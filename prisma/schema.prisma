@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  MEMBER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum SessionStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  READY
+  ACTIVE
+  COMPLETED
+  VOID
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  WAITLISTED
+}
+
+enum TransactionType {
+  PAYMENT
+  EXPENSE
+  ADJUSTMENT
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SYNCED
+  FAILED
+  CONFLICT
+}
+
+enum RelationshipKind {
+  PREFERRED
+  AVOID
+  BLACKLIST
+  PARTNER
+}
+
+enum RotationAction {
+  SWAP
+  ROTATE
+  SUGGEST
+  FORCE
+  LOCK
+  UNLOCK
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  imageUrl     String?
+  role         Role     @default(MEMBER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdSessions      Session[]      @relation("SessionCreator")
+  createdTransactions  Transaction[]  @relation("TransactionCreator")
+  createdExpenses      Expense[]       @relation("ExpenseCreator")
+  createdSyncQueue     SyncQueue[]     @relation("SyncQueueCreator")
+
+  @@map("users")
+}
+
+model Player {
+  id             String   @id @default(cuid())
+  displayName    String
+  gender         Gender?
+  skillLevel     Int      @default(3)
+  phone          String?
+  avatarUrl      String?
+  notes          String?
+  isPriority     Boolean  @default(false)
+  isLocked       Boolean  @default(false)
+  lastPlayedAt   DateTime?
+  lastRestedAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  attendance           Attendance[]
+  pairings             Pairing[]
+  tags                 PlayerTag[]
+  relationshipsAsSource PlayerRelationship[] @relation("RelationshipSource")
+  relationshipsAsTarget PlayerRelationship[] @relation("RelationshipTarget")
+  rotationHistory      RotationHistory[] @relation("RotationPlayer")
+
+  @@index([displayName])
+  @@index([skillLevel])
+  @@map("players")
+}
+
+model Session {
+  id                String        @id @default(cuid())
+  playDate          DateTime
+  startsAt          DateTime
+  endsAt            DateTime
+  status            SessionStatus  @default(DRAFT)
+  courtCount        Int
+  rotationGroupSize Int            @default(8)
+  openingCapital    Decimal        @default(0) @db.Decimal(12, 2)
+  notes             String?
+  createdById       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  createdBy      User?           @relation("SessionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  courts         Court[]
+  matches        Match[]
+  attendance     Attendance[]
+  transactions   Transaction[]
+  expenses       Expense[]
+  rotationHistory RotationHistory[]
+  syncQueue      SyncQueue[]
+
+  @@index([playDate])
+  @@index([status])
+  @@map("sessions")
+}
+
+model Court {
+  id         String   @id @default(cuid())
+  sessionId  String
+  number     Int
+  label      String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  matches   Match[]
+
+  @@unique([sessionId, number])
+  @@index([sessionId])
+  @@map("courts")
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  sessionId    String
+  courtId      String
+  round        Int         @default(1)
+  status       MatchStatus @default(PENDING)
+  winningSide  Int?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  session    Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  court      Court       @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  pairings   Pairing[]
+  rotationHistory RotationHistory[]
+
+  @@index([sessionId])
+  @@index([courtId])
+  @@index([status])
+  @@map("matches")
+}
+
+model Pairing {
+  id         String   @id @default(cuid())
+  matchId    String
+  playerId   String
+  side       Int
+  slot       Int
+  isLocked   Boolean  @default(false)
+  score      Decimal? @db.Decimal(5, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player  Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+  @@index([matchId])
+  @@index([playerId])
+  @@map("pairings")
+}
+
+model Attendance {
+  id          String           @id @default(cuid())
+  sessionId   String
+  playerId    String
+  status      AttendanceStatus @default(PRESENT)
+  checkInAt   DateTime?
+  checkOutAt  DateTime?
+  note        String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, playerId])
+  @@index([sessionId])
+  @@index([playerId])
+  @@map("attendance")
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  sessionId   String?
+  playerId    String?
+  createdById String?
+  type        TransactionType
+  amount      Decimal          @db.Decimal(12, 2)
+  description String?
+  occurredAt  DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([playerId])
+  @@index([type])
+  @@map("transactions")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  sessionId   String?
+  createdById String?
+  category    String
+  amount      Decimal  @db.Decimal(12, 2)
+  vendor      String?
+  description String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([category])
+  @@map("expenses")
+}
+
+model PlayerTag {
+  id          String   @id @default(cuid())
+  playerId    String
+  name        String
+  color       String?
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([name])
+  @@map("player_tags")
+}
+
+model PlayerRelationship {
+  id              String           @id @default(cuid())
+  sourcePlayerId  String
+  targetPlayerId  String
+  kind            RelationshipKind
+  weight          Int              @default(1)
+  note            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  sourcePlayer Player @relation("RelationshipSource", fields: [sourcePlayerId], references: [id], onDelete: Cascade)
+  targetPlayer Player @relation("RelationshipTarget", fields: [targetPlayerId], references: [id], onDelete: Cascade)
+
+  @@unique([sourcePlayerId, targetPlayerId, kind])
+  @@index([sourcePlayerId])
+  @@index([targetPlayerId])
+  @@map("player_relationships")
+}
+
+model RotationHistory {
+  id          String         @id @default(cuid())
+  sessionId   String
+  matchId     String?
+  courtId     String?
+  playerId    String
+  action      RotationAction
+  fromSlot    Int?
+  toSlot      Int?
+  meta        Json?
+  createdAt   DateTime       @default(now())
+
+  session Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  match   Match?   @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  court   Court?   @relation(fields: [courtId], references: [id], onDelete: SetNull)
+  player  Player   @relation("RotationPlayer", fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([matchId])
+  @@index([playerId])
+  @@map("rotation_history")
+}
+
+model SyncQueue {
+  id               String     @id @default(cuid())
+  sessionId        String?
+  createdById      String?
+  entityType       String
+  entityId         String
+  operation        String
+  payload          Json
+  status           SyncStatus  @default(PENDING)
+  attempts         Int         @default(0)
+  clientMutationId  String?    @unique
+  lastError        String?
+  processedAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdBy User?    @relation("SyncQueueCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([sessionId])
+  @@map("sync_queue")
+}
