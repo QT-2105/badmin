@@ -1,0 +1,135 @@
+version: "2026-06-09"
+name: protected-modules
+scope: repository
+
+protected_modules:
+  - id: runtime_store
+    paths:
+      - "src/lib/badminton-store.ts"
+    protected_semantics:
+      - optimistic runtime state
+      - court generation from court_count
+      - player lifecycle transitions
+      - next-match generation and scoring
+      - replacement candidate behavior
+      - ready-court cancellation
+      - match start/end
+      - cooldown transitions
+      - hydration mapping
+
+  - id: runtime_screen
+    paths:
+      - "src/app/sessions/[sessionId]/runtime/page.tsx"
+      - "src/components/runtime-route-client.tsx"
+      - "src/components/realtime-dashboard.tsx"
+    protected_semantics:
+      - runtime only inside session route
+      - sticky runtime top bar
+      - compact stats header
+      - court-management region
+      - full-screen player list access
+      - sync warning before unsafe leave
+
+  - id: court_management
+    paths:
+      - "src/components/sections/live-courts-section.tsx"
+      - "src/components/cards/court-card.tsx"
+      - "src/components/cards/player-team.tsx"
+    protected_semantics:
+      - EMPTY READY PLAYING court lifecycle
+      - apply suggestion to empty court
+      - start/end controls
+      - cancel ready court before start
+      - no routine roster mutation while playing
+
+  - id: next_match_orchestration
+    paths:
+      - "src/components/sections/next-match-queue.tsx"
+      - "src/components/cards/next-match-card.tsx"
+    protected_semantics:
+      - suggestions are optional
+      - refresh suggestions
+      - apply suggestion
+      - replace player in suggestion
+      - prevent duplicate players
+      - exclude playing players from replacement
+
+  - id: runtime_player_panel
+    paths:
+      - "src/components/sections/player-database-panel.tsx"
+    protected_semantics:
+      - runtime player visibility
+      - full-screen player review
+      - payment/player edits when allowed
+      - readonly lock when session completed/cancelled
+
+  - id: runtime_persistence
+    paths:
+      - "src/hooks/use-runtime-hydration.ts"
+      - "src/hooks/use-runtime-snapshot.ts"
+      - "src/hooks/use-runtime-sync.ts"
+      - "src/services/runtime-snapshot-service.ts"
+      - "src/repositories/runtime-snapshot-repository.ts"
+      - "src/repositories/runtime-courts-repository.ts"
+      - "src/repositories/runtime-matches-repository.ts"
+      - "src/app/api/runtime/snapshot/route.ts"
+    protected_semantics:
+      - current-state snapshot
+      - explicit action-driven commit
+      - recovery from DB
+      - generated empty courts from court_count
+
+  - id: session_completion
+    paths:
+      - "src/components/schedule/session-detail-client.tsx"
+      - "src/repositories/session-completion-repository.ts"
+      - "src/app/api/sessions/[sessionId]/complete/route.ts"
+    protected_semantics:
+      - validate court cost and shuttlecock usage
+      - calculate profit including court and shuttlecock costs
+      - optionally create finance vouchers
+      - always create PLAY_USAGE stock movement
+      - lock runtime after completion
+
+  - id: shuttlecock_inventory
+    paths:
+      - "src/components/inventory/inventory-page-client.tsx"
+      - "src/repositories/inventory-repository.ts"
+      - "src/app/api/inventory/*"
+    protected_semantics:
+      - product inventory movement model
+      - no negative stock
+      - weighted average cost/usage price
+      - movement required for every stock change
+
+  - id: finance
+    paths:
+      - "src/components/finance/finance-page-client.tsx"
+      - "src/repositories/finance-repository.ts"
+      - "src/app/api/finance/transactions/route.ts"
+    protected_semantics:
+      - manual transactions do not require session_id
+      - title is required
+      - categories are Cầu/Sân/Khác for manual UI
+      - period filter defaults to current month
+      - transaction list sort is newest/oldest only
+
+  - id: dashboard
+    paths:
+      - "src/components/dashboard/dashboard-page-client.tsx"
+      - "src/repositories/dashboard-repository.ts"
+      - "src/app/api/dashboard/summary/route.ts"
+    protected_semantics:
+      - business overview only
+      - month/year report period
+      - no live scheduling controls
+      - recent sessions link to detail, not direct runtime takeover
+
+  - id: app_shell
+    paths:
+      - "src/components/app-shell.tsx"
+    protected_semantics:
+      - fixed sidebar
+      - collapsed state persistence
+      - root nav labels
+      - no global runtime nav

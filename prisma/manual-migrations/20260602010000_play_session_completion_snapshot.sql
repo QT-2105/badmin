@@ -1,0 +1,4 @@
+ALTER TABLE "play_sessions"
+  ADD COLUMN IF NOT EXISTS "court_cost" DECIMAL(12, 2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS "shuttlecock_pieces_used" INTEGER NOT NULL DEFAULT 0;
+

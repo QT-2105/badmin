@@ -1,0 +1,60 @@
+version: "2026-06-09"
+name: scheduling-constraints
+scope: scheduling-runtime
+
+constraints:
+  - id: operator_final_authority
+    severity: critical
+    rule: "The operator must be able to ignore, refresh, replace, apply, cancel, start, and end scheduling decisions."
+
+  - id: suggestions_not_commands
+    severity: critical
+    rule: "Next-match suggestions must never auto-apply without operator action."
+
+  - id: minimum_players
+    severity: high
+    rule: "Runtime scheduling requires at least court_count * 6 players."
+
+  - id: start_requires_ready_full_court
+    severity: high
+    rule: "A match can start only from READY court with four filled slots."
+
+  - id: end_match_sets_just_finished
+    severity: critical
+    rule: "Ending a playing match must increment matches, set involved players to JUST_FINISHED, set justFinishedAt, and clear the court."
+
+  - id: cancel_ready_returns_waiting
+    severity: high
+    rule: "Cancelling a READY court returns its roster to WAITING and clears the court."
+
+  - id: no_playing_replacement
+    severity: critical
+    rule: "Players currently PLAYING must not be replacement candidates."
+
+  - id: no_duplicate_suggestion_players
+    severity: critical
+    rule: "A player must not appear in multiple active suggestions/courts after replacement."
+
+  - id: gender_format_preference
+    severity: medium
+    rule: "Prefer nam-nam vs nam-nam, nữ-nữ vs nữ-nữ, or nam-nữ vs nam-nữ. Avoid nữ-nữ vs nam-nam unless owner changes philosophy."
+
+  - id: level_balance_priority
+    severity: high
+    rule: "Level balance between teams must outweigh weaker gender formatting preferences."
+
+  - id: fewer_matches_priority
+    severity: medium
+    rule: "Players with fewer matches should be prioritized by suggestion scoring."
+
+  - id: completed_runtime_readonly
+    severity: critical
+    rule: "COMPLETED or CANCELLED sessions must render runtime readonly and disable scheduling/player edits."
+
+manual_controls_required:
+  - refresh_next_matches
+  - apply_next_match
+  - replace_next_match_player
+  - cancel_ready_court
+  - start_match
+  - end_match

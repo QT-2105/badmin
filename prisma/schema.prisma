@@ -5,348 +5,159 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
-enum Role {
-  ADMIN
-  STAFF
-  MEMBER
+model play_dates {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  play_date     DateTime        @unique @db.Date
+  title         String?         @db.VarChar(255)
+  note          String?
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(6)
+  play_sessions play_sessions[]
 }
 
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-  UNDISCLOSED
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model play_sessions {
+  id                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  play_date_id             String                 @db.Uuid
+  name                     String                 @db.VarChar(255)
+  start_time               DateTime               @db.Time(6)
+  end_time                 DateTime               @db.Time(6)
+  court_count              Int                    @default(1)
+  note                     String?
+  status                   String                 @default("NOT_STARTED") @db.VarChar(20)
+  court_cost               Decimal?               @default(0) @db.Decimal(12, 2)
+  shuttlecock_pieces_used  Int                    @default(0)
+  shuttlecock_product_id   String?                @db.Uuid
+  shuttlecock_product_name String?                @db.VarChar(255)
+  total_income             Decimal?               @default(0) @db.Decimal(12, 2)
+  total_expense            Decimal?               @default(0) @db.Decimal(12, 2)
+  total_profit             Decimal?               @default(0) @db.Decimal(12, 2)
+  created_at               DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at               DateTime?              @default(now()) @db.Timestamp(6)
+  play_dates               play_dates             @relation(fields: [play_date_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  runtime_courts           runtime_courts[]
+  runtime_matches          runtime_matches[]
+  session_players          session_players[]
+  session_summaries        session_summaries[]
+  session_transactions     session_transactions[]
+
+  @@index([play_date_id], map: "idx_play_sessions_play_date_id")
 }
 
-enum SessionStatus {
-  DRAFT
-  SCHEDULED
-  ACTIVE
-  COMPLETED
-  CANCELLED
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model runtime_courts {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id       String           @db.Uuid
+  court_number     Int
+  status           String           @db.VarChar(20)
+  runtime_match_id String?          @db.Uuid
+  started_at       DateTime?        @db.Timestamp(6)
+  updated_at       DateTime?        @default(now()) @db.Timestamp(6)
+  runtime_matches  runtime_matches? @relation(fields: [runtime_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  play_sessions    play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([session_id], map: "idx_runtime_courts_session_id")
 }
 
-enum MatchStatus {
-  PENDING
-  READY
-  ACTIVE
-  COMPLETED
-  VOID
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model runtime_matches {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id     String           @db.Uuid
+  queue_order    Int?
+  court_number   Int?
+  status         String           @db.VarChar(20)
+  fairness_score Int?
+  team_a         Json
+  team_b         Json
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
+  runtime_courts runtime_courts[]
+  play_sessions  play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([session_id], map: "idx_runtime_matches_session_id")
 }
 
-enum AttendanceStatus {
-  PRESENT
-  LATE
-  ABSENT
-  WAITLISTED
+model session_players {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id        String        @db.Uuid
+  full_name         String        @db.VarChar(255)
+  gender            String?       @db.VarChar(10)
+  level             Int           @default(1)
+  total_matches     Int           @default(0)
+  payment_amount    Decimal       @default(0) @db.Decimal(12, 2)
+  discount          Decimal       @default(0) @db.Decimal(5, 2)
+  payment_method    String?       @db.VarChar(10)
+  payment_status    String        @default("UNPAID") @db.VarChar(20)
+  runtime_status    String?       @default("WAITING") @db.VarChar(20)
+  last_court_number Int?
+  note              String?
+  joined_at         DateTime?     @default(now()) @db.Timestamp(6)
+  play_sessions     play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([session_id], map: "idx_session_players_session_id")
 }
 
-enum TransactionType {
-  PAYMENT
-  EXPENSE
-  ADJUSTMENT
+model session_summaries {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id    String        @db.Uuid
+  total_players Int           @default(0)
+  total_income  Decimal?      @default(0) @db.Decimal(12, 2)
+  total_expense Decimal?      @default(0) @db.Decimal(12, 2)
+  total_profit  Decimal?      @default(0) @db.Decimal(12, 2)
+  created_at    DateTime?     @default(now()) @db.Timestamp(6)
+  play_sessions play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-enum SyncStatus {
-  PENDING
-  SYNCING
-  SYNCED
-  FAILED
-  CONFLICT
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_transactions {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id       String?        @db.Uuid
+  transaction_type String         @db.VarChar(20)
+  category         String         @db.VarChar(30)
+  title            String?        @db.VarChar(255)
+  quantity         Decimal?       @default(1) @db.Decimal(12, 2)
+  unit_price       Decimal?       @default(0) @db.Decimal(12, 2)
+  total_amount     Decimal        @default(0) @db.Decimal(12, 2)
+  note             String?
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  play_sessions    play_sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-enum RelationshipKind {
-  PREFERRED
-  AVOID
-  BLACKLIST
-  PARTNER
+model shuttlecock_inventory {
+  id                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shuttlecock_product_id   String               @unique @db.Uuid
+  quantity_ball            Int                  @default(0)
+  avg_cost_per_ball        Decimal?             @default(0) @db.Decimal(18, 6)
+  avg_usage_price_per_ball Decimal?             @default(0) @db.Decimal(18, 6)
+  updated_at               DateTime?            @default(now()) @db.Timestamp(6)
+  shuttlecock_products     shuttlecock_products @relation(fields: [shuttlecock_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-enum RotationAction {
-  SWAP
-  ROTATE
-  SUGGEST
-  FORCE
-  LOCK
-  UNLOCK
+model shuttlecock_movements {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shuttlecock_product_id String               @db.Uuid
+  movement_type          String               @db.VarChar(20)
+  quantity_ball          Int                  @default(0)
+  cost_per_ball          Decimal?             @db.Decimal(18, 6)
+  usage_price_per_ball   Decimal?             @db.Decimal(18, 6)
+  unit_price             Decimal?             @db.Decimal(18, 6)
+  title                  String?              @db.VarChar(255)
+  note                   String?
+  created_at             DateTime?            @default(now()) @db.Timestamp(6)
+  shuttlecock_products   shuttlecock_products @relation(fields: [shuttlecock_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  imageUrl     String?
-  role         Role     @default(MEMBER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  createdSessions      Session[]      @relation("SessionCreator")
-  createdTransactions  Transaction[]  @relation("TransactionCreator")
-  createdExpenses      Expense[]       @relation("ExpenseCreator")
-  createdSyncQueue     SyncQueue[]     @relation("SyncQueueCreator")
-
-  @@map("users")
-}
-
-model Player {
-  id             String   @id @default(cuid())
-  displayName    String
-  gender         Gender?
-  skillLevel     Int      @default(3)
-  phone          String?
-  avatarUrl      String?
-  notes          String?
-  isPriority     Boolean  @default(false)
-  isLocked       Boolean  @default(false)
-  lastPlayedAt   DateTime?
-  lastRestedAt   DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  attendance           Attendance[]
-  pairings             Pairing[]
-  tags                 PlayerTag[]
-  relationshipsAsSource PlayerRelationship[] @relation("RelationshipSource")
-  relationshipsAsTarget PlayerRelationship[] @relation("RelationshipTarget")
-  rotationHistory      RotationHistory[] @relation("RotationPlayer")
-
-  @@index([displayName])
-  @@index([skillLevel])
-  @@map("players")
-}
-
-model Session {
-  id                String        @id @default(cuid())
-  playDate          DateTime
-  startsAt          DateTime
-  endsAt            DateTime
-  status            SessionStatus  @default(DRAFT)
-  courtCount        Int
-  rotationGroupSize Int            @default(8)
-  openingCapital    Decimal        @default(0) @db.Decimal(12, 2)
-  notes             String?
-  createdById       String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-
-  createdBy      User?           @relation("SessionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  courts         Court[]
-  matches        Match[]
-  attendance     Attendance[]
-  transactions   Transaction[]
-  expenses       Expense[]
-  rotationHistory RotationHistory[]
-  syncQueue      SyncQueue[]
-
-  @@index([playDate])
-  @@index([status])
-  @@map("sessions")
-}
-
-model Court {
-  id         String   @id @default(cuid())
-  sessionId  String
-  number     Int
-  label      String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  matches   Match[]
-
-  @@unique([sessionId, number])
-  @@index([sessionId])
-  @@map("courts")
-}
-
-model Match {
-  id           String      @id @default(cuid())
-  sessionId    String
-  courtId      String
-  round        Int         @default(1)
-  status       MatchStatus @default(PENDING)
-  winningSide  Int?
-  startedAt    DateTime?
-  endedAt      DateTime?
-  notes        String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  session    Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  court      Court       @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  pairings   Pairing[]
-  rotationHistory RotationHistory[]
-
-  @@index([sessionId])
-  @@index([courtId])
-  @@index([status])
-  @@map("matches")
-}
-
-model Pairing {
-  id         String   @id @default(cuid())
-  matchId    String
-  playerId   String
-  side       Int
-  slot       Int
-  isLocked   Boolean  @default(false)
-  score      Decimal? @db.Decimal(5, 2)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  player  Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([matchId, playerId])
-  @@index([matchId])
-  @@index([playerId])
-  @@map("pairings")
-}
-
-model Attendance {
-  id          String           @id @default(cuid())
-  sessionId   String
-  playerId    String
-  status      AttendanceStatus @default(PRESENT)
-  checkInAt   DateTime?
-  checkOutAt  DateTime?
-  note        String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  player  Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, playerId])
-  @@index([sessionId])
-  @@index([playerId])
-  @@map("attendance")
-}
-
-model Transaction {
-  id          String           @id @default(cuid())
-  sessionId   String?
-  playerId    String?
-  createdById String?
-  type        TransactionType
-  amount      Decimal          @db.Decimal(12, 2)
-  description String?
-  occurredAt  DateTime         @default(now())
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  player    Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
-  createdBy User?    @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([sessionId])
-  @@index([playerId])
-  @@index([type])
-  @@map("transactions")
-}
-
-model Expense {
-  id          String   @id @default(cuid())
-  sessionId   String?
-  createdById String?
-  category    String
-  amount      Decimal  @db.Decimal(12, 2)
-  vendor      String?
-  description String?
-  occurredAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  createdBy User?    @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([sessionId])
-  @@index([category])
-  @@map("expenses")
-}
-
-model PlayerTag {
-  id          String   @id @default(cuid())
-  playerId    String
-  name        String
-  color       String?
-  priority    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@index([playerId])
-  @@index([name])
-  @@map("player_tags")
-}
-
-model PlayerRelationship {
-  id              String           @id @default(cuid())
-  sourcePlayerId  String
-  targetPlayerId  String
-  kind            RelationshipKind
-  weight          Int              @default(1)
-  note            String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  sourcePlayer Player @relation("RelationshipSource", fields: [sourcePlayerId], references: [id], onDelete: Cascade)
-  targetPlayer Player @relation("RelationshipTarget", fields: [targetPlayerId], references: [id], onDelete: Cascade)
-
-  @@unique([sourcePlayerId, targetPlayerId, kind])
-  @@index([sourcePlayerId])
-  @@index([targetPlayerId])
-  @@map("player_relationships")
-}
-
-model RotationHistory {
-  id          String         @id @default(cuid())
-  sessionId   String
-  matchId     String?
-  courtId     String?
-  playerId    String
-  action      RotationAction
-  fromSlot    Int?
-  toSlot      Int?
-  meta        Json?
-  createdAt   DateTime       @default(now())
-
-  session Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  match   Match?   @relation(fields: [matchId], references: [id], onDelete: SetNull)
-  court   Court?   @relation(fields: [courtId], references: [id], onDelete: SetNull)
-  player  Player   @relation("RotationPlayer", fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@index([sessionId])
-  @@index([matchId])
-  @@index([playerId])
-  @@map("rotation_history")
-}
-
-model SyncQueue {
-  id               String     @id @default(cuid())
-  sessionId        String?
-  createdById      String?
-  entityType       String
-  entityId         String
-  operation        String
-  payload          Json
-  status           SyncStatus  @default(PENDING)
-  attempts         Int         @default(0)
-  clientMutationId  String?    @unique
-  lastError        String?
-  processedAt      DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  createdBy User?    @relation("SyncQueueCreator", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([status])
-  @@index([sessionId])
-  @@map("sync_queue")
+model shuttlecock_products {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String                  @db.VarChar(255)
+  brand                 String?                 @db.VarChar(100)
+  balls_per_tube        Int                     @default(12)
+  status                String                  @default("ACTIVE") @db.VarChar(20)
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  shuttlecock_inventory shuttlecock_inventory?
+  shuttlecock_movements shuttlecock_movements[]
 }

@@ -1,0 +1,66 @@
+version: "2026-06-09"
+name: ai-behavior-rules
+scope: ai-agents
+
+mandatory_reading:
+  before_architecture_sensitive_change:
+    - "AGENTS.md"
+    - "docs/*"
+    - "rules/*"
+  when_touching_runtime:
+    - "src/lib/badminton-store.ts"
+    - "src/components/realtime-dashboard.tsx"
+    - "src/components/sections/live-courts-section.tsx"
+    - "src/components/sections/next-match-queue.tsx"
+    - "src/components/sections/player-database-panel.tsx"
+    - "src/components/cards/court-card.tsx"
+    - "src/components/cards/next-match-card.tsx"
+    - "src/hooks/use-runtime-*.ts"
+    - "src/repositories/runtime-*.ts"
+    - "prisma/schema.prisma"
+
+required_behavior:
+  - "Preserve session-centric architecture."
+  - "Preserve runtime inside /sessions/[sessionId]/runtime only."
+  - "Preserve current-state runtime persistence."
+  - "Preserve optimistic Zustand runtime interactions."
+  - "Commit runtime snapshots only on meaningful operator actions."
+  - "Preserve operator-first scheduling and manual overrides."
+  - "Preserve tablet/mobile-first runtime UX."
+  - "Use readable level labels in user-facing UI."
+  - "Update docs/rules/prompts when current architecture changes."
+
+must_ask_owner_before:
+  - "Changing player lifecycle statuses or transitions."
+  - "Changing JUST_FINISHED cooldown/fairness semantics."
+  - "Changing next-match scoring philosophy."
+  - "Changing replacement eligibility."
+  - "Changing court lifecycle."
+  - "Changing runtime snapshot sync/hydration strategy."
+  - "Introducing a required courts catalog table."
+  - "Introducing global player identity."
+  - "Changing session completion finance/inventory semantics."
+  - "Moving runtime to root/global navigation."
+  - "Requiring session_id for manual finance transactions."
+  - "Changing shuttlecock inventory movement formulas."
+
+must_not:
+  - "Autonomously redesign protected runtime scheduling."
+  - "Make suggestions mandatory."
+  - "Offer PLAYING players as replacement candidates."
+  - "Persist temporary runtime selections continuously."
+  - "Block live runtime UI on database writes."
+  - "Replace session_players with users/members."
+  - "Introduce event sourcing, CQRS, ERP, or warehouse architecture."
+  - "Turn Dashboard into a live runtime monitor."
+
+review_focus:
+  - runtime_lifecycle_regressions
+  - duplicate_players_in_suggestions
+  - playing_player_replacement_bug
+  - just_finished_semantic_breakage
+  - excessive_database_calls
+  - session_completion_finance_drift
+  - shuttlecock_inventory_negative_stock
+  - schedule_past_date_mutation
+  - tablet_mobile_layout_regressions

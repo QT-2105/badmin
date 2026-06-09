@@ -4,26 +4,26 @@
 
 :root {
   color-scheme: dark;
-  --background: 222 47% 6%;
+  --background: 222 47% 5%;
   --foreground: 210 40% 98%;
-  --card: 222 47% 9%;
+  --card: 222 47% 8%;
   --card-foreground: 210 40% 98%;
-  --popover: 222 47% 8%;
+  --popover: 222 47% 7%;
   --popover-foreground: 210 40% 98%;
-  --primary: 164 78% 53%;
+  --primary: 174 88% 52%;
   --primary-foreground: 222 47% 6%;
-  --secondary: 220 18% 14%;
+  --secondary: 220 18% 13%;
   --secondary-foreground: 210 40% 96%;
-  --muted: 220 18% 12%;
+  --muted: 220 18% 11%;
   --muted-foreground: 215 20% 72%;
-  --accent: 169 77% 17%;
-  --accent-foreground: 166 95% 90%;
+  --accent: 188 86% 18%;
+  --accent-foreground: 176 100% 92%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 18% 16%;
-  --input: 220 18% 16%;
-  --ring: 164 78% 53%;
-  --radius: 1rem;
+  --border: 220 18% 15%;
+  --input: 220 18% 15%;
+  --ring: 174 88% 52%;
+  --radius: 1.125rem;
 }
 
 * {
@@ -32,8 +32,9 @@
 
 html {
   background:
-    radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 32%),
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 24%),
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 24%),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.12), transparent 22%),
     hsl(var(--background));
 }
 
@@ -43,8 +44,25 @@ body {
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .font-display {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.28);
+  color: white;
 }
 
 @layer base {

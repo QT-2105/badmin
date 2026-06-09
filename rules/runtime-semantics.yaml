@@ -1,0 +1,78 @@
+version: "2026-06-09"
+name: runtime-semantics
+scope: scheduling-runtime
+
+player_lifecycle:
+  protected_flow:
+    - WAITING
+    - NEXT_MATCH_OR_PRIORITY
+    - PLAYING
+    - JUST_FINISHED
+    - WAITING
+  statuses:
+    WAITING:
+      meaning: "Eligible and waiting."
+      eligible_for_suggestion: true
+      eligible_for_replacement: true
+    PRIORITY:
+      meaning: "Prepared in a next match or ready court."
+      eligible_for_suggestion: false
+      eligible_for_replacement: "only when in another suggestion and not on court"
+    PLAYING:
+      meaning: "Currently active on a court."
+      eligible_for_suggestion: false
+      eligible_for_replacement: false
+    JUST_FINISHED:
+      meaning: "Recently completed match and cooling down."
+      eligible_for_suggestion: "allowed with penalties/current heuristic"
+      eligible_for_replacement: true
+      protected: true
+    RESTING:
+      meaning: "Unavailable."
+      eligible_for_suggestion: false
+      eligible_for_replacement: false
+    FINISHED:
+      meaning: "Session completed/locked."
+      eligible_for_suggestion: false
+      eligible_for_replacement: false
+
+cooldown:
+  protected: true
+  just_finished_duration_ms: 120000
+  transition: "JUST_FINISHED -> WAITING"
+  rationale:
+    - fairness
+    - fatigue_management
+    - anti_repeat
+    - queue_continuity
+
+court_lifecycle:
+  statuses:
+    EMPTY:
+      meaning: "Court has no roster and can receive a suggestion."
+    READY:
+      meaning: "Court has roster but match has not started."
+    PLAYING:
+      meaning: "Match is running."
+  protected_transitions:
+    - "EMPTY -> READY"
+    - "READY -> PLAYING"
+    - "READY -> EMPTY"
+    - "PLAYING -> EMPTY"
+
+runtime_eligibility:
+  minimum_players_formula: "court_count * 6"
+  disabled_when:
+    - "session is not ACTIVE"
+    - "session is COMPLETED or CANCELLED"
+    - "players.length < court_count * 6"
+
+persistence:
+  live_owner: "zustand"
+  recovery_owner: "database_current_snapshot"
+  court_identity: "court_number derived from play_sessions.court_count"
+  commit_model: "explicit important operator actions"
+  forbidden:
+    - event_sourcing
+    - cqrs
+    - continuous_db_write_loop

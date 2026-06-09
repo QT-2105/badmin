@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
 
 import { Providers } from './providers';
@@ -10,20 +10,20 @@ const inter = Inter({
   variable: '--font-inter'
 });
 
-const spaceGrotesk = Space_Grotesk({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-display'
 });
 
 export const metadata: Metadata = {
-  title: 'Badmin',
-  description: 'Mobile-first badminton group operations control panel.'
+  title: 'Badmin Live Court Console',
+  description: 'Mobile-first real-time badminton court management system.'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceGrotesk.variable} min-h-screen bg-background text-foreground antialiased`}>
+    <html lang="vi" className="dark" suppressHydrationWarning>
+      <body className={`${inter.variable} ${plusJakartaSans.variable} min-h-screen bg-background text-foreground antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

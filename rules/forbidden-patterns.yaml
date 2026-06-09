@@ -1,0 +1,69 @@
+version: "2026-06-09"
+name: forbidden-patterns
+scope: repository
+
+forbidden_patterns:
+  - id: runtime_as_root_module
+    severity: critical
+    rule: "Do not add realtime runtime as root navigation."
+    rationale: "Điều phối belongs inside a Play Session."
+
+  - id: event_sourcing_runtime
+    severity: critical
+    rule: "Do not make runtime events the source of truth."
+    rationale: "Badmin uses current-state snapshots for recovery."
+
+  - id: cqrs_runtime
+    severity: critical
+    rule: "Do not split runtime into CQRS command/read models."
+    rationale: "Live operation needs lightweight state transitions."
+
+  - id: global_player_system
+    severity: critical
+    rule: "Do not replace session_players with users, members, or global players."
+    rationale: "Players are session-scoped."
+
+  - id: required_courts_catalog
+    severity: high
+    rule: "Do not reintroduce a mandatory physical court catalog for current runtime."
+    rationale: "Current courts are generated from play_sessions.court_count and persisted by court_number."
+
+  - id: mandatory_auto_matchmaking
+    severity: critical
+    rule: "Do not auto-apply suggestions without operator action."
+    rationale: "Operator authority is final."
+
+  - id: continuous_runtime_db_writes
+    severity: high
+    rule: "Do not write or select DB continuously for temporary runtime state."
+    rationale: "Runtime should commit on important clicks and stay responsive."
+
+  - id: playing_player_replacement
+    severity: critical
+    rule: "Do not allow PLAYING players to be selected as suggestion replacements."
+    rationale: "This corrupts live court state."
+
+  - id: remove_just_finished
+    severity: critical
+    rule: "Do not remove or cosmetically collapse JUST_FINISHED."
+    rationale: "It protects fairness, cooldown, fatigue, and anti-repeat behavior."
+
+  - id: inventory_direct_update
+    severity: critical
+    rule: "Do not update shuttlecock_inventory directly without creating shuttlecock_movements."
+    rationale: "Movements are the stock reconciliation source."
+
+  - id: manual_finance_requires_session
+    severity: high
+    rule: "Do not require session_id for manually created finance transactions."
+    rationale: "Manual Thu chi is intentionally independent from session selection."
+
+  - id: noisy_finance_filters
+    severity: medium
+    rule: "Do not reintroduce complex transaction filters beyond selected period and newest/oldest sort without owner request."
+    rationale: "The owner simplified finance UI for clarity."
+
+  - id: erp_transformation
+    severity: critical
+    rule: "Do not turn finance/inventory/settings into ERP or warehouse management."
+    rationale: "Badmin is lightweight badminton operational software."
