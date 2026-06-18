@@ -5,15 +5,18 @@ import type { MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import type { Route } from 'next';
-import { CalendarDays, ChevronUp, Home, Loader2, Users, X, Zap } from 'lucide-react';
+import { CalendarDays, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useBadmintonStore } from '@/lib/badminton-store';
 import { useRuntimeHydration } from '@/hooks/use-runtime-hydration';
 import { useRuntimeSync } from '@/hooks/use-runtime-sync';
 import { usePlaySession } from '@/hooks/use-play-dates';
+import { useMatchHistoryMutations } from '@/hooks/use-match-history';
 import { getSessionStatusLabel, isRuntimeActiveStatus, isRuntimeReadonlyStatus, normalizeSessionStatus } from '@/lib/session-status';
+import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { LiveCourtsSection } from './sections/live-courts-section';
+import { MatchHistoryPanel } from './sections/match-history-panel';
 import { NextMatchQueue } from './sections/next-match-queue';
 import { PlayerDatabasePanel } from './sections/player-database-panel';
 
@@ -21,9 +24,13 @@ export function RealtimeDashboard() {
   const { updateCooldowns, players, session, refreshNextMatches, setRuntimeSessionId, runtimeSessionId } = useBadmintonStore();
   const [isPlayerDBOpen, setIsPlayerDBOpen] = useState(false);
   const [isPlayerFullscreenOpen, setIsPlayerFullscreenOpen] = useState(false);
+  const [isMatchHistoryOpen, setIsMatchHistoryOpen] = useState(false);
+  const [historyPlayerId, setHistoryPlayerId] = useState('');
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [playerPanelSize, setPlayerPanelSize] = useState<'compact' | 'expanded'>('compact');
 
   const { data: sessionRecord } = usePlaySession(runtimeSessionId || '');
+  const { createHistory } = useMatchHistoryMutations(runtimeSessionId || '');
 
   // Hydrate from DB on mount and whenever runtimeSessionId changes
   const hydration = useRuntimeHydration({ sessionId: runtimeSessionId || undefined, enabled: !!runtimeSessionId });
@@ -43,14 +50,12 @@ export function RealtimeDashboard() {
     const waiting = players.filter((player) => player.status === 'WAITING').length;
     const finished = players.filter((player) => player.status === 'JUST_FINISHED').length;
     const playing = players.filter((player) => player.status === 'PLAYING').length;
-    const resting = players.filter((player) => player.status === 'RESTING').length;
 
     return {
       total: players.length,
       waiting,
       finished,
-      playing,
-      resting
+      playing
     };
   }, [players]);
 
@@ -84,6 +89,16 @@ export function RealtimeDashboard() {
     if (schedulingDisabled) return;
     refreshNextMatches();
     void commitRuntimeSnapshot();
+  }
+
+  async function recordMatchHistory(payload: MatchHistoryPayload) {
+    if (!runtimeSessionId) return;
+    try {
+      await createHistory.mutateAsync(payload);
+      setHistoryError(null);
+    } catch {
+      setHistoryError('Không thể lưu lịch sử trận đấu. Vui lòng kiểm tra kết nối hoặc migration database.');
+    }
   }
 
   // Update cooldowns every second
@@ -131,19 +146,23 @@ export function RealtimeDashboard() {
       {/* DESKTOP/TABLET HEADER */}
       <header className="hidden md:flex flex-col gap-1.5 px-4 py-1.5">
         <div className="flex items-center gap-2">
-          <div className="grid flex-1 grid-cols-5 gap-1.5">
-            <StatPill label="Tổng người" value={stats.total} tone="text-white" compact />
-            <StatPill label="Đang chờ" value={stats.waiting} tone="text-cyan-200" compact />
+          <div className="grid flex-1 grid-cols-4 gap-1.5">
+            <StatPill label="Tổng" value={stats.total} tone="text-white" compact />
+            <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Vừa xong" value={stats.finished} tone="text-violet-200" compact />
             <StatPill label="Đang chơi" value={stats.playing} tone="text-emerald-200" compact />
-            <StatPill label="Nghỉ" value={stats.resting} tone="text-amber-200" compact />
           </div>
+          <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-9 shrink-0 px-3 text-xs">
+            <History className="h-4 w-4" />
+            Lịch sử
+          </Button>
           <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-9 shrink-0 px-3 text-xs">
             <Users className="h-4 w-4" />
             Người chơi
           </Button>
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} /> : null}
+        {historyError ? <RuntimeNotice message={historyError} /> : null}
       </header>
 
       {/* DESKTOP/TABLET LAYOUT */}
@@ -170,7 +189,13 @@ export function RealtimeDashboard() {
 
             <div className="grid flex-1 min-h-0 grid-cols-[1.45fr,1.25fr] gap-2 p-2">
               <div className="min-h-0 overflow-y-auto pr-1">
-                <LiveCourtsSection showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
+                <LiveCourtsSection
+                  showHeader={false}
+                  schedulingDisabled={schedulingDisabled}
+                  disabledReason={schedulingDisabledReason}
+                  onCommitRuntime={commitRuntimeSnapshot}
+                  onRecordMatch={recordMatchHistory}
+                />
               </div>
               <div className="min-h-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-2">
                 <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
@@ -199,7 +224,11 @@ export function RealtimeDashboard() {
       {/* MOBILE LAYOUT */}
       <div className="md:hidden flex-1 flex flex-col overflow-hidden">
         <div className="px-3 py-1.5">
-          <div className="mb-1.5 flex justify-end">
+          <div className="mb-1.5 flex justify-end gap-1.5">
+            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-8 px-2.5 text-[11px]">
+              <History className="h-3.5 w-3.5" />
+              Lịch sử
+            </Button>
             <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-8 px-2.5 text-[11px]">
               <Users className="h-3.5 w-3.5" />
               Người chơi
@@ -210,13 +239,18 @@ export function RealtimeDashboard() {
             <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Xong" value={stats.finished} tone="text-violet-200" compact />
             <StatPill label="Chơi" value={stats.playing} tone="text-emerald-200" compact />
-            <StatPill label="Nghỉ" value={stats.resting} tone="text-amber-200" compact />
           </div>
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} compact /> : null}
+        {historyError ? <RuntimeNotice message={historyError} compact /> : null}
 
         <div className="flex-1 overflow-y-auto px-3">
-          <LiveCourtsSection schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
+          <LiveCourtsSection
+            schedulingDisabled={schedulingDisabled}
+            disabledReason={schedulingDisabledReason}
+            onCommitRuntime={commitRuntimeSnapshot}
+            onRecordMatch={recordMatchHistory}
+          />
         </div>
 
         <motion.div
@@ -258,6 +292,18 @@ export function RealtimeDashboard() {
             <PlayerDatabasePanel onClose={() => setIsPlayerDBOpen(false)} className="max-h-[40vh]" readonly={isReadonly} />
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isMatchHistoryOpen && runtimeSessionId ? (
+          <MatchHistoryPanel
+            sessionId={runtimeSessionId}
+            players={players}
+            selectedPlayerId={historyPlayerId}
+            onSelectedPlayerChange={setHistoryPlayerId}
+            onClose={() => setIsMatchHistoryOpen(false)}
+          />
+        ) : null}
       </AnimatePresence>
 
       {/* COLLAPSE/EXPAND PLAYER DB BUTTON (MOBILE ONLY) */}

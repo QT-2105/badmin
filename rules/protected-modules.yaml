@@ -63,6 +63,19 @@ protected_modules:
       - payment/player edits when allowed
       - readonly lock when session completed/cancelled
 
+  - id: match_history
+    paths:
+      - "src/components/sections/match-history-panel.tsx"
+      - "src/repositories/match-history-repository.ts"
+      - "src/app/api/sessions/[sessionId]/match-history/route.ts"
+      - "src/app/api/match-history/reset/route.ts"
+    protected_semantics:
+      - lookup only after match end
+      - filter by session player
+      - not live runtime source of truth
+      - no replay architecture
+      - destructive reset requires explicit user confirmation
+
   - id: runtime_persistence
     paths:
       - "src/hooks/use-runtime-hydration.ts"

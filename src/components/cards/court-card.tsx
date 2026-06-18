@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRightLeft, Clock, Play, Square, Users, X } from 'lucide-react';
 import { useBadmintonStore, type Court } from '@/lib/badminton-store';
+import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { cn } from '@/lib/utils';
 import { PlayerTeam } from './player-team';
 
@@ -17,12 +18,14 @@ export function CourtCard({
   court,
   schedulingDisabled = false,
   disabledReason,
-  onCommitRuntime
+  onCommitRuntime,
+  onRecordMatch
 }: {
   court: Court;
   schedulingDisabled?: boolean;
   disabledReason?: string | null;
   onCommitRuntime?: () => Promise<boolean>;
+  onRecordMatch?: (payload: MatchHistoryPayload) => Promise<void>;
 }) {
   const { players, swapPairs, startMatch, endMatch, nextMatches, applyNextMatch, cancelReadyCourt } = useBadmintonStore();
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -57,6 +60,27 @@ export function CourtCard({
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
+
+  function buildMatchHistoryPayload(): MatchHistoryPayload | null {
+    const roster = court.slots
+      .filter((id): id is string => Boolean(id))
+      .map((id) => players.find((player) => player.id === id))
+      .filter((player): player is NonNullable<typeof player> => Boolean(player));
+
+    if (roster.length !== 4) return null;
+    const endedAt = Date.now();
+    const courtNumberMatch = court.name.match(/\d+/);
+
+    return {
+      courtNumber: courtNumberMatch ? Number(courtNumberMatch[0]) : Number(court.id.replace(/\D/g, '') || 0),
+      courtName: court.name,
+      startedAt: court.startedAt ? new Date(court.startedAt).toISOString() : null,
+      endedAt: new Date(endedAt).toISOString(),
+      durationSeconds: court.startedAt ? Math.max(0, Math.floor((endedAt - court.startedAt) / 1000)) : null,
+      teamA: roster.slice(0, 2).map((player) => ({ playerId: player.id, playerName: player.name })),
+      teamB: roster.slice(2, 4).map((player) => ({ playerId: player.id, playerName: player.name }))
+    };
+  }
 
   return (
     <motion.div
@@ -183,8 +207,14 @@ export function CourtCard({
           <motion.button
             onClick={() => {
               if (schedulingDisabled) return;
+              const historyPayload = buildMatchHistoryPayload();
               endMatch(court.id);
-              void onCommitRuntime?.();
+              void (async () => {
+                await onCommitRuntime?.();
+                if (historyPayload) {
+                  await onRecordMatch?.(historyPayload);
+                }
+              })();
             }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

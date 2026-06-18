@@ -68,6 +68,7 @@ The Play Session owns:
 - court count
 - runtime courts
 - runtime matches
+- match history records
 - payment status
 - court cost
 - shuttlecock usage
@@ -85,6 +86,8 @@ The database stores current operational snapshots for recovery:
 - runtime matches
 
 Runtime persistence is not event sourcing, not CQRS, and not replay architecture.
+
+Match history is allowed as a post-match lookup record created when an operator ends a match. It must not become the source of truth for live runtime state.
 
 Runtime courts are generated from `play_sessions.court_count` when needed. Do not reintroduce a required physical court catalog unless explicitly requested.
 

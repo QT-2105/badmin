@@ -49,3 +49,11 @@ export function formatPlayDateTitle(value: string): string {
 export function formatCurrency(value: number): string {
   return Math.round(value).toLocaleString('vi-VN');
 }
+
+export function formatDuration(totalSeconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  return `${minutes}p ${String(seconds).padStart(2, '0')}s`;
+}

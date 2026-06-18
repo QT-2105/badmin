@@ -70,6 +70,13 @@ Everything operational belongs to a Play Session:
 - court matches use `court_number`
 - teams are JSON arrays
 
+`match_histories` and `match_history_players`
+
+- post-match lookup records created after a match ends
+- support history browsing and filtering by session player
+- not the live runtime source of truth
+- not an event-sourcing replacement for `runtime_courts` or `runtime_matches`
+
 `session_transactions`
 
 - lightweight finance records

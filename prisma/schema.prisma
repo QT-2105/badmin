@@ -40,6 +40,7 @@ model play_sessions {
   play_dates               play_dates             @relation(fields: [play_date_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   runtime_courts           runtime_courts[]
   runtime_matches          runtime_matches[]
+  match_histories          match_histories[]
   session_players          session_players[]
   session_summaries        session_summaries[]
   session_transactions     session_transactions[]
@@ -95,9 +96,41 @@ model session_players {
   last_court_number Int?
   note              String?
   joined_at         DateTime?     @default(now()) @db.Timestamp(6)
+  match_history_players match_history_players[]
   play_sessions     play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([session_id], map: "idx_session_players_session_id")
+}
+
+model match_histories {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id            String                  @db.Uuid
+  court_number          Int
+  court_name            String                  @db.VarChar(50)
+  started_at            DateTime?               @db.Timestamp(6)
+  ended_at              DateTime                @default(now()) @db.Timestamp(6)
+  duration_seconds      Int?
+  team_a                Json
+  team_b                Json
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  play_sessions         play_sessions           @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  match_history_players match_history_players[]
+
+  @@index([session_id, ended_at], map: "idx_match_histories_session_ended")
+  @@index([session_id, court_number], map: "idx_match_histories_session_court")
+}
+
+model match_history_players {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  match_history_id  String          @db.Uuid
+  session_player_id String          @db.Uuid
+  team              String          @db.VarChar(10)
+  position          Int
+  match_histories   match_histories @relation(fields: [match_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  session_players   session_players @relation(fields: [session_player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([match_history_id, session_player_id], map: "uq_match_history_player")
+  @@index([session_player_id], map: "idx_match_history_players_player")
 }
 
 model session_summaries {

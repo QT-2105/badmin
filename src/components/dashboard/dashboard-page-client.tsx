@@ -26,7 +26,8 @@ export function DashboardPageClient() {
   }, [data?.dailyFinance]);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
+    <div className="operational-x-scroll w-full">
+      <div className="mx-auto flex w-full min-w-[720px] max-w-7xl flex-col gap-4 px-4 py-5 md:min-w-0 md:px-6">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Tổng quan vận hành</p>
@@ -65,15 +66,15 @@ export function DashboardPageClient() {
 
       {data ? (
         <>
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid auto-rows-fr gap-3 md:grid-cols-2 xl:grid-cols-4">
             <KpiCard icon={TrendingUp} label="Doanh thu" value={`${formatCurrency(data.totalIncome)}đ`} sub={`${data.sessions} ca · ${data.players} lượt người chơi`} tone="text-emerald-300" />
             <KpiCard icon={TrendingDown} label="Chi phí" value={`${formatCurrency(data.totalExpense)}đ`} sub={formatCostSub(data.costBreakdown)} tone="text-rose-300" />
             <KpiCard icon={CircleDollarSign} label="Lợi nhuận" value={`${formatCurrency(data.totalProfit)}đ`} sub={`Chưa thu ${formatCurrency(data.unpaidAmount)}đ`} tone={data.totalProfit >= 0 ? 'text-cyan-300' : 'text-rose-300'} />
             <KpiCard icon={Package} label="Tồn kho cầu" value={`${data.inventoryPieces} quả`} sub={`${data.inventoryProducts} loại · ${formatCurrency(data.inventoryValue)}đ vốn`} tone="text-amber-300" />
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-            <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+          <section className="grid items-stretch gap-4 xl:grid-cols-[1.6fr_1fr]">
+            <div className="flex min-h-[320px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-white">Dòng tiền theo ngày</h2>
@@ -85,7 +86,7 @@ export function DashboardPageClient() {
                   <Legend color="bg-cyan-300" label="Lãi" />
                 </div>
               </div>
-              <div className="mt-4 flex h-56 items-end gap-1 overflow-x-auto pb-2">
+              <div className="operational-x-scroll mt-4 flex min-h-0 flex-1 items-end gap-1 pb-2">
                 {data.dailyFinance.map((item) => (
                   <div key={item.date} className="flex min-w-[28px] flex-1 flex-col items-center gap-1">
                     <div className="flex h-44 w-full items-end justify-center gap-0.5">
@@ -99,19 +100,19 @@ export function DashboardPageClient() {
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+            <div className="grid auto-rows-fr gap-4">
+              <div className="flex min-h-[150px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
                 <h2 className="text-sm font-semibold text-white">Cơ cấu chi phí</h2>
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 flex-1 space-y-3">
                   {data.costBreakdown.length > 0 ? data.costBreakdown.map((item) => (
                     <BreakdownRow key={item.category} label={item.label} amount={item.amount} total={data.totalExpense} />
                   )) : <div className="text-sm text-slate-400">Chưa có chi phí trong kỳ.</div>}
                 </div>
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+              <div className="flex min-h-[150px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
                 <h2 className="text-sm font-semibold text-white">Cần chú ý</h2>
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
                   {data.alerts.length > 0 ? data.alerts.map((alert) => (
                     <Link key={alert.id} href={(alert.href || '/dashboard') as Route} className="block rounded-lg border border-white/10 bg-white/[0.03] p-3 hover:bg-white/[0.06]">
                       <div className="flex items-start gap-2">
@@ -128,13 +129,13 @@ export function DashboardPageClient() {
             </div>
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
-            <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+          <section className="grid items-stretch gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+            <div className="flex min-h-[360px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold text-white">Ca chơi gần đây</h2>
                 <Link href="/schedule" className="text-xs font-semibold text-cyan-200 hover:text-cyan-100">Xem lịch</Link>
               </div>
-              <div className="mt-3 overflow-x-auto">
+              <div className="operational-x-scroll mt-3 flex-1">
                 <table className="min-w-[860px] w-full text-sm">
                   <thead className="text-xs text-slate-500">
                     <tr>
@@ -171,9 +172,9 @@ export function DashboardPageClient() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+            <div className="flex min-h-[360px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
               <h2 className="text-sm font-semibold text-white">Tồn kho cần chú ý</h2>
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
                 {data.lowStockProducts.length > 0 ? data.lowStockProducts.map((product) => (
                   <div key={product.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
                     <div className="flex items-center justify-between gap-3">
@@ -190,19 +191,20 @@ export function DashboardPageClient() {
           </section>
         </>
       ) : null}
+      </div>
     </div>
   );
 }
 
 function KpiCard({ icon: Icon, label, value, sub, tone }: { icon: typeof CalendarDays; label: string; value: string; sub: string; tone: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <div className="flex h-full min-h-[132px] flex-col rounded-xl border border-white/10 bg-white/[0.04] p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
+        <div className="truncate text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
         <Icon className={`h-4 w-4 ${tone}`} />
       </div>
-      <div className={`mt-3 text-2xl font-semibold ${tone}`}>{value}</div>
-      <div className="mt-2 text-xs text-slate-400">{sub}</div>
+      <div className={`mt-3 break-words text-2xl font-semibold ${tone}`}>{value}</div>
+      <div className="mt-auto pt-2 text-xs leading-5 text-slate-400">{sub}</div>
     </div>
   );
 }

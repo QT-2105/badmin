@@ -60,6 +60,14 @@ court_lifecycle:
     - "READY -> EMPTY"
     - "PLAYING -> EMPTY"
 
+match_history:
+  purpose: "Post-match lookup and player filtering."
+  created_on: "Operator ends a PLAYING match."
+  not_source_of_truth_for:
+    - live_runtime_state
+    - queue_replay
+    - event_sourcing
+
 runtime_eligibility:
   minimum_players_formula: "court_count * 6"
   disabled_when:

@@ -157,3 +157,23 @@ export type ShuttlecockMovementSummary = {
   note: string | null;
   createdAt: string | null;
 };
+
+export type MatchHistoryParticipant = {
+  playerId: string;
+  playerName: string;
+  team: 'A' | 'B';
+  position: number;
+};
+
+export type MatchHistorySummary = {
+  id: string;
+  sessionId: string;
+  courtNumber: number;
+  courtName: string;
+  startedAt: string | null;
+  endedAt: string;
+  durationSeconds: number | null;
+  teamA: MatchHistoryParticipant[];
+  teamB: MatchHistoryParticipant[];
+  createdAt: string | null;
+};

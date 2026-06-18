@@ -24,7 +24,9 @@ Version: 2026-06-09
 - `/api/sessions/[sessionId]`
 - `/api/sessions/[sessionId]/players`
 - `/api/sessions/[sessionId]/complete`
+- `/api/sessions/[sessionId]/match-history`
 - `/api/session-players/[playerId]`
+- `/api/match-history/reset`
 - `/api/runtime/snapshot`
 - `/api/finance/transactions`
 - `/api/inventory/products`
@@ -42,6 +44,7 @@ Version: 2026-06-09
 - `live-courts-section.tsx`: court display
 - `next-match-queue.tsx`: suggestion list
 - `player-database-panel.tsx`: runtime player management
+- `match-history-panel.tsx`: runtime match-history lookup
 - `finance-page-client.tsx`: finance UI
 - `inventory-page-client.tsx`: inventory UI
 - `settings-page-client.tsx`: settings UI
@@ -76,6 +79,7 @@ Current repositories:
 - play dates
 - play sessions
 - runtime courts/matches/session/snapshot
+- match history
 - session players
 - session completion
 

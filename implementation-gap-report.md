@@ -93,6 +93,7 @@ Dashboard is business overview only.
 - replacement excludes `PLAYING` players
 - ready court can be cancelled before start
 - match end moves players to `JUST_FINISHED`
+- match end records durable match history for lookup/filtering
 
 ### Finance
 
@@ -137,6 +138,7 @@ These are not reasons to redesign runtime architecture.
 - refine runtime recovery conflict handling
 - add tests for session completion and inventory movement formulas
 - add tests for duplicate-free next-match replacement
+- add tests for match-history creation/filtering
 
 ## Protected Areas Not To Rewrite
 

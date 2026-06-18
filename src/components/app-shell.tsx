@@ -86,7 +86,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className={cn('min-w-0 transition-[padding-left] duration-200', collapsed ? 'md:pl-[72px]' : 'md:pl-60')}>
+        <main
+          className={cn(
+            'min-w-0 transition-[margin-left] duration-200',
+            collapsed ? 'md:ml-[72px]' : 'md:ml-60'
+          )}
+        >
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-white/10 bg-slate-950/90 px-3 backdrop-blur md:hidden">
             <Link href="/dashboard" className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">B</Link>
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">

@@ -57,6 +57,7 @@ Version: 2026-06-09
 - applying suggestion: players become prepared/priority and court becomes ready
 - starting match: court and players become playing
 - ending match: players become just-finished, matches increment, court becomes empty
+- ending match: a post-match history record may be created for lookup
 - completing session: players become finished, courts empty, runtime matches removed
 
 ## Anti-Duplicate Rule

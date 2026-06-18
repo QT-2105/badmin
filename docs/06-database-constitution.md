@@ -17,6 +17,8 @@ Core tables:
 - `session_players`
 - `runtime_courts`
 - `runtime_matches`
+- `match_histories`
+- `match_history_players`
 - `session_transactions`
 - `session_summaries`
 - `shuttlecock_products`
@@ -103,6 +105,24 @@ Current manual categories exposed in UI:
 - `OTHER` -> Khác
 
 Do not transform finance into accounting ERP.
+
+## Match History Constitution
+
+Match history exists for operator lookup after matches finish.
+
+Current tables:
+
+- `match_histories`
+- `match_history_players`
+
+Rules:
+
+- created when a `PLAYING` match is ended by the operator
+- stores court number/name, started/ended timestamps, duration, and team rosters
+- supports filtering by session player through `match_history_players`
+- must not replace current-state runtime tables
+- must not be used for replaying live runtime state
+- may be fully reset from Settings as a destructive maintenance action after explicit confirmation
 
 ## Dashboard Constitution
 

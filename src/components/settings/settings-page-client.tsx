@@ -1,12 +1,32 @@
 'use client';
 
-import { Settings2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Settings2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { normalizeMaxCourtCount } from '@/lib/app-settings';
+import { resetMatchHistory } from '@/services/settings-service';
 
 export function SettingsPageClient() {
   const { settings, setSetting } = useAppSettings();
+  const [resetState, setResetState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  async function handleResetMatchHistory() {
+    const confirmed = window.confirm('Bạn chắc chắn muốn xóa toàn bộ lịch sử trận đấu? Dữ liệu đã xóa sẽ không thể khôi phục.');
+    if (!confirmed) return;
+
+    setResetState('loading');
+    setResetMessage(null);
+    try {
+      const result = await resetMatchHistory();
+      setResetState('done');
+      setResetMessage(`Đã xóa ${result.deletedMatches} trận đấu khỏi lịch sử.`);
+    } catch (caught) {
+      setResetState('error');
+      setResetMessage(caught instanceof Error ? caught.message : 'Không thể xóa lịch sử trận đấu');
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
@@ -77,6 +97,32 @@ export function SettingsPageClient() {
               className="mt-3 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
             />
           </label>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-400/15 text-rose-200">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white">Dữ liệu lịch sử trận đấu</h2>
+              <p className="mt-1 text-sm text-rose-100/80">Xóa toàn bộ lịch sử các trận đã kết thúc. Thao tác này không ảnh hưởng người chơi, ca chơi, thu chi hoặc kho cầu.</p>
+              {resetMessage ? (
+                <p className={`mt-2 text-sm ${resetState === 'error' ? 'text-rose-100' : 'text-emerald-200'}`}>{resetMessage}</p>
+              ) : null}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleResetMatchHistory()}
+            disabled={resetState === 'loading'}
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-rose-300/30 bg-rose-500/20 px-4 text-sm font-semibold text-rose-100 transition-colors hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resetState === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Reset lịch sử
+          </button>
         </div>
       </section>
     </div>

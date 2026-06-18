@@ -13,6 +13,11 @@ forbidden_patterns:
     rule: "Do not make runtime events the source of truth."
     rationale: "Badmin uses current-state snapshots for recovery."
 
+  - id: match_history_as_runtime_truth
+    severity: critical
+    rule: "Do not use match_histories as the source of truth for live scheduling state."
+    rationale: "Match history is lookup data created after matches end, not runtime replay."
+
   - id: cqrs_runtime
     severity: critical
     rule: "Do not split runtime into CQRS command/read models."

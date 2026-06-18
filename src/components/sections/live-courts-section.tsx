@@ -2,18 +2,21 @@
 
 import { motion } from 'framer-motion';
 import { useBadmintonStore } from '@/lib/badminton-store';
+import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { CourtCard } from '../cards/court-card';
 
 export function LiveCourtsSection({
   showHeader = true,
   schedulingDisabled = false,
   disabledReason,
-  onCommitRuntime
+  onCommitRuntime,
+  onRecordMatch
 }: {
   showHeader?: boolean;
   schedulingDisabled?: boolean;
   disabledReason?: string | null;
   onCommitRuntime?: () => Promise<boolean>;
+  onRecordMatch?: (payload: MatchHistoryPayload) => Promise<void>;
 }) {
   const { courts } = useBadmintonStore();
 
@@ -45,7 +48,13 @@ export function LiveCourtsSection({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.05 }}
           >
-            <CourtCard court={court} schedulingDisabled={schedulingDisabled} disabledReason={disabledReason} onCommitRuntime={onCommitRuntime} />
+            <CourtCard
+              court={court}
+              schedulingDisabled={schedulingDisabled}
+              disabledReason={disabledReason}
+              onCommitRuntime={onCommitRuntime}
+              onRecordMatch={onRecordMatch}
+            />
           </motion.div>
         ))}
       </div>

@@ -43,8 +43,11 @@ Runtime layout prioritizes:
 - courts and next suggestions in the same operational region
 - player panel at bottom on tablet/desktop
 - full-screen player list available from the `Người chơi` button
+- full-screen match history available from the `Lịch sử` button
 
 Do not reintroduce a separate dead `Hàng chờ` tab unless it serves a clear operational purpose.
+
+The quick stats header should show only operationally useful counts: total players, waiting, just-finished, and playing. Do not show `RESTING` unless the product reintroduces a real rest workflow.
 
 ## Readability
 

@@ -16,6 +16,7 @@ Extend Badmin by strengthening the current operational flow, not by turning it i
 - safer runtime recovery UI
 - more responsive tablet/mobile polish
 - controlled settings for existing behaviors
+- reset/maintenance actions for post-match lookup data when clearly warned
 
 ## Risky Extension Areas
 

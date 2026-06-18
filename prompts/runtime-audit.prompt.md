@@ -11,6 +11,7 @@ Inspect:
 - src/components/sections/live-courts-section.tsx
 - src/components/sections/next-match-queue.tsx
 - src/components/sections/player-database-panel.tsx
+- src/components/sections/match-history-panel.tsx
 - src/components/cards/court-card.tsx
 - src/components/cards/next-match-card.tsx
 - src/hooks/use-runtime-hydration.ts
@@ -29,6 +30,7 @@ Verify:
 - ready court cancellation returns players to WAITING
 - start requires READY and four slots
 - end moves players to JUST_FINISHED and clears court
+- ending a match records lookup history without becoming runtime source of truth
 - refresh suggestions commits snapshot only by explicit action
 - tablet and mobile runtime access remain usable
 

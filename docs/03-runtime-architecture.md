@@ -47,6 +47,8 @@ Important operator actions call `commitRuntimeSnapshot`, including:
 - cancel ready court
 - player runtime edits that need persistence
 
+When a match ends, the UI also records a match-history row for lookup. This is a post-action record and must not drive live court state.
+
 The system should avoid constant DB writes, polling, or select loops while the operator is arranging players.
 
 ## Runtime State Shape

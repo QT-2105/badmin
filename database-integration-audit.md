@@ -25,6 +25,8 @@ Current core models:
 - `session_players`
 - `runtime_courts`
 - `runtime_matches`
+- `match_histories`
+- `match_history_players`
 - `session_transactions`
 - `session_summaries`
 - `shuttlecock_products`
@@ -88,6 +90,23 @@ Runtime snapshot write updates:
 - `runtime_courts`
 
 Runtime writes are current-state updates, not event sourcing.
+
+## Match History Mapping
+
+Match history is post-match lookup data.
+
+Current tables:
+
+- `match_histories`
+- `match_history_players`
+
+Current behavior:
+
+- created when the operator ends a playing match
+- stores court number/name, started/ended timestamps, duration, and team rosters
+- stores player join rows so the UI can filter history by session player
+- does not drive live runtime state
+- does not replace `runtime_courts` or `runtime_matches`
 
 ## Session Player Mapping
 
@@ -182,6 +201,7 @@ Current APIs:
 - `/api/sessions/[sessionId]`
 - `/api/sessions/[sessionId]/players`
 - `/api/sessions/[sessionId]/complete`
+- `/api/sessions/[sessionId]/match-history`
 - `/api/session-players/[playerId]`
 - `/api/finance/transactions`
 - `/api/inventory/products`
