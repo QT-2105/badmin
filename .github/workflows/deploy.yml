@@ -65,5 +65,4 @@ jobs:
             export BADMIN_IMAGE="${{ env.IMAGE_NAME }}:latest"
             docker compose pull badmin
             docker compose up -d --no-build badmin
-            docker compose exec -T badmin npx prisma migrate deploy
             docker image prune -f
