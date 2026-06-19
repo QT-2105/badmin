@@ -61,6 +61,7 @@ jobs:
           script_stop: true
           script: |
             cd /opt/ttclubminton
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u QT-2105 --password-stdin
             export BADMIN_IMAGE="${{ env.IMAGE_NAME }}:latest"
             docker compose pull badmin
             docker compose up -d --no-build badmin
