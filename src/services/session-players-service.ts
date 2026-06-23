@@ -50,3 +50,20 @@ export async function deleteSessionPlayer(playerId: string): Promise<void> {
   const res = await fetch(`/api/session-players/${playerId}`, { method: 'DELETE' });
   await readJson<{ ok: true }>(res, 'Failed to delete session player');
 }
+
+export async function uploadSessionPlayerAvatar(playerId: string, file: File): Promise<{ avatarUrl: string | null; avatarS3Key: string | null }> {
+  const formData = new FormData();
+  formData.set('file', file);
+  const res = await fetch(`/api/session-players/${playerId}/avatar`, {
+    method: 'POST',
+    body: formData
+  });
+  const data = await readJson<{ avatar: { avatarUrl: string | null; avatarS3Key: string | null } }>(res, 'Failed to upload player avatar');
+  return data.avatar;
+}
+
+export async function deleteSessionPlayerAvatar(playerId: string): Promise<{ avatarUrl: null; avatarS3Key: null }> {
+  const res = await fetch(`/api/session-players/${playerId}/avatar`, { method: 'DELETE' });
+  const data = await readJson<{ avatar: { avatarUrl: null; avatarS3Key: null } }>(res, 'Failed to delete player avatar');
+  return data.avatar;
+}

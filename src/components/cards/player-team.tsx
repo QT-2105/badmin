@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
+import { PlayerAvatar } from '@/components/player/player-avatar';
+import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Player } from '@/lib/badminton-store';
-import { cn } from '@/lib/utils';
 import { getLevelLabel } from '@/lib/player-labels';
 
 interface PlayerTeamProps {
@@ -10,35 +12,49 @@ interface PlayerTeamProps {
 }
 
 export function PlayerTeam({ team, teamLabel }: PlayerTeamProps) {
+  const [quickViewPlayer, setQuickViewPlayer] = useState<QuickViewPlayer | null>(null);
+
   return (
     <div className="flex flex-col gap-0.5">
       <div className="text-[10px] font-semibold text-slate-400">{teamLabel}</div>
       <div className="space-y-0.5">
         {team.map((player, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            <div
-              className={cn(
-                'w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-slate-900',
-                player?.gender === 'Nam' ? 'bg-cyan-400' : 'bg-pink-400'
-              )}
-            >
-              {player
-                ?.name.split(' ')
-                .map((s) => s[0])
-                .slice(0, 2)
-                .join('')
-                .toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium text-slate-200 truncate">{player?.name}</p>
-              <div className="flex items-center gap-1 text-[10px] text-slate-400">
+          <button
+            type="button"
+            key={idx}
+            className="grid w-full grid-cols-[auto_1fr] items-start gap-1.5 rounded-md p-0.5 text-left transition-colors hover:bg-white/[0.04]"
+            onClick={() => player && setQuickViewPlayer(toQuickViewPlayer(player))}
+          >
+            <PlayerAvatar name={player?.name ?? 'Người chơi'} gender={player?.gender} avatarUrl={player?.avatarUrl} size="xs" />
+            <div className="min-w-0 flex-1">
+              <p className="overflow-hidden break-words text-[11px] font-medium leading-4 text-slate-200 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">{player?.name}</p>
+              <div className="flex flex-wrap items-center gap-1 text-[10px] leading-3 text-slate-400">
                 <span>{getLevelLabel(player?.level)}</span>
                 <span>{player?.gender === 'Nam' ? '♂' : '♀'}</span>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+      <PlayerQuickView player={quickViewPlayer} onClose={() => setQuickViewPlayer(null)} />
     </div>
   );
+}
+
+function toQuickViewPlayer(player: Player): QuickViewPlayer {
+  return {
+    id: player.id,
+    name: player.name,
+    gender: player.gender,
+    level: player.level,
+    matchesPlayed: player.matchesPlayed,
+    status: player.status,
+    paymentAmount: player.money,
+    discount: player.discount,
+    paymentStatus: player.paymentStatus,
+    paymentMethod: player.paymentType,
+    note: player.note,
+    avatarUrl: player.avatarUrl,
+    lastCourt: player.lastCourt
+  };
 }

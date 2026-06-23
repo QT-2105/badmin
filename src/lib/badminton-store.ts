@@ -6,6 +6,7 @@ export type CourtStatus = 'EMPTY' | 'READY' | 'PLAYING';
 export type PaymentType = 'TM' | 'CK';
 export type PaymentStatus = 'PAID' | 'WAIVED' | 'UNPAID';
 export type GenderType = 'Nam' | 'Nữ';
+export type SuggestionMode = 'random' | 'mixed' | 'women' | 'men';
 
 export interface Player {
   id: string;
@@ -25,6 +26,8 @@ export interface Player {
   statusUpdatedAt: number;
   justFinishedAt: number | null;
   restUntil: number | null;
+  avatarUrl: string | null;
+  avatarS3Key: string | null;
 }
 
 export interface Court {
@@ -48,6 +51,7 @@ export interface NextMatch {
   fatigueBalance: number;
   score: number; // overall quality score
   appliedCourtId?: string | null;
+  locked?: boolean;
 }
 
 export interface MatchHistory {
@@ -74,6 +78,7 @@ export interface BadmintonState {
   players: Player[];
   courts: Court[];
   nextMatches: NextMatch[];
+  suggestionMode: SuggestionMode;
   history: MatchHistory[];
   setRuntimeSessionId: (sessionId: string | null) => void;
   hydrateRuntimeSnapshot: (snapshot: RuntimeSnapshot) => void;
@@ -87,8 +92,9 @@ export interface BadmintonState {
   updatePlayer: (playerId: string, patch: Partial<Pick<Player, 'name' | 'gender' | 'level' | 'money' | 'paymentType' | 'discount' | 'note'>>) => void;
   updatePlayerPayment: (playerId: string, patch: Partial<Pick<Player, 'paymentStatus' | 'paymentType' | 'money' | 'discount'>>) => void;
   setCourtCount?: (count: number) => void;
-  refreshNextMatches: () => void;
+  refreshNextMatches: (mode?: SuggestionMode) => void;
   replaceNextMatchPlayer: (matchId: string, slotIndex: number, playerId: string) => void;
+  toggleNextMatchLock: (matchId: string) => void;
   endMatch: (courtId: string) => void;
   startMatch: (courtId: string) => void;
 }
@@ -96,8 +102,12 @@ export interface BadmintonState {
 const JUST_FINISHED_COOLDOWN_MS = 120_000;
 const SUGGESTION_POOL_LIMIT = 18;
 const MATCH_HISTORY_LIMIT = 8;
+const RECENT_PAIR_HISTORY_LIMIT = 6;
+const LEVEL_MIN = 1;
+const LEVEL_MAX = 6;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+const normalizeLevel = (level: number): number => clamp(Math.floor(Number(level || LEVEL_MIN)), LEVEL_MIN, LEVEL_MAX);
 
 const EMPTY_SESSION: SessionMeta = {
   title: '',
@@ -141,8 +151,8 @@ export function generateCourts(count: number, existing: Court[] = []): Court[] {
   });
 }
 
-export function buildCourtSuggestion(players: Player[], court: Court, excludedPlayerIds: Set<string> = new Set()): string[] {
-  const candidates = players
+export function buildCourtSuggestion(players: Player[], court: Court, excludedPlayerIds: Set<string> = new Set(), mode: SuggestionMode = 'random', history: MatchHistory[] = []): string[] {
+  const baseCandidates = players
     .filter((player) => !excludedPlayerIds.has(player.id) && (player.status === 'WAITING' || player.status === 'JUST_FINISHED'))
     .sort((left, right) => {
       if (left.matchesPlayed !== right.matchesPlayed) {
@@ -163,8 +173,11 @@ export function buildCourtSuggestion(players: Player[], court: Court, excludedPl
         return leftClock - rightClock;
       }
 
-      if (Math.abs(left.level - right.level) > 0) {
-        return left.level - right.level;
+      const leftLevel = normalizeLevel(left.level);
+      const rightLevel = normalizeLevel(right.level);
+
+      if (leftLevel !== rightLevel) {
+        return leftLevel - rightLevel;
       }
 
       if (left.fatigue !== right.fatigue) {
@@ -174,24 +187,73 @@ export function buildCourtSuggestion(players: Player[], court: Court, excludedPl
       return left.name.localeCompare(right.name, 'vi');
     });
 
+  const candidates = filterCandidatesBySuggestionMode(baseCandidates, mode);
+
   if (candidates.length < 4) {
     return [];
   }
 
-  return pickBestRoster(candidates, court);
+  return pickBestRoster(candidates, court, mode, history);
 }
 
-function pickBestRoster(candidates: Player[], court: Court): string[] {
-  const pool = candidates.slice(0, SUGGESTION_POOL_LIMIT);
-  const options: { roster: Player[]; score: number }[] = [];
+function filterCandidatesBySuggestionMode(candidates: Player[], mode: SuggestionMode): Player[] {
+  if (mode === 'men') {
+    return candidates.filter((player) => player.gender === 'Nam');
+  }
+
+  if (mode === 'women') {
+    return candidates.filter((player) => player.gender === 'Nữ');
+  }
+
+  if (mode === 'mixed') {
+    const male = candidates.filter((player) => player.gender === 'Nam');
+    const female = candidates.filter((player) => player.gender === 'Nữ');
+    if (male.length < 2 || female.length < 2) return [];
+    return interleaveByGender(male, female);
+  }
+
+  return candidates;
+}
+
+function interleaveByGender(male: Player[], female: Player[]): Player[] {
+  const output: Player[] = [];
+  const max = Math.max(male.length, female.length);
+  for (let index = 0; index < max; index++) {
+    if (male[index]) output.push(male[index]);
+    if (female[index]) output.push(female[index]);
+  }
+  return output;
+}
+
+function pickBestRoster(candidates: Player[], court: Court, mode: SuggestionMode = 'random', history: MatchHistory[] = []): string[] {
+  const pool = buildFairnessPool(candidates);
+  const minCandidateMatches = Math.min(...candidates.map((player) => player.matchesPlayed));
+  const options: {
+    roster: Player[];
+    score: number;
+    totalMatches: number;
+    maxMatches: number;
+    aboveMinCount: number;
+    lowestMatchCount: number;
+  }[] = [];
 
   for (let a = 0; a < pool.length - 3; a++) {
     for (let b = a + 1; b < pool.length - 2; b++) {
       for (let c = b + 1; c < pool.length - 1; c++) {
         for (let d = c + 1; d < pool.length; d++) {
           const quartet = [pool[a], pool[b], pool[c], pool[d]];
-          const arranged = arrangeRosterPairs(quartet);
-          options.push({ roster: arranged.roster, score: scoreRosterOption(arranged.roster, court.name, arranged.pairScore, court.suggestionSeed) });
+          if (!matchesSuggestionMode(quartet, mode)) {
+            continue;
+          }
+          const arranged = arrangeRosterPairs(quartet, history);
+          options.push({
+            roster: arranged.roster,
+            score: scoreRosterOption(arranged.roster, court.name, arranged.pairScore, court.suggestionSeed, history, minCandidateMatches, mode),
+            totalMatches: arranged.roster.reduce((total, player) => total + player.matchesPlayed, 0),
+            maxMatches: Math.max(...arranged.roster.map((player) => player.matchesPlayed)),
+            aboveMinCount: arranged.roster.filter((player) => player.matchesPlayed > minCandidateMatches).length,
+            lowestMatchCount: arranged.roster.filter((player) => player.matchesPlayed === minCandidateMatches).length
+          });
         }
       }
     }
@@ -199,12 +261,54 @@ function pickBestRoster(candidates: Player[], court: Court): string[] {
 
   if (options.length === 0) return [];
 
-  options.sort((left, right) => right.score - left.score);
-  const topOptions = options.slice(0, Math.min(4, options.length));
-  return topOptions[court.suggestionSeed % topOptions.length].roster.map((player) => player.id);
+  options.sort((left, right) => {
+    if (left.aboveMinCount !== right.aboveMinCount) return left.aboveMinCount - right.aboveMinCount;
+    if (left.lowestMatchCount !== right.lowestMatchCount) return right.lowestMatchCount - left.lowestMatchCount;
+    if (left.totalMatches !== right.totalMatches) return left.totalMatches - right.totalMatches;
+    if (left.maxMatches !== right.maxMatches) return left.maxMatches - right.maxMatches;
+    return right.score - left.score;
+  });
+  const bestOption = options[0];
+  const alternateOptions = options.slice(1, Math.min(6, options.length));
+  const suggestionIndex = getSuggestionIndex(court.name);
+  const selected = suggestionIndex <= 1 || alternateOptions.length === 0
+    ? bestOption
+    : alternateOptions[(court.suggestionSeed + suggestionIndex) % alternateOptions.length];
+  return selected.roster.map((player) => player.id);
 }
 
-function arrangeRosterPairs(players: Player[]): { roster: Player[]; pairScore: number } {
+function getSuggestionIndex(courtName: string): number {
+  const match = courtName.match(/#(\d+)/);
+  return match ? Number(match[1]) : 1;
+}
+
+function buildFairnessPool(candidates: Player[]): Player[] {
+  if (candidates.length <= SUGGESTION_POOL_LIMIT) return candidates;
+
+  const minMatches = Math.min(...candidates.map((player) => player.matchesPlayed));
+  let spread = 0;
+  let pool: Player[] = [];
+
+  while (pool.length < Math.min(4, candidates.length) && spread < 8) {
+    pool = candidates.filter((player) => player.matchesPlayed <= minMatches + spread);
+    spread += 1;
+  }
+
+  const overflow = candidates.filter((player) => !pool.includes(player));
+  return [...pool, ...overflow].slice(0, SUGGESTION_POOL_LIMIT);
+}
+
+function matchesSuggestionMode(roster: Player[], mode: SuggestionMode): boolean {
+  const maleCount = roster.filter((player) => player.gender === 'Nam').length;
+  const femaleCount = roster.filter((player) => player.gender === 'Nữ').length;
+
+  if (mode === 'men') return maleCount === 4;
+  if (mode === 'women') return femaleCount === 4;
+  if (mode === 'mixed') return maleCount === 2 && femaleCount === 2;
+  return true;
+}
+
+function arrangeRosterPairs(players: Player[], history: MatchHistory[] = []): { roster: Player[]; pairScore: number } {
   const pairings = [
     [[players[0], players[1]], [players[2], players[3]]],
     [[players[0], players[2]], [players[1], players[3]]],
@@ -212,10 +316,14 @@ function arrangeRosterPairs(players: Player[]): { roster: Player[]; pairScore: n
   ];
 
   const ranked = pairings.map(([teamA, teamB]) => {
-    const teamALevel = teamA[0].level + teamA[1].level;
-    const teamBLevel = teamB[0].level + teamB[1].level;
+    const teamALevel = normalizeLevel(teamA[0].level) + normalizeLevel(teamA[1].level);
+    const teamBLevel = normalizeLevel(teamB[0].level) + normalizeLevel(teamB[1].level);
     const teamLevelGap = Math.abs(teamALevel - teamBLevel);
-    const pairScore = scorePair(teamA[0], teamA[1]) + scorePair(teamB[0], teamB[1]) + scoreTeamGenderMatchup(teamA, teamB) + scoreTeamLevelBalance(teamLevelGap);
+    const pairScore =
+      scorePair(teamA[0], teamA[1], history)
+      + scorePair(teamB[0], teamB[1], history)
+      + scoreTeamGenderMatchup(teamA, teamB)
+      + scoreTeamLevelBalance(teamLevelGap);
     return { roster: [...teamA, ...teamB], pairScore };
   });
 
@@ -223,19 +331,19 @@ function arrangeRosterPairs(players: Player[]): { roster: Player[]; pairScore: n
   return ranked[0];
 }
 
-function scorePair(left: Player, right: Player): number {
+function scorePair(left: Player, right: Player, history: MatchHistory[] = []): number {
   const sameGender = left.gender === right.gender;
-  const levelGap = Math.abs(left.level - right.level);
+  const levelGap = Math.abs(normalizeLevel(left.level) - normalizeLevel(right.level));
   const matchGap = Math.abs(left.matchesPlayed - right.matchesPlayed);
-  const levelScore = levelGap === 0 ? 70 : levelGap === 1 ? 42 : levelGap === 2 ? 8 : -70;
-  return (sameGender ? 42 : 24) + levelScore + Math.max(0, 24 - matchGap * 8);
+  const levelScore = levelGap === 0 ? 120 : levelGap === 1 ? 82 : levelGap === 2 ? 24 : -180 - levelGap * 45;
+  return (sameGender ? 46 : 26) + levelScore + Math.max(0, 34 - matchGap * 10) - recentPairPenalty(left.name, right.name, history);
 }
 
 function scoreTeamLevelBalance(teamLevelGap: number): number {
-  if (teamLevelGap === 0) return 120;
-  if (teamLevelGap === 1) return 70;
-  if (teamLevelGap === 2) return -20;
-  return -180 - teamLevelGap * 60;
+  if (teamLevelGap === 0) return 170;
+  if (teamLevelGap === 1) return 118;
+  if (teamLevelGap === 2) return 34;
+  return -220 - teamLevelGap * 70;
 }
 
 function scoreTeamGenderMatchup(teamA: Player[], teamB: Player[]): number {
@@ -249,25 +357,76 @@ function scoreTeamGenderMatchup(teamA: Player[], teamB: Player[]): number {
   return -60;
 }
 
-function scoreRosterOption(roster: Player[], courtName: string, pairScore: number, seed: number): number {
+function scoreRosterOption(
+  roster: Player[],
+  courtName: string,
+  pairScore: number,
+  seed: number,
+  history: MatchHistory[] = [],
+  minCandidateMatches = 0,
+  mode: SuggestionMode = 'random'
+): number {
   const averageMatches = roster.reduce((total, player) => total + player.matchesPlayed, 0) / roster.length;
   const matchSpread = Math.max(...roster.map((player) => player.matchesPlayed)) - Math.min(...roster.map((player) => player.matchesPlayed));
-  const levelSpread = Math.max(...roster.map((player) => player.level)) - Math.min(...roster.map((player) => player.level));
+  const levels = roster.map((player) => normalizeLevel(player.level));
+  const levelSpread = Math.max(...levels) - Math.min(...levels);
   const justFinishedCount = roster.filter((player) => player.status === 'JUST_FINISHED').length;
   const repeatedCourtCount = roster.filter((player) => player.lastCourt === courtName).length;
   const fatigueTotal = roster.reduce((total, player) => total + player.fatigue, 0);
-  const noveltyNudge = roster.reduce((total, player, index) => total + player.name.charCodeAt(0) * (index + 1), seed) % 18;
+  const minMatches = Math.min(...roster.map((player) => player.matchesPlayed));
+  const lowMatchCount = roster.filter((player) => player.matchesPlayed <= minMatches + 1).length;
+  const absoluteLowestCount = roster.filter((player) => player.matchesPlayed === minCandidateMatches).length;
+  const overMinPenalty = roster.reduce((penalty, player) => penalty + Math.max(0, player.matchesPlayed - minCandidateMatches) * 95, 0);
+  const historyPenalty = recentRosterPenalty(roster, history);
+  const noveltyNudge = roster.reduce((total, player, index) => total + player.name.charCodeAt(0) * (index + 1), seed) % 10;
 
   return (
     pairScore
-    + Math.max(0, 220 - averageMatches * 34)
-    + Math.max(0, 90 - matchSpread * 22)
-    + Math.max(0, 70 - levelSpread * 20)
-    - justFinishedCount * 22
+    + Math.max(0, 360 - averageMatches * 58)
+    + Math.max(0, 180 - matchSpread * 42)
+    + lowMatchCount * 38
+    + absoluteLowestCount * 120
+    + scoreRosterGenderFormation(roster, mode)
+    + Math.max(0, 120 - levelSpread * 34)
+    - justFinishedCount * 28
     - repeatedCourtCount * 18
     - fatigueTotal * 6
+    - overMinPenalty
+    - historyPenalty
     + noveltyNudge
   );
+}
+
+function scoreRosterGenderFormation(roster: Player[], mode: SuggestionMode): number {
+  const maleCount = roster.filter((player) => player.gender === 'Nam').length;
+  const femaleCount = roster.length - maleCount;
+
+  if (mode === 'women') return femaleCount === 4 ? 180 : -400;
+  if (mode === 'men') return maleCount === 4 ? 150 : -400;
+  if (mode === 'mixed') return maleCount === 2 && femaleCount === 2 ? 120 : -300;
+
+  if (femaleCount === 4) return 170;
+  if (maleCount === 4) return 120;
+  if (maleCount === 2 && femaleCount === 2) return 80;
+  return 0;
+}
+
+function recentPairPenalty(leftName: string, rightName: string, history: MatchHistory[]): number {
+  return history.slice(0, RECENT_PAIR_HISTORY_LIMIT).reduce((penalty, match, index) => {
+    const hasBoth = match.playerNames.includes(leftName) && match.playerNames.includes(rightName);
+    if (!hasBoth) return penalty;
+    return penalty + Math.max(18, 80 - index * 12);
+  }, 0);
+}
+
+function recentRosterPenalty(roster: Player[], history: MatchHistory[]): number {
+  const names = roster.map((player) => player.name);
+  return history.slice(0, RECENT_PAIR_HISTORY_LIMIT).reduce((penalty, match, index) => {
+    const overlap = names.filter((name) => match.playerNames.includes(name)).length;
+    if (overlap < 2) return penalty;
+    const sameQuartetPenalty = overlap === 4 ? 180 : 0;
+    return penalty + sameQuartetPenalty + overlap * Math.max(12, 38 - index * 5);
+  }, 0);
 }
 
 export function evaluateRoster(players: Player[], roster: string[], courtName: string): {
@@ -285,8 +444,8 @@ export function evaluateRoster(players: Player[], roster: string[], courtName: s
 
   const teamA = selected.slice(0, 2);
   const teamB = selected.slice(2, 4);
-  const skillA = teamA.reduce((total, player) => total + player.level, 0);
-  const skillB = teamB.reduce((total, player) => total + player.level, 0);
+  const skillA = teamA.reduce((total, player) => total + normalizeLevel(player.level), 0);
+  const skillB = teamB.reduce((total, player) => total + normalizeLevel(player.level), 0);
   const fatigueA = teamA.reduce((total, player) => total + player.fatigue, 0);
   const fatigueB = teamB.reduce((total, player) => total + player.fatigue, 0);
   const repeatHits = selected.filter((player) => player.lastCourt === courtName).length;
@@ -394,7 +553,9 @@ function mapSessionPlayerToPlayer(player: RuntimeSessionPlayer): Player {
     lastCourt: player.lastCourtNumber ? `Sân ${player.lastCourtNumber}` : null,
     statusUpdatedAt: player.joinedAt ?? Date.now(),
     justFinishedAt: null,
-    restUntil: null
+    restUntil: null,
+    avatarUrl: player.avatarUrl,
+    avatarS3Key: player.avatarS3Key
   };
 }
 
@@ -457,6 +618,7 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
     players: [],
     courts: [],
     nextMatches: [],
+    suggestionMode: 'random',
     history: [],
   updateCooldowns: (now) => {
     set((state) => {
@@ -614,7 +776,7 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
             }
           : item
       );
-      const nextMatches = generateNextMatches(state.session.courtCount, nextPlayers, nextCourts, now);
+      const nextMatches = generateNextMatches(state.session.courtCount, nextPlayers, nextCourts, now, state.suggestionMode, new Set<string>(), state.history);
 
       return { players: nextPlayers, courts: nextCourts, nextMatches };
     });
@@ -744,12 +906,13 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
     set((state) => {
       const nextSession = { ...state.session, courtCount: count };
       const nextCourts = generateCourts(count, state.courts);
-      const nextMatches = generateNextMatches(count, state.players, nextCourts);
+      const nextMatches = generateNextMatches(count, state.players, nextCourts, undefined, state.suggestionMode, new Set<string>(), state.history);
       return { session: nextSession, courts: nextCourts, nextMatches };
     });
   },
-  refreshNextMatches: () => {
+  refreshNextMatches: (mode) => {
     set((state) => {
+      const nextMode = mode ?? state.suggestionMode;
       const onCourtIds = new Set(state.courts.flatMap((court) => court.slots).filter((id): id is string => Boolean(id)));
       const now = Date.now();
       const nextPlayers = state.players.map((player) => {
@@ -764,8 +927,33 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
 
         return player;
       });
-      const nextMatches = generateNextMatches(state.session.courtCount, nextPlayers, state.courts, now);
-      return { players: nextPlayers, nextMatches };
+      const lockedMatches = state.nextMatches.filter((match) => match.locked && match.roster.length >= 4);
+      const lockedPlayerIds = new Set(lockedMatches.flatMap((match) => match.roster));
+      const generatedMatches = generateNextMatches(
+        Math.max(0, state.session.courtCount - lockedMatches.length),
+        nextPlayers,
+        state.courts,
+        now,
+        nextMode,
+        lockedPlayerIds,
+        state.history
+      );
+      const lockedByIndex = new Map(lockedMatches.map((match) => [match.index, match]));
+      const nextMatches: NextMatch[] = [];
+      let generatedIndex = 0;
+      for (let index = 1; index <= state.session.courtCount; index++) {
+        const lockedMatch = lockedByIndex.get(index);
+        if (lockedMatch) {
+          nextMatches.push({ ...lockedMatch, index });
+          continue;
+        }
+
+        const generatedMatch = generatedMatches[generatedIndex];
+        if (!generatedMatch) continue;
+        nextMatches.push({ ...generatedMatch, index });
+        generatedIndex += 1;
+      }
+      return { players: nextPlayers, nextMatches, suggestionMode: nextMode };
     });
   },
   applyNextMatch: (matchId: string, courtId?: string) => {
@@ -829,9 +1017,14 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
         nextPlayers,
         nextCourts,
         Math.max(...state.nextMatches.map((m) => m.index)) + 1,
-        usedPlayerIds
+        usedPlayerIds,
+        state.suggestionMode,
+        state.history
       );
-      const nextMatches = newMatch.roster.length >= 4 ? [...remaining, newMatch] : remaining;
+      const nextMatches = (newMatch.roster.length >= 4 ? [...remaining, newMatch] : remaining).map((item, index) => ({
+        ...item,
+        index: index + 1
+      }));
 
       return {
         players: nextPlayers,
@@ -895,6 +1088,13 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
 
       return { players: nextPlayers, nextMatches };
     });
+  },
+  toggleNextMatchLock: (matchId: string) => {
+    set((state) => ({
+      nextMatches: state.nextMatches.map((match) => (
+        match.id === matchId ? { ...match, locked: !match.locked } : match
+      ))
+    }));
   },
   startMatch: (courtId: string) => {
     set((state) => {
@@ -1004,7 +1204,9 @@ function generateNextMatch(
   players: Player[],
   courts: Court[],
   seed: number,
-  excludedPlayerIds: Set<string> = new Set()
+  excludedPlayerIds: Set<string> = new Set(),
+  mode: SuggestionMode = 'random',
+  history: MatchHistory[] = []
 ): NextMatch {
   const fakeCourt: Court = createCourt({
     id: `s-fake-${index}`,
@@ -1017,7 +1219,7 @@ function generateNextMatch(
     suggestionSeed: seed
   });
 
-  const roster = buildCourtSuggestion(players, fakeCourt, excludedPlayerIds);
+  const roster = buildCourtSuggestion(players, fakeCourt, excludedPlayerIds, mode, history);
   const scores = evaluateRoster(players, roster, fakeCourt.name);
   const score = Math.round((scores.fairness + scores.antiRepeat + scores.fatigueBalance) / 3);
 
@@ -1029,7 +1231,8 @@ function generateNextMatch(
     antiRepeat: scores.antiRepeat,
     fatigueBalance: scores.fatigueBalance,
     score,
-    appliedCourtId: null
+    appliedCourtId: null,
+    locked: false
   };
 }
 
@@ -1037,12 +1240,15 @@ function generateNextMatches(
   count: number,
   players: Player[],
   courts: Court[],
-  seedBase = 0
+  seedBase = 0,
+  mode: SuggestionMode = 'random',
+  initialUsedPlayerIds: Set<string> = new Set(),
+  history: MatchHistory[] = []
 ): NextMatch[] {
   const matches: NextMatch[] = [];
-  const usedPlayerIds = new Set<string>();
+  const usedPlayerIds = new Set<string>(initialUsedPlayerIds);
   for (let i = 0; i < count; i++) {
-    const match = generateNextMatch(i + 1, players, courts, seedBase + i, usedPlayerIds);
+    const match = generateNextMatch(i + 1, players, courts, seedBase + i, usedPlayerIds, mode, history);
     if (match.roster.length < 4) break;
     matches.push(match);
     match.roster.forEach((playerId) => usedPlayerIds.add(playerId));

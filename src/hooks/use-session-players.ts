@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createSessionPlayer,
   deleteSessionPlayer,
+  deleteSessionPlayerAvatar,
   fetchSessionPlayers,
   updateSessionPlayer,
+  uploadSessionPlayerAvatar,
   type SessionPlayerPayload
 } from '@/services/session-players-service';
 
@@ -37,6 +39,14 @@ export function useSessionPlayerMutations(sessionId: string) {
     }),
     deletePlayer: useMutation({
       mutationFn: deleteSessionPlayer,
+      onSuccess: invalidate
+    }),
+    uploadAvatar: useMutation({
+      mutationFn: ({ id, file }: { id: string; file: File }) => uploadSessionPlayerAvatar(id, file),
+      onSuccess: invalidate
+    }),
+    deleteAvatar: useMutation({
+      mutationFn: deleteSessionPlayerAvatar,
       onSuccess: invalidate
     })
   };

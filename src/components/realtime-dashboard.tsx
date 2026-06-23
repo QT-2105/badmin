@@ -5,10 +5,10 @@ import type { MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import type { Route } from 'next';
-import { CalendarDays, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { useBadmintonStore } from '@/lib/badminton-store';
+import { useBadmintonStore, type Player, type SuggestionMode } from '@/lib/badminton-store';
 import { useRuntimeHydration } from '@/hooks/use-runtime-hydration';
 import { useRuntimeSync } from '@/hooks/use-runtime-sync';
 import { usePlaySession } from '@/hooks/use-play-dates';
@@ -20,14 +20,20 @@ import { MatchHistoryPanel } from './sections/match-history-panel';
 import { NextMatchQueue } from './sections/next-match-queue';
 import { PlayerDatabasePanel } from './sections/player-database-panel';
 
+const SUGGESTION_MODES: Array<{ value: SuggestionMode; label: string }> = [
+  { value: 'random', label: 'Ngẫu nhiên' },
+  { value: 'mixed', label: 'Nam nữ' },
+  { value: 'women', label: 'Đôi Nữ' },
+  { value: 'men', label: 'Đôi Nam' }
+];
+
 export function RealtimeDashboard() {
-  const { updateCooldowns, players, session, refreshNextMatches, setRuntimeSessionId, runtimeSessionId } = useBadmintonStore();
-  const [isPlayerDBOpen, setIsPlayerDBOpen] = useState(false);
+  const { updateCooldowns, players, session, suggestionMode, refreshNextMatches, setRuntimeSessionId, runtimeSessionId } = useBadmintonStore();
   const [isPlayerFullscreenOpen, setIsPlayerFullscreenOpen] = useState(false);
   const [isMatchHistoryOpen, setIsMatchHistoryOpen] = useState(false);
   const [historyPlayerId, setHistoryPlayerId] = useState('');
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [playerPanelSize, setPlayerPanelSize] = useState<'compact' | 'expanded'>('compact');
+  const [selectedSuggestionMode, setSelectedSuggestionMode] = useState<SuggestionMode>(suggestionMode);
 
   const { data: sessionRecord } = usePlaySession(runtimeSessionId || '');
   const { createHistory } = useMatchHistoryMutations(runtimeSessionId || '');
@@ -87,7 +93,7 @@ export function RealtimeDashboard() {
 
   function refreshSuggestions() {
     if (schedulingDisabled) return;
-    refreshNextMatches();
+    refreshNextMatches(selectedSuggestionMode);
     void commitRuntimeSnapshot();
   }
 
@@ -174,21 +180,23 @@ export function RealtimeDashboard() {
                 <h2 className="text-xs font-bold tracking-wider text-slate-100">QUẢN LÝ SÂN</h2>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-slate-400">{session.courtCount} sân</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex min-w-0 items-center gap-1.5">
                 <span className="rounded-lg bg-cyan-400/15 px-3 py-1.5 text-xs font-semibold text-cyan-200">Trận tiếp theo</span>
+                <SuggestionModePicker value={selectedSuggestionMode} onChange={setSelectedSuggestionMode} disabled={schedulingDisabled} />
                 <button
                   onClick={refreshSuggestions}
                   disabled={schedulingDisabled}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 text-xs font-semibold text-cyan-100 transition-colors hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Zap className="h-3 w-3" />
-                  Làm mới
+                  Auto xếp cặp
                 </button>
               </div>
             </div>
 
-            <div className="grid flex-1 min-h-0 grid-cols-[1.45fr,1.25fr] gap-2 p-2">
-              <div className="min-h-0 overflow-y-auto pr-1">
+            <div className="grid flex-1 min-h-0 grid-cols-2 gap-2 p-2">
+              <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <LiveCourtsSection
                   showHeader={false}
                   schedulingDisabled={schedulingDisabled}
@@ -196,28 +204,14 @@ export function RealtimeDashboard() {
                   onCommitRuntime={commitRuntimeSnapshot}
                   onRecordMatch={recordMatchHistory}
                 />
+                </div>
+                <PlayerStatusOverview players={players} />
               </div>
               <div className="min-h-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-2">
                 <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
               </div>
             </div>
           </section>
-        </div>
-
-        <div className="shrink-0 border-t border-slate-800/60 bg-slate-900/60 backdrop-blur-sm">
-          <PlayerDatabasePanel
-            showClose={false}
-            viewMode={playerPanelSize}
-            headerAction={
-              <button
-                onClick={() => setPlayerPanelSize((prev) => (prev === 'expanded' ? 'compact' : 'expanded'))}
-                className="text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-200 transition"
-              >
-                {playerPanelSize === 'expanded' ? 'Thu gọn' : 'Mở rộng'}
-              </button>
-            }
-            readonly={isReadonly}
-          />
         </div>
       </div>
 
@@ -251,6 +245,9 @@ export function RealtimeDashboard() {
             onCommitRuntime={commitRuntimeSnapshot}
             onRecordMatch={recordMatchHistory}
           />
+          <div className="mt-2">
+            <PlayerStatusOverview players={players} />
+          </div>
         </div>
 
         <motion.div
@@ -266,33 +263,21 @@ export function RealtimeDashboard() {
               <button
                 onClick={refreshSuggestions}
                 disabled={schedulingDisabled}
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-[11px] font-semibold text-slate-200 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-1 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 text-[11px] font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Zap className="h-3 w-3" />
-                Làm mới
+                Auto xếp cặp
               </button>
             </div>
-            <div className="max-h-[40vh] min-h-[200px] overflow-hidden p-3">
+            <div className="border-b border-slate-800/60 px-3 py-2">
+              <SuggestionModePicker value={selectedSuggestionMode} onChange={setSelectedSuggestionMode} disabled={schedulingDisabled} />
+            </div>
+            <div className="max-h-[46vh] min-h-[220px] overflow-hidden p-3">
               <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* MOBILE PLAYER DATABASE PANEL */}
-      <AnimatePresence>
-        {isPlayerDBOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="md:hidden border-t border-slate-800/50 bg-slate-900/80 backdrop-blur-sm overflow-hidden"
-          >
-            <PlayerDatabasePanel onClose={() => setIsPlayerDBOpen(false)} className="max-h-[40vh]" readonly={isReadonly} />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {isMatchHistoryOpen && runtimeSessionId ? (
@@ -305,25 +290,6 @@ export function RealtimeDashboard() {
           />
         ) : null}
       </AnimatePresence>
-
-      {/* COLLAPSE/EXPAND PLAYER DB BUTTON (MOBILE ONLY) */}
-      <motion.button
-        onClick={() => setIsPlayerDBOpen(!isPlayerDBOpen)}
-        className="md:hidden w-full h-10 border-t border-slate-800/50 bg-slate-900/50 hover:bg-slate-800/50 text-slate-300 text-xs font-medium transition-colors flex items-center justify-center gap-1"
-        whileHover={{ backgroundColor: 'rgba(30, 41, 59, 0.7)' }}
-      >
-        {isPlayerDBOpen ? (
-          <>
-            <ChevronUp className="w-3 h-3" />
-            Đóng danh sách
-          </>
-        ) : (
-          <>
-            <ChevronUp className="w-3 h-3 rotate-180" />
-            Danh sách người chơi
-          </>
-        )}
-      </motion.button>
 
       <AnimatePresence>
         {isPlayerFullscreenOpen ? (
@@ -424,4 +390,113 @@ function StatPill({ label, value, tone, compact = false }: { label: string; valu
       <p className="text-[9px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
     </div>
   );
+}
+
+function SuggestionModePicker({
+  value,
+  onChange,
+  disabled
+}: {
+  value: SuggestionMode;
+  onChange: (value: SuggestionMode) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-white/10 bg-slate-950/50 p-1">
+      {SUGGESTION_MODES.map((mode) => (
+        <button
+          key={mode.value}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(mode.value)}
+          className={`h-6 shrink-0 rounded-md px-2 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            value === mode.value
+              ? 'bg-cyan-400 text-slate-950'
+              : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+          }`}
+        >
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PlayerStatusOverview({ players }: { players: Player[] }) {
+  const [expanded, setExpanded] = useState(true);
+  const sortedPlayers = useMemo(() => {
+    const statusRank: Record<string, number> = {
+      WAITING: 0,
+      JUST_FINISHED: 1,
+      PRIORITY: 2,
+      PLAYING: 3,
+      RESTING: 4,
+      FINISHED: 5
+    };
+
+    return [...players]
+      .filter((player) => player.status === 'WAITING' || player.status === 'JUST_FINISHED' || player.status === 'PLAYING' || player.status === 'PRIORITY')
+      .sort((left, right) => {
+        const statusDiff = (statusRank[left.status] ?? 9) - (statusRank[right.status] ?? 9);
+        if (statusDiff !== 0) return statusDiff;
+        if (left.matchesPlayed !== right.matchesPlayed) return left.matchesPlayed - right.matchesPlayed;
+        return left.name.localeCompare(right.name, 'vi');
+      })
+      .slice(0, 24);
+  }, [players]);
+  const visiblePlayers = expanded ? sortedPlayers.slice(0, 5) : [];
+
+  return (
+    <div className="shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Hàng chờ</div>
+          <div className="text-[11px] text-slate-500">Ưu tiên chờ, vừa xong</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          aria-label={expanded ? 'Thu gọn hàng chờ' : 'Mở rộng hàng chờ'}
+        >
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </div>
+      {expanded ? <div className="max-h-40 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 gap-1 xl:grid-cols-2">
+          {visiblePlayers.map((player) => (
+            <div key={player.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-lg bg-slate-950/45 px-2 py-1.5 text-[11px]">
+              <div className="min-w-0">
+                <div className="truncate font-semibold text-slate-100">{player.name}</div>
+                <div className={player.gender === 'Nữ' ? 'text-pink-300' : 'text-cyan-300'}>{player.gender}</div>
+              </div>
+              <div className="font-mono text-slate-300">{player.matchesPlayed} trận</div>
+              <span className={`rounded-full px-2 py-0.5 font-medium ${getPlayerStatusTone(player.status)}`}>
+                {getPlayerStatusLabel(player.status)}
+              </span>
+            </div>
+          ))}
+          {visiblePlayers.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-center text-xs text-slate-500">
+              Chưa có người chơi đang chờ.
+            </div>
+          ) : null}
+        </div>
+      </div> : null}
+    </div>
+  );
+}
+
+function getPlayerStatusLabel(status: Player['status']): string {
+  if (status === 'PLAYING') return 'Đang chơi';
+  if (status === 'JUST_FINISHED') return 'Vừa xong';
+  if (status === 'PRIORITY') return 'Đã xếp';
+  return 'Chờ';
+}
+
+function getPlayerStatusTone(status: Player['status']): string {
+  if (status === 'PLAYING') return 'bg-emerald-400/15 text-emerald-200';
+  if (status === 'JUST_FINISHED') return 'bg-violet-400/15 text-violet-200';
+  if (status === 'PRIORITY') return 'bg-amber-400/15 text-amber-200';
+  return 'bg-cyan-400/15 text-cyan-200';
 }

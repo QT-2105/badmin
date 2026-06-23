@@ -24,6 +24,8 @@ function mapPlayer(row: {
   runtime_status: string | null;
   last_court_number: number | null;
   note: string | null;
+  avatar_url: string | null;
+  avatar_s3_key: string | null;
   joined_at: Date | null;
 }): SessionPlayerSummary {
   return {
@@ -40,6 +42,8 @@ function mapPlayer(row: {
     runtimeStatus: row.runtime_status,
     lastCourtNumber: row.last_court_number,
     note: row.note,
+    avatarUrl: row.avatar_url,
+    avatarS3Key: row.avatar_s3_key,
     joinedAt: toIso(row.joined_at)
   };
 }
@@ -93,7 +97,7 @@ export async function createSessionPlayer(input: {
       session_id: input.sessionId,
       full_name: input.fullName.trim(),
       gender: input.gender?.trim() || null,
-      level: Math.max(1, Math.min(5, Math.floor(input.level ?? 1))),
+      level: Math.max(1, Math.min(6, Math.floor(input.level ?? 1))),
       payment_amount: Number(input.paymentAmount ?? 0),
       discount: Number(input.discount ?? 0),
       payment_method: input.paymentMethod?.trim() || null,
@@ -132,7 +136,7 @@ export async function updateSessionPlayer(playerId: string, input: {
     data: {
       ...(input.fullName !== undefined ? { full_name: input.fullName.trim() || existing.full_name } : {}),
       ...(input.gender !== undefined ? { gender: input.gender?.trim() || null } : {}),
-      ...(input.level !== undefined ? { level: Math.max(1, Math.min(5, Math.floor(input.level))) } : {}),
+      ...(input.level !== undefined ? { level: Math.max(1, Math.min(6, Math.floor(input.level))) } : {}),
       ...(input.paymentAmount !== undefined ? { payment_amount: Number(input.paymentAmount) } : {}),
       ...(input.discount !== undefined ? { discount: Number(input.discount) } : {}),
       ...(input.paymentMethod !== undefined ? { payment_method: input.paymentMethod?.trim() || null } : {}),

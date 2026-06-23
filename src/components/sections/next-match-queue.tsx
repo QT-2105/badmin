@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
+import { useState } from 'react';
 import { useBadmintonStore } from '@/lib/badminton-store';
 import { NextMatchCard } from '../cards/next-match-card';
 
@@ -17,6 +18,7 @@ export function NextMatchQueue({
   onCommitRuntime?: () => Promise<boolean>;
 }) {
   const { nextMatches, courts, refreshNextMatches, applyNextMatch } = useBadmintonStore();
+  const [activeReplaceMatchId, setActiveReplaceMatchId] = useState<string | null>(null);
   const emptyCourts = courts.filter((c) => c.status === 'EMPTY');
   const canAutoAssign = !schedulingDisabled && emptyCourts.length > 0 && nextMatches.length > 0;
 
@@ -39,7 +41,7 @@ export function NextMatchQueue({
             disabled={schedulingDisabled}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title="Làm mới danh sách"
+            title="Auto xếp cặp"
             className="p-1 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
           >
             <Zap className="w-3.5 h-3.5" />
@@ -61,7 +63,12 @@ export function NextMatchQueue({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05 }}
           >
-            <NextMatchCard match={match} onCommitRuntime={onCommitRuntime} />
+            <NextMatchCard
+              match={match}
+              replaceOpen={activeReplaceMatchId === match.id}
+              onReplaceOpenChange={(open) => setActiveReplaceMatchId(open ? match.id : null)}
+              onCommitRuntime={onCommitRuntime}
+            />
           </motion.div>
         ))}
       </div>
@@ -79,7 +86,7 @@ export function NextMatchQueue({
         className="w-full py-2 rounded-lg bg-gradient-to-r from-violet-500/20 to-cyan-500/20 hover:from-violet-500/30 hover:to-cyan-500/30 border border-violet-400/30 text-slate-100 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Zap className="w-3.5 h-3.5" />
-        Tự động xếp
+        Xếp vào sân trống
       </motion.button>
     </motion.div>
   );

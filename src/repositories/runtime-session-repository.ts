@@ -81,6 +81,8 @@ export async function listSessionPlayers(sessionId: string): Promise<RuntimeSess
     runtimeStatus: normalizeStatus(row.runtime_status),
     lastCourtNumber: row.last_court_number ?? null,
     note: row.note ?? null,
+    avatarUrl: row.avatar_url ?? null,
+    avatarS3Key: row.avatar_s3_key ?? null,
     joinedAt: parseDateValue(row.joined_at)
   }));
 }

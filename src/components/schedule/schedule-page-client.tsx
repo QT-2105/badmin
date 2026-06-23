@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { CalendarPlus, Loader2, Trash2 } from 'lucide-react';
+import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { usePlayDates, useScheduleMutations } from '@/hooks/use-play-dates';
 import { isPastDateInput, todayDateInput } from '@/lib/date-format';
+import { normalizeSessionStatus } from '@/lib/session-status';
 
 export function SchedulePageClient() {
   const { data: playDates = [], isLoading, error } = usePlayDates();
@@ -16,6 +17,7 @@ export function SchedulePageClient() {
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(() => new Set());
   const sortedPlayDates = useMemo(() => {
     return [...playDates].sort((left, right) => right.playDate.localeCompare(left.playDate));
   }, [playDates]);
@@ -30,6 +32,25 @@ export function SchedulePageClient() {
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'Không thể tạo ngày chơi');
     }
+  }
+
+function togglePlayDateSessions(id: string) {
+    setExpandedDateIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function hasIncompleteSessions(sessions: Array<{ status?: string | null }>) {
+    return sessions.some((session) => {
+      const normalized = normalizeSessionStatus(session.status);
+      return normalized === 'PENDING' || normalized === 'ACTIVE';
+    });
   }
 
   async function removePlayDate(id: string) {
@@ -83,15 +104,47 @@ export function SchedulePageClient() {
       <section className="grid gap-3 lg:grid-cols-2">
         {sortedPlayDates.map((item) => {
           const isPast = isPastDateInput(item.playDate, today);
+          const isToday = item.playDate === today;
+          const expanded = expandedDateIds.has(item.id);
+          const hasIncompleteSession = hasIncompleteSessions(item.sessions);
+          const sortedSessions = [...item.sessions].sort((left, right) => left.startTime.localeCompare(right.startTime));
           return (
-          <article key={item.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+          <article
+            key={item.id}
+            className={`rounded-xl border p-4 transition-colors ${
+              isToday
+                ? 'border-cyan-300/40 bg-cyan-400/[0.08] shadow-[0_0_0_1px_rgba(34,211,238,0.08)]'
+                : hasIncompleteSession
+                  ? 'border-amber-300/30 bg-amber-400/[0.06]'
+                  : 'border-white/10 bg-white/[0.04]'
+            }`}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-sm font-semibold text-white">{item.title || item.playDate}</div>
-                  {isPast ? <span className="rounded-full border border-slate-500/30 bg-slate-700/30 px-2 py-0.5 text-[11px] text-slate-300">Chỉ xem lại</span> : null}
+                  {isToday ? <span className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-100">Hôm nay</span> : null}
                 </div>
-                <div className="mt-1 text-xs text-slate-400">{item.playDate} · {item.sessionCount} ca</div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                  <span>{item.playDate} · {item.sessionCount} ca</span>
+                  {item.sessions.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => togglePlayDateSessions(item.id)}
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[11px] font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                      aria-label={expanded ? 'Thu gọn ca' : 'Mở rộng ca'}
+                    >
+                      {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      {expanded ? 'Thu gọn ca' : 'Mở ca'}
+                    </button>
+                  ) : null}
+                </div>
+                {(hasIncompleteSession || isPast) ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {hasIncompleteSession ? <span className="rounded-full border border-amber-300/30 bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-100">Có ca chưa hoàn tất</span> : null}
+                    {isPast ? <span className="rounded-full border border-slate-500/30 bg-slate-700/30 px-2 py-0.5 text-[11px] text-slate-300">Chỉ xem lại</span> : null}
+                  </div>
+                ) : null}
                 {item.note ? <div className="mt-2 text-sm text-slate-300">{item.note}</div> : null}
               </div>
               <div className="flex shrink-0 gap-2">
@@ -105,9 +158,9 @@ export function SchedulePageClient() {
                 ) : null}
               </div>
             </div>
-            {item.sessions.length > 0 ? (
+            {item.sessions.length > 0 && expanded ? (
               <div className="mt-3 space-y-2">
-                {[...item.sessions].sort((left, right) => left.startTime.localeCompare(right.startTime)).slice(0, 3).map((session) => (
+                {sortedSessions.map((session) => (
                   <Link key={session.id} href={`/sessions/${session.id}`} className="block rounded-lg bg-slate-950/60 px-3 py-2 text-sm text-slate-200 hover:bg-slate-900">
                     {session.name} · {session.startTime}-{session.endTime} · {session.courtCount} sân
                   </Link>

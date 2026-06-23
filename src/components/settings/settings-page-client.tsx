@@ -1,16 +1,45 @@
 'use client';
 
-import { AlertTriangle, Loader2, Settings2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, ChevronDown, ChevronUp, ImageUp, Loader2, Save, Settings2, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
+import { BrandLogo } from '@/components/branding/brand-logo';
+import { Button } from '@/components/ui/button';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { useBranding, useBrandingMutations } from '@/hooks/use-branding';
 import { normalizeMaxCourtCount } from '@/lib/app-settings';
-import { resetMatchHistory } from '@/services/settings-service';
+import { deleteAllPlayerImages, resetMatchHistory } from '@/services/settings-service';
 
 export function SettingsPageClient() {
   const { settings, setSetting } = useAppSettings();
+  const { data: branding } = useBranding();
+  const brandingMutations = useBrandingMutations();
+  const [clubName, setClubName] = useState('');
   const [resetState, setResetState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [imageResetState, setImageResetState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [imageResetMessage, setImageResetMessage] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState({
+    branding: false,
+    finance: false,
+    schedule: false,
+    history: false,
+    images: false
+  });
+
+  useEffect(() => {
+    setClubName(branding?.clubName || 'Badmin');
+  }, [branding?.clubName]);
+
+  async function handleSaveBrandingName() {
+    await brandingMutations.updateName.mutateAsync(clubName);
+  }
+
+  async function handleUploadLogo(file: File | undefined) {
+    if (!file) return;
+    await brandingMutations.uploadLogo.mutateAsync(file);
+  }
 
   async function handleResetMatchHistory() {
     const confirmed = window.confirm('Bạn chắc chắn muốn xóa toàn bộ lịch sử trận đấu? Dữ liệu đã xóa sẽ không thể khôi phục.');
@@ -28,6 +57,22 @@ export function SettingsPageClient() {
     }
   }
 
+  async function handleDeleteAllPlayerImages() {
+    const confirmed = window.confirm('Bạn chắc chắn muốn xóa toàn bộ hình ảnh người chơi trên DB và S3? Người chơi sẽ quay về avatar mặc định theo giới tính.');
+    if (!confirmed) return;
+
+    setImageResetState('loading');
+    setImageResetMessage(null);
+    try {
+      const result = await deleteAllPlayerImages();
+      setImageResetState('done');
+      setImageResetMessage(`Đã xóa ${result.deletedImages} hình ảnh người chơi.`);
+    } catch (caught) {
+      setImageResetState('error');
+      setImageResetMessage(caught instanceof Error ? caught.message : 'Không thể xóa dữ liệu hình ảnh người chơi');
+    }
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
       <header>
@@ -36,22 +81,64 @@ export function SettingsPageClient() {
         <p className="mt-1 max-w-2xl text-sm text-slate-400">Tinh chỉnh các hành vi tự động của chương trình. Giữ cấu hình đơn giản để không làm nặng luồng vận hành sân.</p>
       </header>
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
-              <Settings2 className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white">Thu chi khi hoàn tất ca</h2>
-              <p className="mt-1 text-sm text-slate-400">Bật/tắt phiếu tự động sinh ra khi operator hoàn tất ca chơi.</p>
-            </div>
+      <SettingsCard
+        title="Thông tin CLB"
+        description="Tên và logo hiển thị trên thanh menu."
+        icon={<Settings2 className="h-5 w-5" />}
+        expanded={expandedSections.branding}
+        onToggle={() => setExpandedSections((current) => ({ ...current, branding: !current.branding }))}
+      >
+        <div className="grid gap-4 lg:grid-cols-[144px_minmax(0,1fr)] lg:items-center">
+          <div className="flex justify-center lg:justify-start">
+            <BrandLogo
+              clubName={branding?.clubName || clubName}
+              logoUrl={branding?.logoUrl}
+              className="h-32 w-32 rounded-3xl text-3xl"
+              textClassName="text-2xl"
+            />
           </div>
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-400">
-            Lưu trên trình duyệt
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+            <label className="block min-w-0">
+              <span className="text-xs font-medium text-slate-400">Tên hiển thị</span>
+              <input
+                value={clubName}
+                onChange={(event) => setClubName(event.target.value)}
+                className="mt-1 h-12 w-full rounded-xl border border-white/10 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-cyan-300/50"
+                placeholder="Tên CLB"
+              />
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void handleSaveBrandingName()} disabled={brandingMutations.updateName.isPending} className="h-11 rounded-xl">
+                {brandingMutations.updateName.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Lưu tên
+              </Button>
+              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.08]">
+                {brandingMutations.uploadLogo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                Tải logo
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="sr-only"
+                  onChange={(event) => void handleUploadLogo(event.target.files?.[0])}
+                />
+              </label>
+              {branding?.logoUrl ? (
+                <Button type="button" variant="ghost" onClick={() => void brandingMutations.deleteLogo.mutateAsync()} disabled={brandingMutations.deleteLogo.isPending} className="h-11 rounded-xl">
+                  Xóa logo
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
+      </SettingsCard>
 
+      <SettingsCard
+        title="Thu chi khi hoàn tất ca"
+        description="Bật/tắt phiếu tự động sinh ra khi operator hoàn tất ca chơi."
+        icon={<Settings2 className="h-5 w-5" />}
+        expanded={expandedSections.finance}
+        onToggle={() => setExpandedSections((current) => ({ ...current, finance: !current.finance }))}
+      >
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <SettingToggle
             checked={settings.autoCreateCourtFeeTransaction}
@@ -66,24 +153,15 @@ export function SettingsPageClient() {
             onChange={(checked) => setSetting('autoCreateShuttlecockUsageTransaction', checked)}
           />
         </div>
-      </section>
+      </SettingsCard>
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
-              <Settings2 className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white">Lịch chơi</h2>
-              <p className="mt-1 text-sm text-slate-400">Giới hạn thao tác tạo/sửa ca theo số sân tối đa phù hợp với vận hành thực tế.</p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-400">
-            Tối đa 12 sân
-          </div>
-        </div>
-
+      <SettingsCard
+        title="Lịch chơi"
+        description="Giới hạn thao tác tạo/sửa ca theo số sân tối đa phù hợp với vận hành thực tế."
+        icon={<Settings2 className="h-5 w-5" />}
+        expanded={expandedSections.schedule}
+        onToggle={() => setExpandedSections((current) => ({ ...current, schedule: !current.schedule }))}
+      >
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <label className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
             <span className="block text-sm font-medium text-white">Số sân tối đa cho một ca</span>
@@ -98,22 +176,23 @@ export function SettingsPageClient() {
             />
           </label>
         </div>
-      </section>
+      </SettingsCard>
 
-      <section className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3">
+      <SettingsCard
+        title="Dữ liệu lịch sử trận đấu"
+        description="Xóa toàn bộ lịch sử các trận đã kết thúc."
+        icon={<AlertTriangle className="h-5 w-5" />}
+        expanded={expandedSections.history}
+        danger
+        onToggle={() => setExpandedSections((current) => ({ ...current, history: !current.history }))}
+      >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-400/15 text-rose-200">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white">Dữ liệu lịch sử trận đấu</h2>
-              <p className="mt-1 text-sm text-rose-100/80">Xóa toàn bộ lịch sử các trận đã kết thúc. Thao tác này không ảnh hưởng người chơi, ca chơi, thu chi hoặc kho cầu.</p>
+              <p className="text-sm text-rose-100/80">Thao tác này không ảnh hưởng người chơi, ca chơi, thu chi hoặc kho cầu.</p>
               {resetMessage ? (
                 <p className={`mt-2 text-sm ${resetState === 'error' ? 'text-rose-100' : 'text-emerald-200'}`}>{resetMessage}</p>
               ) : null}
             </div>
-          </div>
           <button
             type="button"
             onClick={() => void handleResetMatchHistory()}
@@ -124,8 +203,78 @@ export function SettingsPageClient() {
             Reset lịch sử
           </button>
         </div>
-      </section>
+      </SettingsCard>
+
+      <SettingsCard
+        title="Dữ liệu hình ảnh người chơi"
+        description="Xóa toàn bộ ảnh người chơi trong DB và trên S3."
+        icon={<AlertTriangle className="h-5 w-5" />}
+        expanded={expandedSections.images}
+        danger
+        onToggle={() => setExpandedSections((current) => ({ ...current, images: !current.images }))}
+      >
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm text-rose-100/80">Người chơi vẫn được giữ lại và dùng avatar mặc định theo giới tính.</p>
+              {imageResetMessage ? (
+                <p className={`mt-2 text-sm ${imageResetState === 'error' ? 'text-rose-100' : 'text-emerald-200'}`}>{imageResetMessage}</p>
+              ) : null}
+            </div>
+          <button
+            type="button"
+            onClick={() => void handleDeleteAllPlayerImages()}
+            disabled={imageResetState === 'loading'}
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-rose-300/30 bg-rose-500/20 px-4 text-sm font-semibold text-rose-100 transition-colors hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {imageResetState === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Xóa ảnh người chơi
+          </button>
+        </div>
+      </SettingsCard>
     </div>
+  );
+}
+
+function SettingsCard({
+  title,
+  description,
+  icon,
+  expanded,
+  danger = false,
+  onToggle,
+  children
+}: {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  expanded: boolean;
+  danger?: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`rounded-xl border p-3 ${danger ? 'border-rose-400/20 bg-rose-500/10' : 'border-white/10 bg-slate-900/70'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${danger ? 'bg-rose-400/15 text-rose-200' : 'bg-cyan-400/10 text-cyan-200'}`}>
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-white">{title}</h2>
+            <p className={`mt-1 text-sm ${danger ? 'text-rose-100/80' : 'text-slate-400'}`}>{description}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          aria-label={expanded ? 'Thu gọn' : 'Mở rộng'}
+        >
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </div>
+      {expanded ? <div className="mt-3">{children}</div> : null}
+    </section>
   );
 }
 

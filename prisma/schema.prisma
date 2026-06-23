@@ -95,11 +95,40 @@ model session_players {
   runtime_status    String?       @default("WAITING") @db.VarChar(20)
   last_court_number Int?
   note              String?
+  avatar_s3_key     String?       @db.VarChar(500)
+  avatar_url        String?       @db.VarChar(1000)
+  avatar_updated_at DateTime?     @db.Timestamp(6)
   joined_at         DateTime?     @default(now()) @db.Timestamp(6)
   match_history_players match_history_players[]
   play_sessions     play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  session_player_images session_player_images[]
 
   @@index([session_id], map: "idx_session_players_session_id")
+}
+
+model app_settings {
+  id          String    @id @default("default") @db.VarChar(50)
+  club_name   String    @default("Badmin") @db.VarChar(255)
+  logo_s3_key String?   @db.VarChar(500)
+  logo_url    String?   @db.VarChar(1000)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model session_player_images {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_player_id String          @db.Uuid
+  s3_key            String          @db.VarChar(500)
+  public_url        String          @db.VarChar(1000)
+  file_name         String?         @db.VarChar(255)
+  content_type      String?         @db.VarChar(100)
+  file_size         Int?
+  status            String          @default("ACTIVE") @db.VarChar(20)
+  created_at        DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?       @default(now()) @db.Timestamp(6)
+  session_players   session_players @relation(fields: [session_player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([session_player_id], map: "idx_session_player_images_player")
+  @@index([status], map: "idx_session_player_images_status")
 }
 
 model match_histories {

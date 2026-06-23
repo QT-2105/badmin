@@ -45,7 +45,15 @@ export type SessionPlayerSummary = {
   runtimeStatus: string | null;
   lastCourtNumber: number | null;
   note: string | null;
+  avatarUrl: string | null;
+  avatarS3Key: string | null;
   joinedAt: string | null;
+};
+
+export type BrandingSettings = {
+  clubName: string;
+  logoUrl: string | null;
+  logoS3Key: string | null;
 };
 
 export type DashboardSummary = {

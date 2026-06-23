@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
 import { useInventoryMovements, useInventoryMutations, useInventoryProducts } from '@/hooks/use-inventory';
 import { formatCurrency } from '@/lib/date-format';
 import type { ShuttlecockProductSummary } from '@/types/domain';
@@ -48,6 +49,8 @@ export function InventoryPageClient() {
   const [reportYear, setReportYear] = useState(() => String(today.getFullYear()));
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [stockFormTab, setStockFormTab] = useState<StockFormTab | null>(null);
+  const [movementPageSize, setMovementPageSize] = useState<PageSize>(10);
+  const [movementPage, setMovementPage] = useState(1);
 
   const importProduct = products.find((product) => product.id === importProductId);
   const outboundProduct = products.find((product) => product.id === outboundProductId);
@@ -71,6 +74,17 @@ export function InventoryPageClient() {
       { sales: 0, usage: 0 }
     );
   }, [movements, reportMonth, reportPeriod, reportYear]);
+  const sortedMovements = useMemo(() => [...movements].sort((left, right) => getTime(right.createdAt) - getTime(left.createdAt)), [movements]);
+  const movementTotalPages = Math.max(1, Math.ceil(sortedMovements.length / movementPageSize));
+  const visibleMovements = useMemo(() => {
+    const safePage = Math.min(movementPage, movementTotalPages);
+    const start = (safePage - 1) * movementPageSize;
+    return sortedMovements.slice(start, start + movementPageSize);
+  }, [movementPage, movementPageSize, movementTotalPages, sortedMovements]);
+
+  useEffect(() => {
+    setMovementPage(1);
+  }, [movementPageSize]);
 
   async function submitProduct(event: React.FormEvent) {
     event.preventDefault();
@@ -354,10 +368,15 @@ export function InventoryPageClient() {
       </section>
 
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-        <h2 className="text-sm font-semibold text-white">Lịch sử nhập xuất</h2>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <h2 className="text-sm font-semibold text-white">Lịch sử nhập xuất</h2>
+          <select value={movementPageSize} onChange={(event) => setMovementPageSize(Number(event.target.value) as PageSize)} className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+            {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
+          </select>
+        </div>
         <div className="mt-3 max-h-[360px] overflow-auto rounded-lg border border-white/10">
           {movementsLoading ? <div className="p-4 text-sm text-slate-400">Đang tải giao dịch kho...</div> : null}
-          {movements.map((movement) => (
+          {visibleMovements.map((movement) => (
             <article key={movement.id} className="grid gap-2 border-b border-white/5 px-3 py-3 text-sm lg:grid-cols-[88px_minmax(0,2.6fr)_78px_92px_92px_122px] lg:items-center">
               <MovementBadge type={movement.movementType} />
               <div>
@@ -373,8 +392,15 @@ export function InventoryPageClient() {
               </div>
             </article>
           ))}
-          {!movementsLoading && movements.length === 0 ? <div className="p-5 text-center text-sm text-slate-400">Chưa có giao dịch kho.</div> : null}
+          {!movementsLoading && visibleMovements.length === 0 ? <div className="p-5 text-center text-sm text-slate-400">Chưa có giao dịch kho.</div> : null}
         </div>
+        <PaginationControls
+          currentPage={Math.min(movementPage, movementTotalPages)}
+          totalPages={movementTotalPages}
+          totalItems={sortedMovements.length}
+          pageSize={movementPageSize}
+          onPageChange={setMovementPage}
+        />
       </section>
     </div>
   );
@@ -431,6 +457,12 @@ function estimateOutboundBalls(type: OutboundType, product: ShuttlecockProductSu
 
 function formatCreatedAt(value: string | null): string {
   return value ? new Date(value).toLocaleString('vi-VN') : '-';
+}
+
+function getTime(value: string | null): number {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
 }
 
 function MovementBadge({ type }: { type: string }) {

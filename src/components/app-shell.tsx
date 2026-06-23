@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, Package, Settings2, Trophy } from 'lucide-react';
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, Package, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { BrandLogo } from '@/components/branding/brand-logo';
+import { useBranding } from '@/hooks/use-branding';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -18,6 +20,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { data: branding } = useBranding();
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('badmin_sidebar_collapsed') === 'true';
@@ -38,10 +41,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         >
           <div className="flex h-16 items-center justify-between gap-2 border-b border-white/10 px-3">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">B</span>
+              <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
               {!collapsed ? (
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-white">Badmin</span>
+                  <span className="block truncate text-sm font-semibold text-white">{branding?.clubName || 'Badmin'}</span>
                   <span className="block truncate text-[11px] text-slate-400">Vận hành sân</span>
                 </span>
               ) : null}
@@ -78,12 +81,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-white/10 p-3">
-            <div className={cn('rounded-xl border border-white/10 bg-white/[0.03] p-3', collapsed && 'px-2')}>
-              <Trophy className="h-4 w-4 text-amber-300" />
-              {!collapsed ? <p className="mt-2 text-xs text-slate-400">Điều phối nằm trong từng ca chơi.</p> : null}
-            </div>
-          </div>
         </aside>
 
         <main
@@ -93,7 +90,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         >
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-white/10 bg-slate-950/90 px-3 backdrop-blur md:hidden">
-            <Link href="/dashboard" className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">B</Link>
+            <Link href="/dashboard">
+              <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
+            </Link>
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
               {navItems.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
