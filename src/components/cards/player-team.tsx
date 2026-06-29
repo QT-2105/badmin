@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Player } from '@/lib/badminton-store';
+import { getDisplayPlayerName } from '@/lib/player-display';
 import { getLevelLabel } from '@/lib/player-labels';
 
 interface PlayerTeamProps {
@@ -27,7 +28,7 @@ export function PlayerTeam({ team, teamLabel }: PlayerTeamProps) {
           >
             <PlayerAvatar name={player?.name ?? 'Người chơi'} gender={player?.gender} avatarUrl={player?.avatarUrl} size="xs" />
             <div className="min-w-0 flex-1">
-              <p className="overflow-hidden break-words text-[11px] font-medium leading-4 text-slate-200 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">{player?.name}</p>
+              <p className="overflow-hidden break-words text-[11px] font-medium leading-4 text-slate-200 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{getDisplayPlayerName(player?.name)}</p>
               <div className="flex flex-wrap items-center gap-1 text-[10px] leading-3 text-slate-400">
                 <span>{getLevelLabel(player?.level)}</span>
                 <span>{player?.gender === 'Nam' ? '♂' : '♀'}</span>

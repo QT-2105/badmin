@@ -45,6 +45,7 @@ export type SessionPlayerSummary = {
   runtimeStatus: string | null;
   lastCourtNumber: number | null;
   note: string | null;
+  playerTags: string[];
   avatarUrl: string | null;
   avatarS3Key: string | null;
   joinedAt: string | null;

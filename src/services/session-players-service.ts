@@ -18,6 +18,7 @@ export type SessionPlayerPayload = {
   paymentMethod?: string | null;
   paymentStatus?: string;
   note?: string | null;
+  playerTags?: string[];
 };
 
 export async function fetchSessionPlayers(sessionId: string, signal?: AbortSignal): Promise<SessionPlayerSummary[]> {

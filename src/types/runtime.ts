@@ -35,6 +35,7 @@ export type RuntimeSessionPlayer = {
   runtimeStatus: RuntimePlayerStatus;
   lastCourtNumber: number | null;
   note: string | null;
+  playerTags: string[];
   avatarUrl: string | null;
   avatarS3Key: string | null;
   joinedAt: number | null;

@@ -7,6 +7,7 @@ import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, P
 import { useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
+import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { useBranding } from '@/hooks/use-branding';
 import { cn } from '@/lib/utils';
 
@@ -81,6 +82,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
+          <div className="border-t border-white/10 p-2">
+            <FullscreenToggle compact={collapsed} className="w-full justify-center" />
+          </div>
+
         </aside>
 
         <main
@@ -111,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
+              <FullscreenToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
             </div>
           </header>
           {children}

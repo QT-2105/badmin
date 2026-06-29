@@ -8,17 +8,22 @@ import type { Route } from 'next';
 import { CalendarDays, ChevronDown, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { useBadmintonStore, type Player, type SuggestionMode } from '@/lib/badminton-store';
 import { useRuntimeHydration } from '@/hooks/use-runtime-hydration';
 import { useRuntimeSync } from '@/hooks/use-runtime-sync';
 import { usePlaySession } from '@/hooks/use-play-dates';
 import { useMatchHistoryMutations } from '@/hooks/use-match-history';
 import { getSessionStatusLabel, isRuntimeActiveStatus, isRuntimeReadonlyStatus, normalizeSessionStatus } from '@/lib/session-status';
+import { getDisplayPlayerName } from '@/lib/player-display';
+import { getLevelLabel } from '@/lib/player-labels';
+import { PLAYER_TAG_OPTIONS, normalizePlayerTags } from '@/lib/player-tags';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { LiveCourtsSection } from './sections/live-courts-section';
 import { MatchHistoryPanel } from './sections/match-history-panel';
 import { NextMatchQueue } from './sections/next-match-queue';
 import { PlayerDatabasePanel } from './sections/player-database-panel';
+import { PlayerTagBadges } from './player/player-tag-badges';
 
 const SUGGESTION_MODES: Array<{ value: SuggestionMode; label: string }> = [
   { value: 'random', label: 'Ngẫu nhiên' },
@@ -33,6 +38,7 @@ export function RealtimeDashboard() {
   const [isMatchHistoryOpen, setIsMatchHistoryOpen] = useState(false);
   const [historyPlayerId, setHistoryPlayerId] = useState('');
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [autoMatchNotice, setAutoMatchNotice] = useState<string | null>(null);
   const [selectedSuggestionMode, setSelectedSuggestionMode] = useState<SuggestionMode>(suggestionMode);
 
   const { data: sessionRecord } = usePlaySession(runtimeSessionId || '');
@@ -81,6 +87,10 @@ export function RealtimeDashboard() {
       : !hasEnoughPlayers
         ? 'Chưa đủ người chơi để bắt đầu xếp sân.'
         : null;
+  const autoMatchBlockReason = useMemo(
+    () => getAutoMatchBlockReason(players, selectedSuggestionMode, schedulingDisabledReason),
+    [players, selectedSuggestionMode, schedulingDisabledReason]
+  );
 
   function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
     if (syncState === 'pending' || syncState === 'syncing' || syncState === 'error') {
@@ -92,8 +102,17 @@ export function RealtimeDashboard() {
   }
 
   function refreshSuggestions() {
-    if (schedulingDisabled) return;
+    if (autoMatchBlockReason) {
+      setAutoMatchNotice(autoMatchBlockReason);
+      return;
+    }
     refreshNextMatches(selectedSuggestionMode);
+    const generatedMatches = useBadmintonStore.getState().nextMatches;
+    if (generatedMatches.length === 0) {
+      setAutoMatchNotice('Chưa tạo được gợi ý phù hợp. Hãy kiểm tra tag điểm danh, số lượng nam/nữ và trạng thái người chơi.');
+      return;
+    }
+    setAutoMatchNotice(null);
     void commitRuntimeSnapshot();
   }
 
@@ -169,6 +188,7 @@ export function RealtimeDashboard() {
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} /> : null}
         {historyError ? <RuntimeNotice message={historyError} /> : null}
+        {autoMatchNotice ? <RuntimeNotice message={autoMatchNotice} /> : null}
       </header>
 
       {/* DESKTOP/TABLET LAYOUT */}
@@ -186,6 +206,7 @@ export function RealtimeDashboard() {
                 <button
                   onClick={refreshSuggestions}
                   disabled={schedulingDisabled}
+                  title={autoMatchBlockReason ?? undefined}
                   className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 text-xs font-semibold text-cyan-100 transition-colors hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Zap className="h-3 w-3" />
@@ -237,6 +258,7 @@ export function RealtimeDashboard() {
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} compact /> : null}
         {historyError ? <RuntimeNotice message={historyError} compact /> : null}
+        {autoMatchNotice ? <RuntimeNotice message={autoMatchNotice} compact /> : null}
 
         <div className="flex-1 overflow-y-auto px-3">
           <LiveCourtsSection
@@ -263,6 +285,7 @@ export function RealtimeDashboard() {
               <button
                 onClick={refreshSuggestions}
                 disabled={schedulingDisabled}
+                title={autoMatchBlockReason ?? undefined}
                 className="inline-flex h-10 items-center gap-1 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 text-[11px] font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Zap className="h-3 w-3" />
@@ -351,6 +374,7 @@ function RuntimeTopBar({
             <Home className="h-4 w-4" />
             Dashboard
           </Link>
+          <FullscreenToggle compact className="shrink-0" />
         </div>
 
         <div className="min-w-0 text-center">
@@ -424,34 +448,49 @@ function SuggestionModePicker({
 
 function PlayerStatusOverview({ players }: { players: Player[] }) {
   const [expanded, setExpanded] = useState(true);
+  const tagStats = useMemo(
+    () =>
+      PLAYER_TAG_OPTIONS.map((tag) => ({
+        ...tag,
+        count: players.filter((player) => normalizePlayerTags(player.playerTags).includes(tag.value)).length
+      })),
+    [players]
+  );
   const sortedPlayers = useMemo(() => {
     const statusRank: Record<string, number> = {
       WAITING: 0,
       JUST_FINISHED: 1,
-      PRIORITY: 2,
-      PLAYING: 3,
+      PLAYING: 2,
+      PRIORITY: 3,
       RESTING: 4,
       FINISHED: 5
     };
 
     return [...players]
-      .filter((player) => player.status === 'WAITING' || player.status === 'JUST_FINISHED' || player.status === 'PLAYING' || player.status === 'PRIORITY')
       .sort((left, right) => {
         const statusDiff = (statusRank[left.status] ?? 9) - (statusRank[right.status] ?? 9);
         if (statusDiff !== 0) return statusDiff;
         if (left.matchesPlayed !== right.matchesPlayed) return left.matchesPlayed - right.matchesPlayed;
         return left.name.localeCompare(right.name, 'vi');
-      })
-      .slice(0, 24);
+      });
   }, [players]);
-  const visiblePlayers = expanded ? sortedPlayers.slice(0, 5) : [];
+  const visiblePlayers = expanded ? sortedPlayers : [];
 
   return (
     <div className="shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2">
       <div className="mb-2 flex items-center justify-between gap-2">
         <div>
           <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Hàng chờ</div>
-          <div className="text-[11px] text-slate-500">Ưu tiên chờ, vừa xong</div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {tagStats.map((tag) => (
+              <span
+                key={tag.value}
+                className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold ${tag.count > 0 ? tag.activeClassName : tag.className}`}
+              >
+                {tag.label} {tag.count}
+              </span>
+            ))}
+          </div>
         </div>
         <button
           type="button"
@@ -462,18 +501,25 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       </div>
-      {expanded ? <div className="max-h-40 overflow-y-auto pr-1">
-        <div className="grid grid-cols-1 gap-1 xl:grid-cols-2">
+      {expanded ? <div className="max-h-48 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
           {visiblePlayers.map((player) => (
-            <div key={player.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-lg bg-slate-950/45 px-2 py-1.5 text-[11px]">
+            <div key={player.id} className="grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-lg bg-slate-950/45 px-2 py-1.5 text-[11px]">
               <div className="min-w-0">
-                <div className="truncate font-semibold text-slate-100">{player.name}</div>
-                <div className={player.gender === 'Nữ' ? 'text-pink-300' : 'text-cyan-300'}>{player.gender}</div>
+                <div className="truncate font-semibold text-slate-100" title={player.name}>{getDisplayPlayerName(player.name)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px]">
+                  <span className={player.gender === 'Nữ' ? 'text-pink-300' : 'text-cyan-300'}>{player.gender}</span>
+                  <span className="text-slate-500">·</span>
+                  <span className="font-semibold text-cyan-200">{getLevelLabel(player.level)}</span>
+                </div>
+                <PlayerTagBadges tags={player.playerTags} compact className="mt-1" />
               </div>
-              <div className="font-mono text-slate-300">{player.matchesPlayed} trận</div>
-              <span className={`rounded-full px-2 py-0.5 font-medium ${getPlayerStatusTone(player.status)}`}>
-                {getPlayerStatusLabel(player.status)}
-              </span>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="font-mono text-slate-300">{player.matchesPlayed} trận</div>
+                <span className={`rounded-full px-2 py-0.5 font-medium ${getPlayerStatusTone(player.status)}`}>
+                  {getPlayerStatusLabel(player.status)}
+                </span>
+              </div>
             </div>
           ))}
           {visiblePlayers.length === 0 ? (
@@ -499,4 +545,46 @@ function getPlayerStatusTone(status: Player['status']): string {
   if (status === 'JUST_FINISHED') return 'bg-violet-400/15 text-violet-200';
   if (status === 'PRIORITY') return 'bg-amber-400/15 text-amber-200';
   return 'bg-cyan-400/15 text-cyan-200';
+}
+
+function getAutoMatchBlockReason(players: Player[], mode: SuggestionMode, schedulingDisabledReason: string | null): string | null {
+  if (schedulingDisabledReason) return schedulingDisabledReason;
+  if (players.length === 0) return 'Chưa có người chơi trong ca.';
+
+  const eligiblePlayers = players.filter(isEligibleForAutoMatchNotice);
+  const arrivedLikeCount = players.filter((player) => {
+    const tags = normalizePlayerTags(player.playerTags);
+    return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
+  }).length;
+
+  if (arrivedLikeCount === 0) {
+    return 'Chưa có người chơi đã tới. Vui lòng điểm danh tag Đã tới hoặc Ưu tiên trước khi auto xếp cặp.';
+  }
+
+  if (eligiblePlayers.length < 4) {
+    return `Chỉ có ${eligiblePlayers.length} người đủ điều kiện xếp cặp. Cần tối thiểu 4 người đã tới và không bị khóa bởi tag Chấn thương/Về sớm.`;
+  }
+
+  const femaleCount = eligiblePlayers.filter((player) => player.gender === 'Nữ').length;
+  const maleCount = eligiblePlayers.filter((player) => player.gender === 'Nam').length;
+
+  if (mode === 'women' && femaleCount < 4) {
+    return `Đôi Nữ cần tối thiểu 4 nữ đủ điều kiện. Hiện có ${femaleCount}.`;
+  }
+  if (mode === 'men' && maleCount < 4) {
+    return `Đôi Nam cần tối thiểu 4 nam đủ điều kiện. Hiện có ${maleCount}.`;
+  }
+  if (mode === 'mixed' && (maleCount < 2 || femaleCount < 2)) {
+    return `Nam nữ cần tối thiểu 2 nam và 2 nữ đủ điều kiện. Hiện có ${maleCount} nam, ${femaleCount} nữ.`;
+  }
+
+  return null;
+}
+
+function isEligibleForAutoMatchNotice(player: Player): boolean {
+  if (player.status !== 'WAITING' && player.status !== 'JUST_FINISHED') return false;
+  const tags = normalizePlayerTags(player.playerTags);
+  if (tags.includes('INJURED') || tags.includes('LEFT_EARLY')) return false;
+  if (tags.includes('NOT_ARRIVED') && !tags.includes('PRIORITY') && !tags.includes('HOST')) return false;
+  return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
 }

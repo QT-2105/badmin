@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Check, Lock, Unlock, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PlayerAvatar } from '@/components/player/player-avatar';
+import { PlayerTagBadges } from '@/components/player/player-tag-badges';
+import { getDisplayPlayerName } from '@/lib/player-display';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { useBadmintonStore, type NextMatch } from '@/lib/badminton-store';
 import { getLevelLabel } from '@/lib/player-labels';
@@ -171,7 +173,7 @@ export function NextMatchCard({
                       className="w-full rounded-lg px-2 py-2 text-left transition-colors hover:bg-slate-700/40 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0 break-words text-xs font-medium leading-4 text-slate-100">{wp.name}</div>
+                        <div className="min-w-0 break-words text-xs font-medium leading-4 text-slate-100" title={wp.name}>{getDisplayPlayerName(wp.name)}</div>
                         {sourceMatchByPlayerId.has(wp.id) ? <span className="shrink-0 rounded bg-cyan-400/10 px-1.5 py-0.5 text-[10px] text-cyan-200">Gợi ý #{sourceMatchByPlayerId.get(wp.id)}</span> : null}
                       </div>
                       <div className="text-xxs text-slate-400 text-[11px]">{wp.gender} • {getLevelLabel(wp.level)} • {wp.matchesPlayed} trận • {wp.status === 'JUST_FINISHED' ? 'vừa xong' : wp.status === 'PRIORITY' ? 'trong gợi ý' : 'chờ'}</div>
@@ -233,10 +235,11 @@ function PairPreview({
           >
             <PlayerAvatar name={player?.name ?? 'Người chơi'} gender={player?.gender} avatarUrl={player?.avatarUrl} size="xs" />
             <div className="min-w-0 flex-1">
-            <p className="break-words text-xs font-medium leading-4 text-slate-200">{player?.name ?? '—'}</p>
+            <p className="break-words text-xs font-medium leading-4 text-slate-200" title={player?.name}>{player ? getDisplayPlayerName(player.name) : '—'}</p>
             <p className="text-[11px] leading-4 text-slate-400">
               {player ? <><span className={player.gender === 'Nam' ? 'text-cyan-300' : 'text-pink-300'}>{player.gender}</span> • {getLevelLabel(player.level)} • {player.matchesPlayed} trận</> : '—'}
             </p>
+            {player ? <PlayerTagBadges tags={player.playerTags} compact className="mt-1" /> : null}
             </div>
           </button>
         ))}
@@ -292,9 +295,9 @@ function ReplacePairColumn({
               onClick={() => onSelect(slot)}
               className={`w-full rounded-lg px-2 py-2 text-left transition-colors hover:bg-slate-700/40 ${selectedSlot === slot ? 'bg-cyan-400/10 ring-1 ring-cyan-400/40' : 'bg-slate-900/30'}`}
             >
-              <div className="break-words text-xs font-medium leading-4 text-slate-100">{player?.name ?? 'Trống'}</div>
+              <div className="break-words text-xs font-medium leading-4 text-slate-100" title={player?.name}>{player ? getDisplayPlayerName(player.name) : 'Trống'}</div>
               <div className="text-[11px] text-slate-400">{player ? `${player.gender} • ${getLevelLabel(player.level)} • ${player.matchesPlayed} trận` : '—'}</div>
-              <div className="mt-1 break-words text-[10px] leading-4 text-slate-500">Cặp với: {partner?.name ?? '—'}</div>
+              <div className="mt-1 break-words text-[10px] leading-4 text-slate-500" title={partner?.name}>Cặp với: {partner ? getDisplayPlayerName(partner.name) : '—'}</div>
             </button>
           );
         })}

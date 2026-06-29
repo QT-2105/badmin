@@ -7,6 +7,7 @@ import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { useSessionPlayerMutations } from '@/hooks/use-session-players';
 import { useBadmintonStore } from '@/lib/badminton-store';
+import { PLAYER_TAG_OPTIONS, togglePlayerTag } from '@/lib/player-tags';
 import { cn } from '@/lib/utils';
 import { LEVEL_OPTIONS } from '@/lib/player-labels';
 
@@ -37,16 +38,17 @@ export function PlayerDatabasePanel({
   const [quickViewPlayer, setQuickViewPlayer] = useState<QuickViewPlayer | null>(null);
 
   const paymentMethodConfig = {
-    UNPAID: { label: 'Chưa TT', color: 'text-rose-300', bg: 'bg-rose-500/10' },
-    TM: { label: 'TM', color: 'text-emerald-300', bg: 'bg-emerald-500/10' },
-    CK: { label: 'CK', color: 'text-cyan-300', bg: 'bg-cyan-500/10' }
+    UNPAID: { label: 'Chưa TT', color: 'text-amber-200', bg: 'bg-amber-500/10' },
+    CASH: { label: 'Tiền mặt', color: 'text-emerald-200', bg: 'bg-emerald-500/10' },
+    BANK: { label: 'Chuyển khoản', color: 'text-cyan-200', bg: 'bg-cyan-500/10' },
+    WAIVED: { label: 'Free', color: 'text-violet-200', bg: 'bg-violet-500/10' }
   };
 
   const totals = useMemo(() => {
     const paidPlayers = players.filter((p) => p.paymentStatus === 'PAID');
     const paidTm = paidPlayers.filter((p) => p.paymentType === 'TM').reduce((sum, p) => sum + p.money, 0);
     const paidCk = paidPlayers.filter((p) => p.paymentType === 'CK').reduce((sum, p) => sum + p.money, 0);
-    const unpaid = players.filter((p) => p.paymentStatus !== 'PAID').reduce((sum, p) => sum + p.money, 0);
+    const unpaid = players.filter((p) => p.paymentStatus !== 'PAID' && p.paymentStatus !== 'WAIVED').reduce((sum, p) => sum + p.money, 0);
     return {
       revenue: paidTm + paidCk,
       paidTm,
@@ -82,9 +84,10 @@ export function PlayerDatabasePanel({
             level: player.level,
             paymentAmount: player.money,
             discount: player.discount,
-            paymentMethod: player.paymentType === 'CK' ? 'BANK' : 'CASH',
+            paymentMethod: player.paymentStatus === 'PAID' ? player.paymentType === 'CK' ? 'BANK' : 'CASH' : null,
             paymentStatus: player.paymentStatus,
-            note: player.note
+            note: player.note,
+            playerTags: player.playerTags
           }
         })
       )
@@ -151,11 +154,12 @@ export function PlayerDatabasePanel({
                   <th className="px-3 py-2 text-left text-slate-300 font-semibold">Giảm</th>
                   <th className="px-3 py-2 text-left text-slate-300 font-semibold">Thanh toán</th>
                   <th className="px-3 py-2 text-left text-slate-300 font-semibold">Ghi chú</th>
+                  <th className="px-3 py-2 text-left text-slate-300 font-semibold">Tag</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/20">
                 {visiblePlayers.map((player) => {
-                  const paymentValue = player.paymentStatus === 'PAID' ? player.paymentType : 'UNPAID';
+                  const paymentValue = getPaymentSelectValue(player);
                   const paymentTone = paymentMethodConfig[paymentValue as keyof typeof paymentMethodConfig];
 
                   return (
@@ -169,8 +173,9 @@ export function PlayerDatabasePanel({
                       <td className="px-3 py-2 text-slate-200 font-medium">
                         <div className="flex min-w-[180px] items-center gap-2">
                           <PlayerAvatar name={player.name} gender={player.gender} avatarUrl={player.avatarUrl} size="sm" />
-                          <input
-                            className="min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none disabled:text-slate-500"
+                          <textarea
+                            rows={2}
+                            className="min-w-0 flex-1 resize-none bg-transparent text-sm leading-5 text-slate-200 outline-none disabled:text-slate-500"
                             value={player.name}
                             disabled={readonly}
                             onClick={(event) => event.stopPropagation()}
@@ -248,13 +253,18 @@ export function PlayerDatabasePanel({
                           disabled={readonly}
                           onChange={(e) => {
                             if (readonly) return;
-                            const value = e.target.value as 'UNPAID' | 'TM' | 'CK';
+                            const value = e.target.value as 'UNPAID' | 'CASH' | 'BANK' | 'WAIVED';
                             if (value === 'UNPAID') {
                               updatePlayerPayment(player.id, { paymentStatus: 'UNPAID' });
                               markDirty(player.id);
                               return;
                             }
-                            updatePlayerPayment(player.id, { paymentStatus: 'PAID', paymentType: value });
+                            if (value === 'WAIVED') {
+                              updatePlayerPayment(player.id, { paymentStatus: 'WAIVED' });
+                              markDirty(player.id);
+                              return;
+                            }
+                            updatePlayerPayment(player.id, { paymentStatus: 'PAID', paymentType: value === 'BANK' ? 'CK' : 'TM' });
                             markDirty(player.id);
                           }}
                           className={cn(
@@ -264,8 +274,9 @@ export function PlayerDatabasePanel({
                           )}
                         >
                           <option value="UNPAID">Chưa TT</option>
-                          <option value="TM">TM</option>
-                          <option value="CK">CK</option>
+                          <option value="CASH">Tiền mặt</option>
+                          <option value="BANK">Chuyển khoản</option>
+                          <option value="WAIVED">Free</option>
                         </select>
                       </td>
                       <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
@@ -279,6 +290,31 @@ export function PlayerDatabasePanel({
                           }}
                           className="w-full bg-transparent text-slate-200 outline-none text-sm disabled:text-slate-500"
                         />
+                      </td>
+                      <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                        <div className="grid min-w-[190px] grid-cols-2 gap-1">
+                          {PLAYER_TAG_OPTIONS.map((tag) => {
+                            const active = player.playerTags.includes(tag.value);
+                            return (
+                              <button
+                                key={tag.value}
+                                type="button"
+                                disabled={readonly}
+                                onClick={() => {
+                                  if (readonly) return;
+                                  updatePlayer(player.id, { playerTags: togglePlayerTag(player.playerTags, tag.value) });
+                                  markDirty(player.id);
+                                }}
+                                className={cn(
+                                  'rounded-md border px-1.5 py-0.5 text-[9px] font-semibold leading-4 transition disabled:cursor-not-allowed disabled:opacity-50',
+                                  active ? tag.activeClassName : tag.className
+                                )}
+                              >
+                                {tag.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
                     </motion.tr>
                   );
@@ -302,11 +338,11 @@ export function PlayerDatabasePanel({
             <div className="font-bold text-emerald-300">{formatMoney(totals.revenue)}</div>
           </div>
           <div className="bg-slate-800/50 rounded p-2">
-            <div className="text-slate-400">Thanh toán TM</div>
+            <div className="text-slate-400">Tiền mặt</div>
             <div className="font-bold text-emerald-300">{formatMoney(totals.paidTm)}</div>
           </div>
           <div className="bg-slate-800/50 rounded p-2">
-            <div className="text-slate-400">Thanh toán CK</div>
+            <div className="text-slate-400">Chuyển khoản</div>
             <div className="font-bold text-cyan-300">{formatMoney(totals.paidCk)}</div>
           </div>
           <div className="bg-slate-800/50 rounded p-2">
@@ -336,4 +372,10 @@ function toRuntimeQuickViewPlayer(player: ReturnType<typeof useBadmintonStore.ge
     avatarUrl: player.avatarUrl,
     lastCourt: player.lastCourt
   };
+}
+
+function getPaymentSelectValue(player: ReturnType<typeof useBadmintonStore.getState>['players'][number]): 'UNPAID' | 'CASH' | 'BANK' | 'WAIVED' {
+  if (player.paymentStatus === 'WAIVED') return 'WAIVED';
+  if (player.paymentStatus !== 'PAID') return 'UNPAID';
+  return player.paymentType === 'CK' ? 'BANK' : 'CASH';
 }

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { normalizePlayerTags, type PlayerTag } from '@/lib/player-tags';
 import type { RuntimeCourt, RuntimeMatch, RuntimeSession, RuntimeSessionPlayer, RuntimeSnapshot } from '@/types/runtime';
 
 export type PlayerStatus = 'WAITING' | 'JUST_FINISHED' | 'PLAYING' | 'RESTING' | 'PRIORITY' | 'FINISHED';
@@ -20,6 +21,7 @@ export interface Player {
   paymentType: PaymentType;
   discount: number;
   note: string;
+  playerTags: PlayerTag[];
   status: PlayerStatus;
   fatigue: number;
   lastCourt: string | null;
@@ -89,7 +91,7 @@ export interface BadmintonState {
   cancelReadyCourt: (courtId: string) => void;
   toggleMatch: (courtId: string) => void;
   checkIn: (playerId: string) => void;
-  updatePlayer: (playerId: string, patch: Partial<Pick<Player, 'name' | 'gender' | 'level' | 'money' | 'paymentType' | 'discount' | 'note'>>) => void;
+  updatePlayer: (playerId: string, patch: Partial<Pick<Player, 'name' | 'gender' | 'level' | 'money' | 'paymentType' | 'discount' | 'note' | 'playerTags'>>) => void;
   updatePlayerPayment: (playerId: string, patch: Partial<Pick<Player, 'paymentStatus' | 'paymentType' | 'money' | 'discount'>>) => void;
   setCourtCount?: (count: number) => void;
   refreshNextMatches: (mode?: SuggestionMode) => void;
@@ -102,12 +104,16 @@ export interface BadmintonState {
 const JUST_FINISHED_COOLDOWN_MS = 120_000;
 const SUGGESTION_POOL_LIMIT = 18;
 const MATCH_HISTORY_LIMIT = 8;
-const RECENT_PAIR_HISTORY_LIMIT = 6;
+const RECENT_PAIR_HISTORY_LIMIT = 12;
 const LEVEL_MIN = 1;
 const LEVEL_MAX = 6;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 const normalizeLevel = (level: number): number => clamp(Math.floor(Number(level || LEVEL_MIN)), LEVEL_MIN, LEVEL_MAX);
+const getEffectiveLevel = (player: Pick<Player, 'level' | 'gender'>): number => {
+  const normalized = normalizeLevel(player.level);
+  return player.gender === 'Nữ' ? clamp(normalized - 1, LEVEL_MIN, LEVEL_MAX) : normalized;
+};
 
 const EMPTY_SESSION: SessionMeta = {
   title: '',
@@ -152,9 +158,20 @@ export function generateCourts(count: number, existing: Court[] = []): Court[] {
 }
 
 export function buildCourtSuggestion(players: Player[], court: Court, excludedPlayerIds: Set<string> = new Set(), mode: SuggestionMode = 'random', history: MatchHistory[] = []): string[] {
-  const baseCandidates = players
-    .filter((player) => !excludedPlayerIds.has(player.id) && (player.status === 'WAITING' || player.status === 'JUST_FINISHED'))
+  const availableCandidates = players
+    .filter((player) => isPlayerEligibleForAutoSuggestion(player, excludedPlayerIds));
+  const nonHostCandidates = availableCandidates.filter((player) => !hasPlayerTag(player, 'HOST'));
+  const candidateSource = nonHostCandidates.length >= 4 ? nonHostCandidates : availableCandidates;
+  const baseCandidates = candidateSource
     .sort((left, right) => {
+      const leftPriority = hasPlayerTag(left, 'PRIORITY') ? 0 : 1;
+      const rightPriority = hasPlayerTag(right, 'PRIORITY') ? 0 : 1;
+      if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
+      const leftHost = hasPlayerTag(left, 'HOST') ? 1 : 0;
+      const rightHost = hasPlayerTag(right, 'HOST') ? 1 : 0;
+      if (leftHost !== rightHost) return leftHost - rightHost;
+
       if (left.matchesPlayed !== right.matchesPlayed) {
         return left.matchesPlayed - right.matchesPlayed;
       }
@@ -173,8 +190,8 @@ export function buildCourtSuggestion(players: Player[], court: Court, excludedPl
         return leftClock - rightClock;
       }
 
-      const leftLevel = normalizeLevel(left.level);
-      const rightLevel = normalizeLevel(right.level);
+      const leftLevel = getEffectiveLevel(left);
+      const rightLevel = getEffectiveLevel(right);
 
       if (leftLevel !== rightLevel) {
         return leftLevel - rightLevel;
@@ -194,6 +211,19 @@ export function buildCourtSuggestion(players: Player[], court: Court, excludedPl
   }
 
   return pickBestRoster(candidates, court, mode, history);
+}
+
+function hasPlayerTag(player: Pick<Player, 'playerTags'>, tag: PlayerTag): boolean {
+  return normalizePlayerTags(player.playerTags).includes(tag);
+}
+
+function isPlayerEligibleForAutoSuggestion(player: Player, excludedPlayerIds: Set<string>): boolean {
+  if (excludedPlayerIds.has(player.id)) return false;
+  if (player.status !== 'WAITING' && player.status !== 'JUST_FINISHED') return false;
+  const tags = normalizePlayerTags(player.playerTags);
+  if (tags.includes('INJURED') || tags.includes('LEFT_EARLY')) return false;
+  if (tags.includes('NOT_ARRIVED') && !tags.includes('PRIORITY') && !tags.includes('HOST')) return false;
+  return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
 }
 
 function filterCandidatesBySuggestionMode(candidates: Player[], mode: SuggestionMode): Player[] {
@@ -235,6 +265,8 @@ function pickBestRoster(candidates: Player[], court: Court, mode: SuggestionMode
     maxMatches: number;
     aboveMinCount: number;
     lowestMatchCount: number;
+    hostCount: number;
+    priorityCount: number;
   }[] = [];
 
   for (let a = 0; a < pool.length - 3; a++) {
@@ -252,7 +284,9 @@ function pickBestRoster(candidates: Player[], court: Court, mode: SuggestionMode
             totalMatches: arranged.roster.reduce((total, player) => total + player.matchesPlayed, 0),
             maxMatches: Math.max(...arranged.roster.map((player) => player.matchesPlayed)),
             aboveMinCount: arranged.roster.filter((player) => player.matchesPlayed > minCandidateMatches).length,
-            lowestMatchCount: arranged.roster.filter((player) => player.matchesPlayed === minCandidateMatches).length
+            lowestMatchCount: arranged.roster.filter((player) => player.matchesPlayed === minCandidateMatches).length,
+            hostCount: arranged.roster.filter((player) => hasPlayerTag(player, 'HOST')).length,
+            priorityCount: arranged.roster.filter((player) => hasPlayerTag(player, 'PRIORITY')).length
           });
         }
       }
@@ -262,8 +296,10 @@ function pickBestRoster(candidates: Player[], court: Court, mode: SuggestionMode
   if (options.length === 0) return [];
 
   options.sort((left, right) => {
+    if (left.priorityCount !== right.priorityCount) return right.priorityCount - left.priorityCount;
     if (left.aboveMinCount !== right.aboveMinCount) return left.aboveMinCount - right.aboveMinCount;
     if (left.lowestMatchCount !== right.lowestMatchCount) return right.lowestMatchCount - left.lowestMatchCount;
+    if (left.hostCount !== right.hostCount) return left.hostCount - right.hostCount;
     if (left.totalMatches !== right.totalMatches) return left.totalMatches - right.totalMatches;
     if (left.maxMatches !== right.maxMatches) return left.maxMatches - right.maxMatches;
     return right.score - left.score;
@@ -316,8 +352,8 @@ function arrangeRosterPairs(players: Player[], history: MatchHistory[] = []): { 
   ];
 
   const ranked = pairings.map(([teamA, teamB]) => {
-    const teamALevel = normalizeLevel(teamA[0].level) + normalizeLevel(teamA[1].level);
-    const teamBLevel = normalizeLevel(teamB[0].level) + normalizeLevel(teamB[1].level);
+    const teamALevel = getEffectiveLevel(teamA[0]) + getEffectiveLevel(teamA[1]);
+    const teamBLevel = getEffectiveLevel(teamB[0]) + getEffectiveLevel(teamB[1]);
     const teamLevelGap = Math.abs(teamALevel - teamBLevel);
     const pairScore =
       scorePair(teamA[0], teamA[1], history)
@@ -333,28 +369,38 @@ function arrangeRosterPairs(players: Player[], history: MatchHistory[] = []): { 
 
 function scorePair(left: Player, right: Player, history: MatchHistory[] = []): number {
   const sameGender = left.gender === right.gender;
-  const levelGap = Math.abs(normalizeLevel(left.level) - normalizeLevel(right.level));
+  const levelGap = Math.abs(getEffectiveLevel(left) - getEffectiveLevel(right));
   const matchGap = Math.abs(left.matchesPlayed - right.matchesPlayed);
-  const levelScore = levelGap === 0 ? 120 : levelGap === 1 ? 82 : levelGap === 2 ? 24 : -180 - levelGap * 45;
-  return (sameGender ? 46 : 26) + levelScore + Math.max(0, 34 - matchGap * 10) - recentPairPenalty(left.name, right.name, history);
+  const levelScore = levelGap === 0 ? 150 : levelGap === 1 ? 92 : levelGap === 2 ? -18 : -260 - levelGap * 70;
+  const genderScore = sameGender ? 44 : 34;
+  return genderScore + levelScore + Math.max(0, 34 - matchGap * 10) - recentPairPenalty(left.name, right.name, history);
 }
 
 function scoreTeamLevelBalance(teamLevelGap: number): number {
-  if (teamLevelGap === 0) return 170;
-  if (teamLevelGap === 1) return 118;
-  if (teamLevelGap === 2) return 34;
-  return -220 - teamLevelGap * 70;
+  if (teamLevelGap === 0) return 240;
+  if (teamLevelGap === 1) return 155;
+  if (teamLevelGap === 2) return 20;
+  return -320 - teamLevelGap * 95;
 }
 
 function scoreTeamGenderMatchup(teamA: Player[], teamB: Player[]): number {
   const teamASignature = teamA.map((player) => player.gender).sort().join('-');
   const teamBSignature = teamB.map((player) => player.gender).sort().join('-');
-  if (teamASignature === teamBSignature) return 80;
+  if (teamASignature === teamBSignature) {
+    if (teamASignature === 'Nam-Nữ') return 180;
+    if (teamASignature === 'Nam-Nam') return 165;
+    if (teamASignature === 'Nữ-Nữ') return 155;
+    return 120;
+  }
 
   const teamAIsSameGender = teamA[0].gender === teamA[1].gender;
   const teamBIsSameGender = teamB[0].gender === teamB[1].gender;
-  if (teamAIsSameGender && teamBIsSameGender) return -140;
-  return -60;
+  if (teamAIsSameGender && teamBIsSameGender) return -420;
+
+  const sameGenderTeam = teamAIsSameGender ? teamASignature : teamBSignature;
+  if (sameGenderTeam === 'Nam-Nam') return -75;
+  if (sameGenderTeam === 'Nữ-Nữ') return -115;
+  return -90;
 }
 
 function scoreRosterOption(
@@ -368,7 +414,7 @@ function scoreRosterOption(
 ): number {
   const averageMatches = roster.reduce((total, player) => total + player.matchesPlayed, 0) / roster.length;
   const matchSpread = Math.max(...roster.map((player) => player.matchesPlayed)) - Math.min(...roster.map((player) => player.matchesPlayed));
-  const levels = roster.map((player) => normalizeLevel(player.level));
+  const levels = roster.map((player) => getEffectiveLevel(player));
   const levelSpread = Math.max(...levels) - Math.min(...levels);
   const justFinishedCount = roster.filter((player) => player.status === 'JUST_FINISHED').length;
   const repeatedCourtCount = roster.filter((player) => player.lastCourt === courtName).length;
@@ -377,6 +423,9 @@ function scoreRosterOption(
   const lowMatchCount = roster.filter((player) => player.matchesPlayed <= minMatches + 1).length;
   const absoluteLowestCount = roster.filter((player) => player.matchesPlayed === minCandidateMatches).length;
   const overMinPenalty = roster.reduce((penalty, player) => penalty + Math.max(0, player.matchesPlayed - minCandidateMatches) * 95, 0);
+  const priorityCount = roster.filter((player) => hasPlayerTag(player, 'PRIORITY')).length;
+  const arrivedCount = roster.filter((player) => hasPlayerTag(player, 'ARRIVED')).length;
+  const hostCount = roster.filter((player) => hasPlayerTag(player, 'HOST')).length;
   const historyPenalty = recentRosterPenalty(roster, history);
   const noveltyNudge = roster.reduce((total, player, index) => total + player.name.charCodeAt(0) * (index + 1), seed) % 10;
 
@@ -386,11 +435,14 @@ function scoreRosterOption(
     + Math.max(0, 180 - matchSpread * 42)
     + lowMatchCount * 38
     + absoluteLowestCount * 120
+    + priorityCount * 240
+    + arrivedCount * 28
     + scoreRosterGenderFormation(roster, mode)
     + Math.max(0, 120 - levelSpread * 34)
     - justFinishedCount * 28
     - repeatedCourtCount * 18
     - fatigueTotal * 6
+    - hostCount * 220
     - overMinPenalty
     - historyPenalty
     + noveltyNudge
@@ -405,9 +457,11 @@ function scoreRosterGenderFormation(roster: Player[], mode: SuggestionMode): num
   if (mode === 'men') return maleCount === 4 ? 150 : -400;
   if (mode === 'mixed') return maleCount === 2 && femaleCount === 2 ? 120 : -300;
 
-  if (femaleCount === 4) return 170;
-  if (maleCount === 4) return 120;
-  if (maleCount === 2 && femaleCount === 2) return 80;
+  if (maleCount === 2 && femaleCount === 2) return 130;
+  if (femaleCount === 4) return 110;
+  if (maleCount === 4) return 100;
+  if (maleCount === 3 && femaleCount === 1) return 52;
+  if (maleCount === 1 && femaleCount === 3) return 28;
   return 0;
 }
 
@@ -415,7 +469,7 @@ function recentPairPenalty(leftName: string, rightName: string, history: MatchHi
   return history.slice(0, RECENT_PAIR_HISTORY_LIMIT).reduce((penalty, match, index) => {
     const hasBoth = match.playerNames.includes(leftName) && match.playerNames.includes(rightName);
     if (!hasBoth) return penalty;
-    return penalty + Math.max(18, 80 - index * 12);
+    return penalty + Math.max(24, 150 - index * 9);
   }, 0);
 }
 
@@ -424,8 +478,8 @@ function recentRosterPenalty(roster: Player[], history: MatchHistory[]): number 
   return history.slice(0, RECENT_PAIR_HISTORY_LIMIT).reduce((penalty, match, index) => {
     const overlap = names.filter((name) => match.playerNames.includes(name)).length;
     if (overlap < 2) return penalty;
-    const sameQuartetPenalty = overlap === 4 ? 180 : 0;
-    return penalty + sameQuartetPenalty + overlap * Math.max(12, 38 - index * 5);
+    const sameQuartetPenalty = overlap === 4 ? 320 : 0;
+    return penalty + sameQuartetPenalty + overlap * Math.max(18, 58 - index * 4);
   }, 0);
 }
 
@@ -444,8 +498,8 @@ export function evaluateRoster(players: Player[], roster: string[], courtName: s
 
   const teamA = selected.slice(0, 2);
   const teamB = selected.slice(2, 4);
-  const skillA = teamA.reduce((total, player) => total + normalizeLevel(player.level), 0);
-  const skillB = teamB.reduce((total, player) => total + normalizeLevel(player.level), 0);
+  const skillA = teamA.reduce((total, player) => total + getEffectiveLevel(player), 0);
+  const skillB = teamB.reduce((total, player) => total + getEffectiveLevel(player), 0);
   const fatigueA = teamA.reduce((total, player) => total + player.fatigue, 0);
   const fatigueB = teamB.reduce((total, player) => total + player.fatigue, 0);
   const repeatHits = selected.filter((player) => player.lastCourt === courtName).length;
@@ -548,6 +602,7 @@ function mapSessionPlayerToPlayer(player: RuntimeSessionPlayer): Player {
     paymentType: normalizePaymentType(player.paymentMethod),
     discount: player.discount,
     note: player.note ?? '',
+    playerTags: normalizePlayerTags(player.playerTags),
     status: normalizePlayerStatus(player.runtimeStatus),
     fatigue: 0,
     lastCourt: player.lastCourtNumber ? `Sân ${player.lastCourtNumber}` : null,
@@ -894,7 +949,11 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
   },
   updatePlayer: (playerId, patch) => {
     set((state) => ({
-      players: state.players.map((player) => (player.id === playerId ? { ...player, ...patch } : player))
+      players: state.players.map((player) => (
+        player.id === playerId
+          ? { ...player, ...patch, playerTags: patch.playerTags ? normalizePlayerTags(patch.playerTags) : player.playerTags }
+          : player
+      ))
     }));
   },
   updatePlayerPayment: (playerId, patch) => {

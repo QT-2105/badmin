@@ -21,7 +21,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       discount: payload.discount === undefined ? undefined : Number(payload.discount),
       paymentMethod: payload.paymentMethod,
       paymentStatus: payload.paymentStatus,
-      note: payload.note
+      note: payload.note,
+      playerTags: payload.playerTags
     });
 
     return NextResponse.json({ player });

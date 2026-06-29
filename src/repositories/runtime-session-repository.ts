@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { normalizePlayerTags } from '@/lib/player-tags';
 import type { RuntimeGender, RuntimePlayerStatus, RuntimeSession, RuntimeSessionPlayer } from '@/types/runtime';
 
 function parseDateValue(value: unknown): number | null {
@@ -81,6 +82,7 @@ export async function listSessionPlayers(sessionId: string): Promise<RuntimeSess
     runtimeStatus: normalizeStatus(row.runtime_status),
     lastCourtNumber: row.last_court_number ?? null,
     note: row.note ?? null,
+    playerTags: normalizePlayerTags(row.player_tags),
     avatarUrl: row.avatar_url ?? null,
     avatarS3Key: row.avatar_s3_key ?? null,
     joinedAt: parseDateValue(row.joined_at)

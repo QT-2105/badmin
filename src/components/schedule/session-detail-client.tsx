@@ -140,7 +140,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
       level: String(player.level),
       paymentAmount: String(player.paymentAmount),
       discount: String(player.discount),
-      paymentMethod: player.paymentMethod || 'CASH',
+      paymentMethod: player.paymentMethod || '',
       paymentStatus: player.paymentStatus,
       note: player.note || ''
     });
@@ -393,7 +393,6 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              capture="environment"
               className="sr-only"
               onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
             />
@@ -417,14 +416,13 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             if (isEditing) {
               return (
                 <article key={player.id} className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] p-3 text-sm">
-                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_2fr_repeat(6,minmax(0,1fr))] lg:items-end">
+                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] lg:items-end">
                     <div className="flex items-center gap-2">
                       <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-white/10 transition hover:ring-cyan-300/50" title="Đổi ảnh người chơi">
                         <PlayerAvatar name={editForm.fullName || player.fullName} gender={editForm.gender} avatarUrl={editAvatarPreview ?? player.avatarUrl} size="lg" />
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
-                          capture="environment"
                           className="sr-only"
                           onChange={(event) => setEditAvatarFile(event.target.files?.[0] ?? null)}
                         />
@@ -465,18 +463,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                     </label>
                     <label className="block min-w-0">
                       <span className="text-xs text-slate-400">Thanh toán</span>
-                      <select value={editForm.paymentStatus} onChange={(event) => setEditForm((current) => ({ ...current, paymentStatus: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+                      <select value={getPaymentEditValue(editForm)} onChange={(event) => setEditForm((current) => withPaymentEditValue(current, event.target.value as PaymentEditValue))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
                         <option value="UNPAID">Chưa thu</option>
-                        <option value="PAID">Đã thu</option>
-                        <option value="WAIVED">Free</option>
-                      </select>
-                    </label>
-                    <label className="block min-w-0">
-                      <span className="text-xs text-slate-400">Hình thức</span>
-                      <select value={editForm.paymentMethod} onChange={(event) => setEditForm((current) => ({ ...current, paymentMethod: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
                         <option value="CASH">Tiền mặt</option>
                         <option value="BANK">Chuyển khoản</option>
-                        <option value="">Khác</option>
+                        <option value="WAIVED">Free</option>
                       </select>
                     </label>
                   </div>
@@ -506,7 +497,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') setQuickViewPlayer(toQuickViewPlayer(player));
                 }}
-                className="grid cursor-pointer gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm transition-colors hover:bg-white/[0.07] md:grid-cols-[1.5fr_90px_120px_120px_120px_auto] md:items-center"
+                className="grid cursor-pointer gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm transition-colors hover:bg-white/[0.07] md:grid-cols-[1.5fr_90px_120px_140px_auto] md:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <PlayerAvatar name={player.fullName} gender={player.gender} avatarUrl={player.avatarUrl} size="md" />
@@ -517,8 +508,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 </div>
                 <div className="text-slate-300">{player.totalMatches} trận</div>
                 <div className="font-mono text-slate-200">{formatCurrency(payable)}đ</div>
-                <PaymentBadge status={player.paymentStatus} />
-                <div className="text-slate-400">{getPaymentMethodLabel(player.paymentMethod)}</div>
+                <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
                 <div className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
                   <Button type="button" variant="secondary" disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-10 px-3">
                     <Pencil className="h-4 w-4" />
@@ -595,7 +585,7 @@ const emptyPlayerForm: PlayerFormState = {
   level: '1',
   paymentAmount: '0',
   discount: '0',
-  paymentMethod: 'CASH',
+  paymentMethod: '',
   paymentStatus: 'UNPAID',
   note: ''
 };
@@ -607,10 +597,28 @@ function normalizePlayerForm(form: PlayerFormState): SessionPlayerPayload {
     level: Number(form.level || 1),
     paymentAmount: Number(form.paymentAmount || 0),
     discount: Number(form.discount || 0),
-    paymentMethod: form.paymentMethod || null,
+    paymentMethod: form.paymentStatus === 'PAID' ? form.paymentMethod || 'CASH' : null,
     paymentStatus: form.paymentStatus,
     note: form.note.trim() || null
   };
+}
+
+type PaymentEditValue = 'UNPAID' | 'CASH' | 'BANK' | 'WAIVED';
+
+function getPaymentEditValue(form: PlayerFormState): PaymentEditValue {
+  if (form.paymentStatus === 'WAIVED') return 'WAIVED';
+  if (form.paymentStatus !== 'PAID') return 'UNPAID';
+  return form.paymentMethod === 'BANK' ? 'BANK' : 'CASH';
+}
+
+function withPaymentEditValue(form: PlayerFormState, value: PaymentEditValue): PlayerFormState {
+  if (value === 'UNPAID') {
+    return { ...form, paymentStatus: 'UNPAID', paymentMethod: '' };
+  }
+  if (value === 'WAIVED') {
+    return { ...form, paymentStatus: 'WAIVED', paymentMethod: '' };
+  }
+  return { ...form, paymentStatus: 'PAID', paymentMethod: value };
 }
 
 function toQuickViewPlayer(player: {
@@ -643,9 +651,15 @@ function toQuickViewPlayer(player: {
   };
 }
 
-function PaymentBadge({ status }: { status: string }) {
-  const label = status === 'PAID' ? 'Đã thu' : status === 'WAIVED' ? 'Free' : 'Chưa thu';
-  const tone = status === 'PAID' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : status === 'WAIVED' ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200' : 'border-amber-400/20 bg-amber-500/10 text-amber-200';
+function PaymentBadge({ status, method }: { status: string; method: string | null }) {
+  const label = status === 'PAID' ? getPaymentMethodLabel(method) : status === 'WAIVED' ? 'Free' : 'Chưa thu';
+  const tone = status === 'PAID'
+    ? method === 'BANK'
+      ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200'
+      : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+    : status === 'WAIVED'
+      ? 'border-violet-400/20 bg-violet-500/10 text-violet-200'
+      : 'border-amber-400/20 bg-amber-500/10 text-amber-200';
 
   return <div className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${tone}`}>{label}</div>;
 }

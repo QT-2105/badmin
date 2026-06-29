@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
+import { normalizePlayerTags, type PlayerTag } from '@/lib/player-tags';
 import type { SessionPlayerSummary } from '@/types/domain';
 
 function toNumber(value: unknown): number {
@@ -24,6 +25,7 @@ function mapPlayer(row: {
   runtime_status: string | null;
   last_court_number: number | null;
   note: string | null;
+  player_tags: string[];
   avatar_url: string | null;
   avatar_s3_key: string | null;
   joined_at: Date | null;
@@ -42,6 +44,7 @@ function mapPlayer(row: {
     runtimeStatus: row.runtime_status,
     lastCourtNumber: row.last_court_number,
     note: row.note,
+    playerTags: normalizePlayerTags(row.player_tags),
     avatarUrl: row.avatar_url,
     avatarS3Key: row.avatar_s3_key,
     joinedAt: toIso(row.joined_at)
@@ -87,6 +90,7 @@ export async function createSessionPlayer(input: {
   paymentMethod?: string | null;
   paymentStatus?: string;
   note?: string | null;
+  playerTags?: PlayerTag[];
 }): Promise<SessionPlayerSummary> {
   if (!input.fullName?.trim()) throw new AppError('Vui lòng nhập tên người chơi.');
   if (Number(input.paymentAmount ?? 0) < 0) throw new AppError('Phí người chơi không được âm.');
@@ -103,7 +107,8 @@ export async function createSessionPlayer(input: {
       payment_method: input.paymentMethod?.trim() || null,
       payment_status: input.paymentStatus ?? 'UNPAID',
       runtime_status: 'WAITING',
-      note: input.note?.trim() || null
+      note: input.note?.trim() || null,
+      player_tags: normalizePlayerTags(input.playerTags)
     }
   });
 
@@ -121,6 +126,7 @@ export async function updateSessionPlayer(playerId: string, input: {
   paymentMethod?: string | null;
   paymentStatus?: string;
   note?: string | null;
+  playerTags?: PlayerTag[];
 }): Promise<SessionPlayerSummary> {
   const existing = await prisma.session_players.findUnique({ where: { id: playerId } });
   if (!existing) {
@@ -141,7 +147,8 @@ export async function updateSessionPlayer(playerId: string, input: {
       ...(input.discount !== undefined ? { discount: Number(input.discount) } : {}),
       ...(input.paymentMethod !== undefined ? { payment_method: input.paymentMethod?.trim() || null } : {}),
       ...(input.paymentStatus !== undefined ? { payment_status: input.paymentStatus } : {}),
-      ...(input.note !== undefined ? { note: input.note?.trim() || null } : {})
+      ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
+      ...(input.playerTags !== undefined ? { player_tags: normalizePlayerTags(input.playerTags) } : {})
     }
   });
 
