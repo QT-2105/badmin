@@ -70,7 +70,17 @@ export function DashboardPageClient() {
             <KpiCard icon={TrendingUp} label="Doanh thu" value={`${formatCurrency(data.totalIncome)}đ`} sub={`${data.sessions} ca · ${data.players} lượt người chơi`} tone="text-emerald-300" />
             <KpiCard icon={TrendingDown} label="Chi phí" value={`${formatCurrency(data.totalExpense)}đ`} sub={formatCostSub(data.costBreakdown)} tone="text-rose-300" />
             <KpiCard icon={CircleDollarSign} label="Lợi nhuận" value={`${formatCurrency(data.totalProfit)}đ`} sub={`Chưa thu ${formatCurrency(data.unpaidAmount)}đ`} tone={data.totalProfit >= 0 ? 'text-cyan-300' : 'text-rose-300'} />
-            <KpiCard icon={Package} label="Tồn kho cầu" value={`${data.inventoryPieces} quả`} sub={`${data.inventoryProducts} loại · ${formatCurrency(data.inventoryValue)}đ vốn`} tone="text-amber-300" />
+            <KpiCard
+              icon={Package}
+              label="Tồn kho cầu"
+              value={(
+                <>
+                  {data.inventoryTubes} ống {data.inventoryLooseBalls} quả <span className="text-base font-semibold opacity-80">({data.inventoryPieces} quả)</span>
+                </>
+              )}
+              sub={`${data.inventoryProducts} loại · ${formatCurrency(data.inventoryValue)}đ vốn`}
+              tone="text-amber-300"
+            />
           </section>
 
           <section className="flex min-h-[320px] flex-col rounded-xl border border-white/10 bg-slate-900/70 p-4">
@@ -189,9 +199,9 @@ export function DashboardPageClient() {
   );
 }
 
-function KpiCard({ icon: Icon, label, value, sub, tone }: { icon: typeof CalendarDays; label: string; value: string; sub: string; tone: string }) {
+function KpiCard({ icon: Icon, label, value, sub, tone }: { icon: typeof CalendarDays; label: string; value: React.ReactNode; sub: string; tone: string }) {
   return (
-    <div className="flex h-full min-h-[132px] flex-col rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <div className={`flex h-full min-h-[132px] flex-col rounded-xl border p-4 ${getKpiSurfaceTone(label)}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="truncate text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
         <Icon className={`h-4 w-4 ${tone}`} />
@@ -200,6 +210,14 @@ function KpiCard({ icon: Icon, label, value, sub, tone }: { icon: typeof Calenda
       <div className="mt-auto pt-2 text-xs leading-5 text-slate-400">{sub}</div>
     </div>
   );
+}
+
+function getKpiSurfaceTone(label: string): string {
+  if (label.includes('Doanh thu')) return 'border-emerald-300/20 bg-emerald-400/[0.08]';
+  if (label.includes('Chi phí')) return 'border-rose-300/20 bg-rose-400/[0.08]';
+  if (label.includes('Lợi nhuận')) return 'border-cyan-300/20 bg-cyan-400/[0.08]';
+  if (label.includes('Tồn kho')) return 'border-amber-300/20 bg-amber-400/[0.08]';
+  return 'border-white/10 bg-white/[0.04]';
 }
 
 function DashboardInfoCard({ title, children }: { title: string; children: React.ReactNode }) {

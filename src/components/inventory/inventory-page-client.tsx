@@ -18,7 +18,7 @@ type ProductForm = {
   status: string;
 };
 
-type OutboundType = 'SALE' | 'ADJUSTMENT' | 'OTHER';
+type OutboundType = 'SALE' | 'PLAY_USAGE' | 'ADJUSTMENT' | 'OTHER';
 type ReportPeriod = 'MONTH' | 'YEAR';
 type StockFormTab = 'IMPORT' | 'OUTBOUND';
 
@@ -71,11 +71,28 @@ export function InventoryPageClient() {
 
   const reportTotals = useMemo(() => {
     return movements.filter((movement) => isInReportPeriod(movement.createdAt, reportPeriod, reportMonth, reportYear)).reduce(
-      (result, movement) => ({
-        sales: result.sales + (movement.movementType === 'SALE' ? movement.totalAmount : 0),
-        usage: result.usage + (movement.movementType === 'PLAY_USAGE' ? movement.totalAmount : 0)
-      }),
-      { sales: 0, usage: 0 }
+      (result, movement) => {
+        const quantityBall = Math.abs(movement.quantityBall);
+        const ballsPerTube = Math.max(1, movement.ballsPerTube);
+        if (movement.movementType === 'SALE') {
+          return {
+            ...result,
+            sales: result.sales + movement.totalAmount,
+            saleTubes: result.saleTubes + (quantityBall / ballsPerTube)
+          };
+        }
+        if (movement.movementType === 'PLAY_USAGE') {
+          return {
+            ...result,
+            usage: result.usage + movement.totalAmount,
+            usageTubes: result.usageTubes + Math.floor(quantityBall / ballsPerTube),
+            usageLooseBalls: result.usageLooseBalls + (quantityBall % ballsPerTube),
+            usageBalls: result.usageBalls + quantityBall
+          };
+        }
+        return result;
+      },
+      { sales: 0, usage: 0, saleTubes: 0, usageTubes: 0, usageLooseBalls: 0, usageBalls: 0 }
     );
   }, [movements, reportMonth, reportPeriod, reportYear]);
   const sortedMovements = useMemo(() => [...movements].sort((left, right) => getTime(right.createdAt) - getTime(left.createdAt)), [movements]);
@@ -171,10 +188,10 @@ export function InventoryPageClient() {
         productId: outboundProduct.id,
         movementType: outboundType,
         title: outboundTitle,
-        quantityTube: outboundType === 'ADJUSTMENT' ? undefined : outboundTubes,
-        quantityBall: outboundType === 'OTHER' ? outboundBalls : undefined,
+        quantityTube: outboundType === 'ADJUSTMENT' || outboundType === 'PLAY_USAGE' ? undefined : outboundTubes,
+        quantityBall: outboundType === 'PLAY_USAGE' || outboundType === 'OTHER' ? outboundBalls : undefined,
         actualQuantityBall: outboundType === 'ADJUSTMENT' ? actualQuantityBall : undefined,
-        salePricePerTube: outboundType === 'ADJUSTMENT' ? undefined : salePricePerTube,
+        salePricePerTube: outboundType === 'ADJUSTMENT' || outboundType === 'PLAY_USAGE' ? undefined : salePricePerTube,
         note: outboundNote
       });
       setOutboundTitle('');
@@ -216,12 +233,12 @@ export function InventoryPageClient() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <Metric label="Tổng loại cầu" value={`${products.length}`} />
-        <Metric label="Tồn theo ống" value={`${totals.tubes} ống ${totals.looseBalls} quả`} />
-        <Metric label="Tồn theo quả" value={`${totals.balls} quả`} />
-        <Metric label="Giá trị tồn vốn" value={`${formatCurrency(totals.stockCost)}đ`} />
-        <Metric label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} />
-        <Metric label="Chi cầu hao ca" value={`${formatCurrency(reportTotals.usage)}đ`} />
+        <Metric label="Tổng loại cầu" value={`${products.length}`} tone="cyan" />
+        <Metric label="Tồn theo ống" value={`${totals.tubes} ống ${totals.looseBalls} quả`} tone="amber" />
+        <Metric label="Tồn theo quả" value={`${totals.balls} quả`} tone="amber" />
+        <Metric label="Giá trị tồn vốn" value={`${formatCurrency(totals.stockCost)}đ`} tone="yellow" />
+        <Metric label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} sub={`${formatQuantity(reportTotals.saleTubes)} ống`} tone="emerald" />
+        <Metric label="Chi cầu hao ca" value={`${formatCurrency(reportTotals.usage)}đ`} sub={`${reportTotals.usageTubes} ống ${reportTotals.usageLooseBalls} quả (${reportTotals.usageBalls} quả)`} tone="rose" />
       </section>
 
       {actionError ? <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{actionError}</div> : null}
@@ -322,8 +339,8 @@ export function InventoryPageClient() {
             <ProductSelect label="Loại cầu" value={importProductId} products={products} onChange={setImportProductId} />
             <Field label="Tiêu đề" value={importTitle} onChange={setImportTitle} required />
             <NumberField label="Số lượng ống" value={importTubes} min={1} onChange={setImportTubes} />
-            <NumberField label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1000} onChange={setCostPricePerTube} />
-            <NumberField label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1000} onChange={setUsagePricePerTube} />
+            <NumberField label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1} onChange={setCostPricePerTube} />
+            <NumberField label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1} onChange={setUsagePricePerTube} />
             <Field label="Ghi chú" value={importNote} onChange={setImportNote} />
           </div>
           <div className="mt-3 grid gap-2 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-300 sm:grid-cols-3">
@@ -346,6 +363,7 @@ export function InventoryPageClient() {
               <span className="text-xs text-slate-400">Loại xuất kho</span>
               <select value={outboundType} onChange={(event) => setOutboundType(event.target.value as OutboundType)} className={inputClass}>
                 <option value="SALE">Bán cầu</option>
+                <option value="PLAY_USAGE">Chi cầu hao ca</option>
                 <option value="ADJUSTMENT">Điều chỉnh tồn</option>
                 <option value="OTHER">Ngoại lệ</option>
               </select>
@@ -354,11 +372,13 @@ export function InventoryPageClient() {
             <Field label="Tiêu đề" value={outboundTitle} onChange={setOutboundTitle} required />
             {outboundType === 'ADJUSTMENT' ? (
               <NumberField label="Tồn thực tế theo quả" value={actualQuantityBall} min={0} onChange={setActualQuantityBall} />
+            ) : outboundType === 'PLAY_USAGE' ? (
+              <NumberField label="Số cầu hao" value={outboundBalls} min={1} onChange={setOutboundBalls} />
             ) : (
               <>
                 <NumberField label="Số lượng ống" value={outboundTubes} min={outboundType === 'SALE' ? 1 : 0} onChange={setOutboundTubes} />
                 {outboundType === 'OTHER' ? <NumberField label="Số quả lẻ" value={outboundBalls} min={0} onChange={setOutboundBalls} /> : null}
-                <NumberField label="Đơn giá/ống" value={salePricePerTube} min={0} step={1000} onChange={setSalePricePerTube} />
+                <NumberField label="Đơn giá/ống" value={salePricePerTube} min={0} step={1} onChange={setSalePricePerTube} />
               </>
             )}
             <Field label="Ghi chú" value={outboundNote} onChange={setOutboundNote} />
@@ -440,8 +460,19 @@ function ProductSelect({ label, value, products, onChange }: { label: string; va
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><div className="text-xs text-slate-400">{label}</div><div className="mt-2 text-xl font-semibold text-white">{value}</div></div>;
+function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: 'cyan' | 'amber' | 'yellow' | 'emerald' | 'rose' }) {
+  const styles = {
+    cyan: 'border-cyan-300/20 bg-cyan-400/[0.08] text-cyan-200',
+    amber: 'border-amber-300/20 bg-amber-400/[0.08] text-amber-200',
+    yellow: 'border-yellow-300/20 bg-yellow-400/[0.08] text-yellow-200',
+    emerald: 'border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200',
+    rose: 'border-rose-300/20 bg-rose-400/[0.08] text-rose-200'
+  }[tone];
+  return <div className={`rounded-xl border p-4 ${styles}`}><div className="text-xs text-slate-400">{label}</div><div className="mt-2 text-xl font-semibold">{value}</div>{sub ? <div className="mt-1 text-xs font-medium text-slate-400">{sub}</div> : null}</div>;
+}
+
+function formatQuantity(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 function formatTubes(balls: number, ballsPerTube: number): string {
@@ -462,6 +493,7 @@ function isInReportPeriod(value: string | null, period: ReportPeriod, selectedMo
 function estimateOutboundBalls(type: OutboundType, product: ShuttlecockProductSummary | undefined, tubes: number, balls: number): number {
   if (!product) return 0;
   if (type === 'SALE') return tubes * product.ballsPerTube;
+  if (type === 'PLAY_USAGE') return balls;
   return tubes * product.ballsPerTube + balls;
 }
 
@@ -484,6 +516,6 @@ function MovementBadge({ type }: { type: string }) {
         ? { label: 'Điều chỉnh', className: 'bg-amber-500/10 text-amber-200' }
         : type === 'OTHER'
           ? { label: 'Ngoại lệ', className: 'bg-violet-500/10 text-violet-200' }
-          : { label: 'Hao ca', className: 'bg-rose-500/10 text-rose-200' };
+          : { label: 'Chi cầu hao ca', className: 'bg-rose-500/10 text-rose-200' };
   return <span className={`inline-flex w-fit rounded-lg px-2 py-1 text-xs font-medium ${config.className}`}>{config.label}</span>;
 }

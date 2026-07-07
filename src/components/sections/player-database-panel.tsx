@@ -329,23 +329,23 @@ export function PlayerDatabasePanel({
       {/* STATS FOOTER */}
       {!isCompact ? (
         <div className="mt-3 grid grid-cols-5 gap-2 text-xs shrink-0">
-          <div className="bg-slate-800/50 rounded p-2">
+          <div className="rounded border border-cyan-300/20 bg-cyan-400/[0.08] p-2">
             <div className="text-slate-400">Đang xem</div>
             <div className="font-bold text-cyan-300">{visiblePlayers.length}/{players.length}</div>
           </div>
-          <div className="bg-slate-800/50 rounded p-2">
+          <div className="rounded border border-emerald-300/20 bg-emerald-400/[0.08] p-2">
             <div className="text-slate-400">Doanh thu</div>
             <div className="font-bold text-emerald-300">{formatMoney(totals.revenue)}</div>
           </div>
-          <div className="bg-slate-800/50 rounded p-2">
+          <div className="rounded border border-emerald-300/20 bg-emerald-400/[0.08] p-2">
             <div className="text-slate-400">Tiền mặt</div>
             <div className="font-bold text-emerald-300">{formatMoney(totals.paidTm)}</div>
           </div>
-          <div className="bg-slate-800/50 rounded p-2">
+          <div className="rounded border border-cyan-300/20 bg-cyan-400/[0.08] p-2">
             <div className="text-slate-400">Chuyển khoản</div>
             <div className="font-bold text-cyan-300">{formatMoney(totals.paidCk)}</div>
           </div>
-          <div className="bg-slate-800/50 rounded p-2">
+          <div className="rounded border border-rose-300/20 bg-rose-400/[0.08] p-2">
             <div className="text-slate-400">Chưa TT</div>
             <div className="font-bold text-rose-300">{formatMoney(totals.unpaid)}</div>
           </div>

@@ -78,7 +78,7 @@ export function SettingsPageClient() {
       <header>
         <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Cấu hình vận hành</p>
         <h1 className="text-2xl font-semibold text-white">Cài đặt</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-400">Tinh chỉnh các hành vi tự động của chương trình. Giữ cấu hình đơn giản để không làm nặng luồng vận hành sân.</p>
+        <p className="mt-1 max-w-2xl text-sm text-slate-400">Tinh chỉnh các hành vi tự động của chương trình.</p>
       </header>
 
       <SettingsCard

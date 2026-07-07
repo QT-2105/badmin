@@ -117,12 +117,15 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     (acc, row) => {
       const pieces = row.quantity_ball;
       const value = pieces * toNumber(row.avg_cost_per_ball);
+      const ballsPerTube = row.shuttlecock_products.balls_per_tube;
       return {
         pieces: acc.pieces + pieces,
+        tubes: acc.tubes + Math.floor(pieces / ballsPerTube),
+        looseBalls: acc.looseBalls + (pieces % ballsPerTube),
         value: acc.value + value
       };
     },
-    { pieces: 0, value: 0 }
+    { pieces: 0, tubes: 0, looseBalls: 0, value: 0 }
   );
 
   const totalIncome = periodTransactions.filter((row) => row.transaction_type === 'INCOME').reduce((total, row) => total + toNumber(row.total_amount), 0);
@@ -185,6 +188,8 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     unpaidAmount: toNumber(unpaidRows._sum.payment_amount),
     inventoryProducts,
     inventoryPieces: inventory.pieces,
+    inventoryTubes: inventory.tubes,
+    inventoryLooseBalls: inventory.looseBalls,
     inventoryValue: inventory.value,
     periodLabel: range.label,
     costBreakdown: Array.from(costByCategory.entries())

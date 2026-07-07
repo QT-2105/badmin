@@ -101,8 +101,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     );
   }, [players]);
   const draftCompletionExpense = Number(courtCost || 0) + shuttlecockExpense;
-  const draftCompletionProfit = paymentTotals.paid - draftCompletionExpense;
-  const visibleCompletionProfit = previewProfit ?? session?.totalProfit ?? 0;
+  const draftCompletionProfit = paymentTotals.expected - draftCompletionExpense;
+  const actualCompletionProfit = paymentTotals.paid - draftCompletionExpense;
+  const visibleCompletionProfit = normalizedStatus === 'COMPLETED'
+    ? session?.totalProfit ?? actualCompletionProfit
+    : previewProfit ?? draftCompletionProfit;
   const completionProfitLabel = normalizedStatus === 'COMPLETED' ? 'Lợi nhuận' : 'Lợi nhuận tạm tính';
 
   const unpaidPlayers = useMemo(() => players.filter((player) => player.paymentStatus !== 'PAID' && player.paymentStatus !== 'WAIVED'), [players]);
@@ -204,7 +207,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         shuttlecockPiecesUsed: Number(shuttlecockPiecesUsed),
         shuttlecockProductId: selectedShuttlecock?.id ?? session?.shuttlecockProductId ?? null,
         shuttlecockProductName: selectedShuttlecock?.name ?? session?.shuttlecockProductName ?? null,
-        totalIncome: paymentTotals.paid,
+        totalIncome: paymentTotals.expected,
         totalExpense: draftCompletionExpense,
         totalProfit: draftCompletionProfit
       }
@@ -227,7 +230,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             shuttlecockPiecesUsed: Number(shuttlecockPiecesUsed),
             shuttlecockProductId: selectedShuttlecock?.id ?? session?.shuttlecockProductId ?? null,
             shuttlecockProductName: selectedShuttlecock?.name ?? session?.shuttlecockProductName ?? null,
-            totalIncome: paymentTotals.paid,
+            totalIncome: paymentTotals.expected,
             totalExpense: draftCompletionExpense,
             totalProfit: draftCompletionProfit
           }
@@ -570,11 +573,18 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+    <div className={`rounded-xl border px-3 py-2.5 ${getInfoCardTone(label)}`}>
       <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{label}</div>
       <div className="mt-1 text-lg font-semibold text-white">{value}</div>
     </div>
   );
+}
+
+function getInfoCardTone(label: string): string {
+  if (label.includes('Thời gian')) return 'border-cyan-300/20 bg-cyan-400/[0.07]';
+  if (label.includes('Người chơi')) return 'border-violet-300/20 bg-violet-400/[0.07]';
+  if (label.includes('Thu')) return 'border-emerald-300/20 bg-emerald-400/[0.07]';
+  return 'border-white/10 bg-white/[0.04]';
 }
 
 type PlayerFormState = {

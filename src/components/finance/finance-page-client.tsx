@@ -158,7 +158,7 @@ export function FinancePageClient() {
             </label>
             <label className="block">
               <span className="text-xs text-slate-400">Đơn giá</span>
-              <input type="number" min={0} step={1000} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
             </label>
             <label className="block md:col-span-5">
               <span className="text-xs text-slate-400">Ghi chú</span>
@@ -251,9 +251,16 @@ function getCategoryLabel(value: string): string {
 
 function Metric({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <div className={`rounded-xl border p-4 ${getMetricSurfaceTone(label)}`}>
       <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
       <div className={`mt-2 text-xl font-semibold ${tone}`}>{value}</div>
     </div>
   );
+}
+
+function getMetricSurfaceTone(label: string): string {
+  if (label.includes('Doanh thu')) return 'border-emerald-300/20 bg-emerald-400/[0.08]';
+  if (label.includes('Chi phí')) return 'border-rose-300/20 bg-rose-400/[0.08]';
+  if (label.includes('Lợi nhuận')) return 'border-cyan-300/20 bg-cyan-400/[0.08]';
+  return 'border-white/10 bg-white/[0.04]';
 }

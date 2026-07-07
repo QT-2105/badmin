@@ -406,14 +406,23 @@ function StatPill({ label, value, tone, compact = false }: { label: string; valu
     <div
       className={
         compact
-          ? 'min-w-[78px] rounded-lg border border-white/10 bg-white/5 px-2 py-1'
-          : 'rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5'
+          ? `min-w-[78px] rounded-lg border px-2 py-1 ${getStatPillSurfaceTone(label)}`
+          : `rounded-xl border px-2.5 py-1.5 ${getStatPillSurfaceTone(label)}`
       }
     >
       <p className={`${compact ? 'text-sm' : 'text-base'} font-semibold ${tone}`}>{value}</p>
       <p className="text-[9px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
     </div>
   );
+}
+
+function getStatPillSurfaceTone(label: string): string {
+  const normalizedLabel = label.toLowerCase();
+  if (normalizedLabel.includes('tổng')) return 'border-slate-300/15 bg-slate-300/[0.07]';
+  if (normalizedLabel.includes('chờ')) return 'border-cyan-300/20 bg-cyan-400/[0.08]';
+  if (normalizedLabel.includes('xong')) return 'border-violet-300/20 bg-violet-400/[0.08]';
+  if (normalizedLabel.includes('chơi')) return 'border-emerald-300/20 bg-emerald-400/[0.08]';
+  return 'border-white/10 bg-white/5';
 }
 
 function SuggestionModePicker({

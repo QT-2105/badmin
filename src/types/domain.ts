@@ -68,6 +68,8 @@ export type DashboardSummary = {
   unpaidAmount: number;
   inventoryProducts: number;
   inventoryPieces: number;
+  inventoryTubes: number;
+  inventoryLooseBalls: number;
   inventoryValue: number;
   periodLabel: string;
   costBreakdown: Array<{
