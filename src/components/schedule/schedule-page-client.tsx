@@ -5,13 +5,17 @@ import { useMemo, useState } from 'react';
 import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDates, useScheduleMutations } from '@/hooks/use-play-dates';
+import { hasPermission } from '@/lib/auth/permissions';
 import { isPastDateInput, todayDateInput } from '@/lib/date-format';
 import { normalizeSessionStatus } from '@/lib/session-status';
 
 export function SchedulePageClient() {
   const { data: playDates = [], isLoading, error } = usePlayDates();
+  const { data: currentUser } = useCurrentUser();
   const { createPlayDate, deletePlayDate } = useScheduleMutations();
+  const canManageSchedule = hasPermission(currentUser ?? null, 'schedule.manage');
   const today = useMemo(() => todayDateInput(), []);
   const [playDate, setPlayDate] = useState(today);
   const [title, setTitle] = useState('');
@@ -76,6 +80,7 @@ function togglePlayDateSessions(id: string) {
         <p className="mt-1 max-w-2xl text-sm text-slate-400">Tạo ngày chơi và mở từng ca để vận hành runtime sân.</p>
       </header>
 
+      {canManageSchedule ? (
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto] md:items-end">
           <label className="block">
@@ -96,6 +101,7 @@ function togglePlayDateSessions(id: string) {
           </Button>
         </form>
       </section>
+      ) : null}
 
       {isLoading ? <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Đang tải lịch chơi...</div> : null}
       {error ? <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error.message}</div> : null}
@@ -151,7 +157,7 @@ function togglePlayDateSessions(id: string) {
                 <Link href={`/schedule/${item.id}`}>
                   <Button size="sm" variant="secondary">Mở</Button>
                 </Link>
-                {!isPast ? (
+                {!isPast && canManageSchedule ? (
                   <Button size="sm" variant="danger" disabled={deletePlayDate.isPending} onClick={() => void removePlayDate(item.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

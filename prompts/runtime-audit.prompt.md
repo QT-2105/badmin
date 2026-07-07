@@ -24,6 +24,13 @@ Verify:
 - WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING
 - scheduling disabled when session not ACTIVE, readonly, or insufficient players
 - minimum players = court_count * 6
+- auto suggestion blocks with a clear message and no DB commit when attendance tags/status/gender mode make suggestions impossible
+- auto suggestion uses attendance tags: Đã tới/Ưu tiên/Host eligible, Chưa tới normally ineligible, Chấn thương/Về sớm excluded
+- Host is avoided when enough non-host players exist
+- effective-level balancing treats female players as one level lower internally
+- same-format matchups are preferred when level balance is acceptable
+- mixed-format matchups are fallback options, not the default preference
+- recent pair/roster repetition is penalized for variety
 - courts generated from court_count when snapshot rows are missing
 - no duplicate players across suggestions/courts
 - PLAYING players cannot be replacement candidates

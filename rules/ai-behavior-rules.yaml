@@ -1,4 +1,4 @@
-version: "2026-06-09"
+version: "2026-06-30"
 name: ai-behavior-rules
 scope: ai-agents
 
@@ -28,12 +28,18 @@ required_behavior:
   - "Preserve operator-first scheduling and manual overrides."
   - "Preserve tablet/mobile-first runtime UX."
   - "Use readable level labels in user-facing UI."
+  - "Preserve attendance-tag eligibility for auto-suggestion."
+  - "Preserve effective-level balancing where female players are internally treated as one level lower."
+  - "Prefer same-format matchups when level balance is acceptable."
+  - "Do not commit runtime snapshots when auto-suggestion is blocked or produces no valid suggestion."
   - "Update docs/rules/prompts when current architecture changes."
 
 must_ask_owner_before:
   - "Changing player lifecycle statuses or transitions."
   - "Changing JUST_FINISHED cooldown/fairness semantics."
   - "Changing next-match scoring philosophy."
+  - "Changing player tag eligibility for auto-suggestion."
+  - "Changing effective-level gender balancing."
   - "Changing replacement eligibility."
   - "Changing court lifecycle."
   - "Changing runtime snapshot sync/hydration strategy."
@@ -49,6 +55,7 @@ must_not:
   - "Make suggestions mandatory."
   - "Offer PLAYING players as replacement candidates."
   - "Persist temporary runtime selections continuously."
+  - "Persist empty/invalid auto-suggestion results just because the button was clicked."
   - "Block live runtime UI on database writes."
   - "Replace session_players with users/members."
   - "Introduce event sourcing, CQRS, ERP, or warehouse architecture."
@@ -60,6 +67,9 @@ review_focus:
   - playing_player_replacement_bug
   - just_finished_semantic_breakage
   - excessive_database_calls
+  - auto_suggestion_empty_commit
+  - player_tag_eligibility_drift
+  - effective_level_balance_drift
   - session_completion_finance_drift
   - shuttlecock_inventory_negative_stock
   - schedule_past_date_mutation

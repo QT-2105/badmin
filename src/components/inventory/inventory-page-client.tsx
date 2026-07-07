@@ -5,7 +5,9 @@ import { Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useInventoryMovements, useInventoryMutations, useInventoryProducts } from '@/hooks/use-inventory';
+import { hasPermission } from '@/lib/auth/permissions';
 import { formatCurrency } from '@/lib/date-format';
 import type { ShuttlecockProductSummary } from '@/types/domain';
 
@@ -24,6 +26,7 @@ const emptyProduct: ProductForm = { name: '', brand: '', ballsPerTube: 12, statu
 const today = new Date();
 
 export function InventoryPageClient() {
+  const { data: currentUser } = useCurrentUser();
   const { data: products = [], isLoading, error } = useInventoryProducts();
   const { data: movements = [], isLoading: movementsLoading } = useInventoryMovements();
   const { createProduct, updateProduct, deleteProduct, createMovement } = useInventoryMutations();
@@ -51,6 +54,7 @@ export function InventoryPageClient() {
   const [stockFormTab, setStockFormTab] = useState<StockFormTab | null>(null);
   const [movementPageSize, setMovementPageSize] = useState<PageSize>(10);
   const [movementPage, setMovementPage] = useState(1);
+  const canManageInventory = hasPermission(currentUser ?? null, 'inventory.manage');
 
   const importProduct = products.find((product) => product.id === importProductId);
   const outboundProduct = products.find((product) => product.id === outboundProductId);
@@ -227,6 +231,7 @@ export function InventoryPageClient() {
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-white">Danh mục cầu</h2>
+          {canManageInventory ? (
           <div className="flex gap-2">
             {editingProductId ? (
               <Button variant="ghost" size="sm" onClick={() => { setEditingProductId(null); setProductForm(emptyProduct); setIsProductFormOpen(false); }}>
@@ -239,8 +244,9 @@ export function InventoryPageClient() {
               {isProductFormOpen ? 'Thu gọn' : 'Mở rộng'}
             </Button>
           </div>
+          ) : null}
         </div>
-        {isProductFormOpen ? (
+        {isProductFormOpen && canManageInventory ? (
           <form onSubmit={submitProduct} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 lg:grid-cols-[1.2fr_1fr_120px_130px_auto] lg:items-end">
             <Field label="Tên loại cầu" value={productForm.name} onChange={(value) => setProductForm((current) => ({ ...current, name: value }))} required />
             <Field label="Hãng" value={productForm.brand} onChange={(value) => setProductForm((current) => ({ ...current, brand: value }))} />
@@ -287,10 +293,12 @@ export function InventoryPageClient() {
                   <td className="px-3 py-3 text-right">{formatCurrency(product.stockCostValue)}đ</td>
                   <td className="px-3 py-3 text-right">{formatCurrency(product.totalSaleAmount)}đ</td>
                   <td className="px-3 py-3">
+                    {canManageInventory ? (
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="secondary" className="h-10 px-3" aria-label={`Sửa ${product.name}`} onClick={() => editProduct(product)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="sm" variant="danger" className="h-10 px-3" aria-label={`Xóa ${product.name}`} disabled={deleteProduct.isPending} onClick={() => void removeProduct(product)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -300,6 +308,7 @@ export function InventoryPageClient() {
         </div>
       </section>
 
+      {canManageInventory ? (
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={() => setStockFormTab((tab) => tab === 'IMPORT' ? null : 'IMPORT')} className={stockFormTab === 'IMPORT' ? activeTabClass : inactiveTabClass}>Phiếu nhập kho</button>
@@ -366,6 +375,7 @@ export function InventoryPageClient() {
         </form>
         ) : null}
       </section>
+      ) : null}
 
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

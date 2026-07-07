@@ -1,23 +1,30 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
+import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
 import { createSessionTransaction, listSessionTransactions } from '@/repositories/finance-repository';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const range = getReportRange(searchParams);
-  const transactions = await listSessionTransactions({
-    sessionId: searchParams.get('sessionId') ?? undefined,
-    from: range.from,
-    to: range.to
-  });
-  return NextResponse.json({ transactions });
+  try {
+    await requireApiPermission(request, 'finance.view');
+    const { searchParams } = new URL(request.url);
+    const range = getReportRange(searchParams);
+    const transactions = await listSessionTransactions({
+      sessionId: searchParams.get('sessionId') ?? undefined,
+      from: range.from,
+      to: range.to
+    });
+    return NextResponse.json({ transactions });
+  } catch (error) {
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tải danh sách thu chi');
+  }
 }
 
 export async function POST(request: Request) {
   try {
+    await requireApiPermission(request, 'finance.manage');
     const payload = await request.json();
     if (!payload?.transactionType || !payload?.category) {
       return NextResponse.json({ error: 'Vui lòng chọn loại thu chi và phân loại.' }, { status: 400 });
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ transaction }, { status: 201 });
   } catch (error) {
-    return apiError(error, 'Không thể tạo phiếu thu chi');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tạo phiếu thu chi');
   }
 }
 

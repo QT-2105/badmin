@@ -19,6 +19,8 @@ Analyze the current implementation, focusing on:
 - src/components/cards/court-card.tsx
 - src/components/cards/next-match-card.tsx
 - src/lib/badminton-store.ts
+- src/lib/player-tags.ts
+- src/lib/player-labels.ts
 - src/lib/session-status.ts
 - src/lib/app-settings.ts
 - src/hooks/*
@@ -33,6 +35,10 @@ Report the real current architecture:
 - current-state runtime snapshot model
 - court generation from play_sessions.court_count and court_number
 - next-match suggestion/replacement flow
+- attendance tag eligibility for auto-suggestion
+- effective-level balancing for mixed-gender matches
+- anti-repeat pair/roster variety
+- blocked auto-suggestion behavior without meaningless DB commits
 - session completion finance/inventory flow
 - shuttlecock product/inventory/movement model
 - browser-local settings

@@ -1,6 +1,6 @@
 # System Philosophy
 
-Version: 2026-06-09
+Version: 2026-06-30
 
 ## Operating Principle
 
@@ -15,6 +15,8 @@ The best implementation is the smallest implementation that lets an operator run
 - safe session start only when enough players exist
 - compact runtime header and large court management area
 - clear next-match suggestions
+- attendance-aware auto-suggestions
+- fair level-balanced pairings with partner/opponent variety
 - manual player replacement before applying matches
 - ability to cancel a ready court and return players to the queue
 - explicit save/commit actions instead of constant database writes
@@ -39,6 +41,15 @@ AI or automatic matching may suggest:
 - who should play next
 - how teams should be paired
 - which players are eligible for replacement
+
+Automatic matching must respect current operator intent:
+
+- only eligible/arrived players should be suggested
+- player tags should be visible and meaningful to the operator
+- level balance must stay more important than weak formation preference
+- same-format teams are preferred when level balance is acceptable
+- mixed-format teams are practical fallbacks, not mandatory patterns
+- no DB write should happen when auto-suggestion is blocked by obvious eligibility rules
 
 But the operator must always be able to:
 

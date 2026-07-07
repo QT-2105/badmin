@@ -1,6 +1,6 @@
 # Protected Runtime Semantics
 
-Version: 2026-06-09
+Version: 2026-06-30
 
 ## Player Statuses
 
@@ -73,6 +73,37 @@ Runtime scheduling controls are disabled unless:
 - player count is at least `court_count * 6`
 
 The player list may remain visible even when scheduling controls are disabled.
+
+Auto-suggestion eligibility is stricter than the global player-count rule:
+
+- player status must be `WAITING` or `JUST_FINISHED`
+- `PLAYING`, `RESTING`, and `FINISHED` players are not eligible
+- `Chưa tới` players are not eligible unless marked `Ưu tiên` or `Host`
+- `Đã tới`, `Ưu tiên`, and `Host` are attendance-positive tags
+- `Chấn thương` and `Về sớm` exclude a player from auto-suggestion
+- `Host` should be avoided when at least four non-host eligible players exist
+
+Mode-specific auto-suggestion requires:
+
+- `Đôi Nam`: at least four eligible male players
+- `Đôi Nữ`: at least four eligible female players
+- `Nam nữ`: at least two eligible male and two eligible female players
+
+If these requirements fail, the UI must show a direct operator-facing reason and must not commit an empty/meaningless runtime snapshot.
+
+## Auto-Suggestion Scoring
+
+Current scoring must preserve these priorities:
+
+- fairness by match count remains important
+- team level balance is stronger than weak gender-format preference
+- female players use one-lower effective level when balancing against male players
+- same-format matchups are preferred when level balance is acceptable
+- recent pair and roster repetition are penalized to keep future matches fresh
+- `Host` is penalized unless needed to fill a match
+- `Ưu tiên` is boosted
+
+Future changes to scoring weights must preserve operator override and must not make suggestions mandatory.
 
 ## Session Lock Rule
 

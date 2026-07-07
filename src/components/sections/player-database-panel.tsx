@@ -3,6 +3,7 @@
 import { type ReactNode, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Save, X } from 'lucide-react';
+import { PlayerFeeInput } from '@/components/player/player-fee-input';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { useSessionPlayerMutations } from '@/hooks/use-session-players';
@@ -222,16 +223,15 @@ export function PlayerDatabasePanel({
                       </td>
                       <td className="px-3 py-2 text-slate-300">{player.matchesPlayed}</td>
                       <td className="px-3 py-2 text-right text-slate-300 font-mono" onClick={(event) => event.stopPropagation()}>
-                        <input
-                          type="number"
+                        <PlayerFeeInput
                           value={Math.round(player.money)}
                           disabled={readonly}
-                          onChange={(e) => {
+                          className="w-28"
+                          onChange={(value) => {
                             if (readonly) return;
-                            updatePlayer(player.id, { money: Number(e.target.value) });
+                            updatePlayer(player.id, { money: Number(value || 0) });
                             markDirty(player.id);
                           }}
-                          className="w-24 bg-transparent text-slate-200 outline-none text-sm text-right disabled:text-slate-500"
                         />
                       </td>
                       <td className="px-3 py-2 text-amber-300" onClick={(event) => event.stopPropagation()}>

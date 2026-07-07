@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
+import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
 import { createSessionPlayer, listSessionPlayers } from '@/repositories/session-players-repository';
 
 export const dynamic = 'force-dynamic';
@@ -9,18 +10,20 @@ type RouteContext = {
   params: Promise<{ sessionId: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
+    await requireApiPermission(request, 'session.view');
     const { sessionId } = await context.params;
     const players = await listSessionPlayers(sessionId);
     return NextResponse.json({ players });
   } catch (error) {
-    return apiError(error, 'Không thể tải danh sách người chơi');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tải danh sách người chơi');
   }
 }
 
 export async function POST(request: Request, context: RouteContext) {
   try {
+    await requireApiPermission(request, 'session.operate');
     const { sessionId } = await context.params;
     const payload = await request.json();
     if (!payload.fullName || typeof payload.fullName !== 'string') {
@@ -42,6 +45,6 @@ export async function POST(request: Request, context: RouteContext) {
 
     return NextResponse.json({ player });
   } catch (error) {
-    return apiError(error, 'Không thể tạo người chơi');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tạo người chơi');
   }
 }

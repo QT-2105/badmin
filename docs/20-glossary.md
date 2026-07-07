@@ -1,6 +1,6 @@
 # Glossary
 
-Version: 2026-06-09
+Version: 2026-06-30
 
 ## Dashboard
 
@@ -41,6 +41,22 @@ Runtime status for players selected/prepared in upcoming or ready matches.
 ## JUST_FINISHED
 
 Cooldown state after a match. Protected fairness mechanic.
+
+## Player Tags
+
+Attendance and operational tags on a session-scoped player. Current tags are `Đã tới`, `Chưa tới`, `Host`, `Chấn thương`, `Về sớm`, and `Ưu tiên`.
+
+## Effective Level
+
+Auto-suggestion balancing value used internally. Male players use displayed level. Female players are treated as one level lower for balancing. Display labels do not change.
+
+## Same-Format Matchup
+
+A match formation where both teams share the same gender structure: `nam-nam vs nam-nam`, `nữ-nữ vs nữ-nữ`, or `nam-nữ vs nam-nữ`.
+
+## Mixed-Format Fallback
+
+A less preferred but allowed formation such as `nam-nữ vs nam-nam`, used when it improves level balance or eligible players are limited.
 
 ## Current-State Runtime
 

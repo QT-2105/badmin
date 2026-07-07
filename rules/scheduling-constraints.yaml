@@ -1,4 +1,4 @@
-version: "2026-06-09"
+version: "2026-06-30"
 name: scheduling-constraints
 scope: scheduling-runtime
 
@@ -37,15 +37,35 @@ constraints:
 
   - id: gender_format_preference
     severity: medium
-    rule: "Prefer nam-nam vs nam-nam, nữ-nữ vs nữ-nữ, or nam-nữ vs nam-nữ. Avoid nữ-nữ vs nam-nam unless owner changes philosophy."
+    rule: "Prefer same-format matchups: nam-nam vs nam-nam, nữ-nữ vs nữ-nữ, or nam-nữ vs nam-nữ when level balance is acceptable."
 
   - id: level_balance_priority
     severity: high
-    rule: "Level balance between teams must outweigh weaker gender formatting preferences."
+    rule: "Level balance between teams must outweigh weaker gender formatting preferences. Auto scoring must not create very uneven matches just to satisfy formation preference."
+
+  - id: effective_gender_level
+    severity: high
+    rule: "When auto-balancing level, female players are treated as one effective level lower than their displayed level; user-facing labels stay unchanged."
+
+  - id: mixed_format_fallback
+    severity: medium
+    rule: "Mixed-format matches such as nam-nữ vs nam-nam may be suggested only when they materially improve level balance or eligible players are limited. Nam-nam vs nữ-nữ should be heavily discouraged."
+
+  - id: attendance_tags_for_auto_suggestion
+    severity: high
+    rule: "Auto suggestions require attendance-positive tags: Đã tới, Ưu tiên, or Host. Chưa tới players are not eligible unless also Ưu tiên or Host. Chấn thương and Về sớm are excluded."
+
+  - id: avoid_meaningless_auto_commit
+    severity: high
+    rule: "If auto suggestion cannot produce a valid suggestion because of tags, status, or gender-mode counts, show an operator-facing reason and do not commit an empty runtime snapshot."
 
   - id: fewer_matches_priority
     severity: medium
     rule: "Players with fewer matches should be prioritized by suggestion scoring."
+
+  - id: anti_repeat_variety
+    severity: medium
+    rule: "Recent pair and roster repetition must be penalized so future suggestions rotate partners and opponents while preserving level balance."
 
   - id: completed_runtime_readonly
     severity: critical

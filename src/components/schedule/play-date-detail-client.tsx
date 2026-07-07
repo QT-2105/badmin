@@ -6,13 +6,16 @@ import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDate, useScheduleMutations } from '@/hooks/use-play-dates';
+import { hasPermission } from '@/lib/auth/permissions';
 import { isPastDateInput, todayDateInput } from '@/lib/date-format';
 import { getSessionStatusLabel, normalizeSessionStatus } from '@/lib/session-status';
 import type { PlaySessionSummary } from '@/types/domain';
 
 export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
   const { data: playDate, isLoading, error } = usePlayDate(playDateId);
+  const { data: currentUser } = useCurrentUser();
   const { createPlaySession, updatePlaySession, deletePlaySession } = useScheduleMutations(playDateId);
   const { settings } = useAppSettings();
   const [name, setName] = useState('Ca tối');
@@ -29,6 +32,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
     return [...(playDate?.sessions ?? [])].sort((left, right) => left.startTime.localeCompare(right.startTime));
   }, [playDate?.sessions]);
   const maxCourtCount = settings.maxCourtCountPerSession;
+  const canManageSessions = hasPermission(currentUser ?? null, 'schedule.manage');
 
   useEffect(() => {
     setCourtCount((current) => Math.min(current, maxCourtCount));
@@ -125,7 +129,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
       {error ? <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error.message}</div> : null}
       {actionError ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">{actionError}</div> : null}
 
-      {!isPastPlayDate ? (
+      {!isPastPlayDate && canManageSessions ? (
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-[1fr_130px_130px_100px] md:items-end">
           <label className="block">
@@ -159,7 +163,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
 
       <section className="space-y-3">
         {sortedSessions.map((session) => {
-          const canModify = !isPastPlayDate && normalizeSessionStatus(session.status) === 'PENDING';
+          const canModify = canManageSessions && !isPastPlayDate && normalizeSessionStatus(session.status) === 'PENDING';
           const isEditing = editingSessionId === session.id;
 
           if (isEditing) {

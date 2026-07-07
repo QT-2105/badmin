@@ -1,6 +1,6 @@
 # Badmin System Constitution
 
-Version: 2026-06-09
+Version: 2026-06-30
 Status: Current architecture constitution
 Scope: Entire repository
 
@@ -67,6 +67,8 @@ Zustand owns immediate live runtime behavior:
 - optimistic player state
 - court state
 - next-match suggestions
+- attendance tags and suggestion eligibility
+- effective-level balancing for mixed-gender scheduling
 - player replacement
 - ready court cancellation
 - match start/end
@@ -82,6 +84,23 @@ The database owns durable current state:
 - shuttlecock inventory and movements
 
 The runtime UI must not wait for continuous database polling. Persist only after important operator actions or explicit data mutations.
+
+## Current Auto-Suggestion Constitution
+
+Auto-suggestion is advisory and must never auto-apply.
+
+Current source-level philosophy:
+
+- player attendance tags determine suggestion eligibility
+- `Chưa tới` is the default and is not auto-eligible
+- `Đã tới` and `Ưu tiên` make players available for auto-suggestion
+- `Host` is avoided when enough non-host players exist
+- `Chấn thương` and `Về sớm` exclude players
+- female players use one-lower effective level for internal balancing
+- same-format matchups are preferred when level balance is acceptable
+- mixed-format matchups are allowed only as practical fallbacks
+- recent pair and roster repetition must be penalized for variety
+- blocked auto-suggestion must explain why and must not commit an empty runtime snapshot
 
 ## Protected Areas
 

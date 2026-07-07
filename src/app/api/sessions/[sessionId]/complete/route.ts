@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
+import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
 import { completePlaySession } from '@/repositories/session-completion-repository';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,7 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
+    await requireApiPermission(request, 'session.complete');
     const { sessionId } = await context.params;
     const payload = await request.json();
     const session = await completePlaySession({
@@ -24,6 +26,6 @@ export async function POST(request: Request, context: RouteContext) {
 
     return NextResponse.json({ session });
   } catch (error) {
-    return apiError(error, 'Không thể hoàn tất ca');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể hoàn tất ca');
   }
 }

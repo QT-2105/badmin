@@ -115,6 +115,31 @@ model app_settings {
   updated_at  DateTime? @default(now()) @db.Timestamp(6)
 }
 
+model app_users {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  password_hash String          @db.VarChar(255)
+  display_name  String          @db.VarChar(255)
+  role          String          @default("OPERATOR") @db.VarChar(30)
+  status        String          @default("ACTIVE") @db.VarChar(20)
+  last_login_at DateTime?       @db.Timestamp(6)
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?       @default(now()) @db.Timestamp(6)
+  auth_sessions auth_sessions[]
+}
+
+model auth_sessions {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique @db.VarChar(128)
+  expires_at DateTime  @db.Timestamp(6)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  app_users  app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_auth_sessions_user")
+  @@index([expires_at], map: "idx_auth_sessions_expires")
+}
+
 model session_player_images {
   id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   session_player_id String          @db.Uuid
@@ -130,6 +155,12 @@ model session_player_images {
 
   @@index([session_player_id], map: "idx_session_player_images_player")
   @@index([status], map: "idx_session_player_images_status")
+}
+
+model app_role_permissions {
+  role        String    @id @db.VarChar(30)
+  permissions Json      @default("[]")
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model match_histories {

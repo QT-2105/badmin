@@ -5,7 +5,9 @@ import { Loader2, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useTransactions, useFinanceMutations } from '@/hooks/use-finance';
+import { hasPermission } from '@/lib/auth/permissions';
 import { formatCurrency } from '@/lib/date-format';
 
 type ReportPeriod = 'MONTH' | 'YEAR';
@@ -19,7 +21,9 @@ const manualCategories = [
 ] as const;
 
 export function FinancePageClient() {
+  const { data: currentUser } = useCurrentUser();
   const { createTransaction } = useFinanceMutations();
+  const canWriteFinance = hasPermission(currentUser ?? null, 'finance.manage');
   const [transactionType, setTransactionType] = useState('INCOME');
   const [category, setCategory] = useState('SHUTTLECOCK');
   const [title, setTitle] = useState('');
@@ -89,6 +93,7 @@ export function FinancePageClient() {
         <p className="mt-1 max-w-2xl text-sm text-slate-400">Ghi nhận thu chi vận hành nhập tay. Giao dịch tự sinh từ hoàn tất ca vẫn được đối soát theo ca chơi.</p>
       </header>
 
+      {canWriteFinance ? (
       <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -108,6 +113,7 @@ export function FinancePageClient() {
           </div>
         </div>
       </section>
+      ) : null}
 
       <section className="grid gap-3 md:grid-cols-3">
         <Metric label="Doanh thu" value={`${formatCurrency(totals.income)}đ`} tone="text-emerald-300" />

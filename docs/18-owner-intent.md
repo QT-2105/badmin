@@ -1,6 +1,6 @@
 # Owner Intent
 
-Version: 2026-06-09
+Version: 2026-06-30
 
 ## Core Intent
 
@@ -43,6 +43,12 @@ The system should help manage:
 - manual thu chi does not require choosing a session
 - finance and inventory reports default to current month and can switch to year
 - settings remain simple and browser-local unless owner requests shared configuration
+- player attendance tags guide auto-suggestions
+- auto-suggestion should explain why it cannot produce a match instead of silently writing empty runtime state
+- auto-suggestion should rotate partners/opponents for variety while keeping level balance fair
+- female players are treated as one effective level lower than displayed level when balancing mixed-gender matches
+- same-format pairings are preferred when level balance is acceptable
+- mixed-format pairings are fallback options when they improve level balance or eligible players are limited
 
 ## Development Intent
 

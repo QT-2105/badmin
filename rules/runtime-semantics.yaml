@@ -1,4 +1,4 @@
-version: "2026-06-09"
+version: "2026-06-30"
 name: runtime-semantics
 scope: scheduling-runtime
 
@@ -74,6 +74,41 @@ runtime_eligibility:
     - "session is not ACTIVE"
     - "session is COMPLETED or CANCELLED"
     - "players.length < court_count * 6"
+  auto_suggestion_requires:
+    statuses:
+      - WAITING
+      - JUST_FINISHED
+    attendance_positive_tags:
+      - ARRIVED
+      - PRIORITY
+      - HOST
+    excluded_tags:
+      - INJURED
+      - LEFT_EARLY
+    default_ineligible_tag: NOT_ARRIVED
+    host_rule: "Avoid HOST when at least four non-host eligible players exist."
+    blocked_behavior: "Show operator-facing reason and do not commit an empty runtime snapshot."
+
+auto_suggestion_scoring:
+  effective_level:
+    male: "displayed level"
+    female: "displayed level - 1 for internal balancing only"
+    ui_labels: "unchanged"
+  priorities:
+    - fewer_matches
+    - team_level_balance
+    - same_format_matchup_when_balanced
+    - pair_and_roster_variety
+    - anti_repeat
+  same_format_matchups:
+    - "nam-nam vs nam-nam"
+    - "nu-nu vs nu-nu"
+    - "nam-nu vs nam-nu"
+  fallback_matchups:
+    - "nam-nu vs nam-nam"
+    - "nam-nu vs nu-nu"
+  discouraged_matchups:
+    - "nam-nam vs nu-nu"
 
 persistence:
   live_owner: "zustand"

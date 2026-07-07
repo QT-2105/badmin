@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
+import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
 import { deletePlaySession, getPlaySession, updatePlaySession } from '@/repositories/play-sessions-repository';
 
 export const dynamic = 'force-dynamic';
@@ -9,18 +10,24 @@ type RouteContext = {
   params: Promise<{ sessionId: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
-  const { sessionId } = await context.params;
-  const session = await getPlaySession(sessionId);
-  if (!session) {
-    return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-  }
+export async function GET(request: Request, context: RouteContext) {
+  try {
+    await requireApiPermission(request, 'session.view');
+    const { sessionId } = await context.params;
+    const session = await getPlaySession(sessionId);
+    if (!session) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
 
-  return NextResponse.json({ session });
+    return NextResponse.json({ session });
+  } catch (error) {
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tải ca chơi');
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    await requireApiPermission(request, 'session.operate');
     const { sessionId } = await context.params;
     const payload = await request.json();
     const session = await updatePlaySession(sessionId, {
@@ -41,16 +48,17 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ session });
   } catch (error) {
-    return apiError(error, 'Không thể cập nhật ca chơi');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể cập nhật ca chơi');
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    await requireApiPermission(request, 'schedule.manage');
     const { sessionId } = await context.params;
     await deletePlaySession(sessionId);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return apiError(error, 'Không thể xóa ca chơi');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể xóa ca chơi');
   }
 }

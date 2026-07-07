@@ -14,11 +14,15 @@ Prioritize findings:
 4. PLAYING players offered as replacement candidates
 5. Loss of operator override
 6. Excessive runtime DB calls or polling
-7. Session-centric architecture drift
-8. Court_number/current-state persistence drift
-9. Session completion finance/inventory drift
-10. Mobile/tablet UX regression
-11. Enterprise over-engineering
+7. Auto-suggestion committing empty/invalid snapshots
+8. Player tag eligibility drift
+9. Effective-level gender balancing drift
+10. Same-format vs fallback matchup scoring drift
+11. Session-centric architecture drift
+12. Court_number/current-state persistence drift
+13. Session completion finance/inventory drift
+14. Mobile/tablet UX regression
+15. Enterprise over-engineering
 
 For each finding include:
 - file and line

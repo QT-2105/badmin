@@ -1,6 +1,6 @@
 # Scheduling Engine Constitution
 
-Version: 2026-06-09
+Version: 2026-06-30
 
 ## Protected Lifecycle
 
@@ -40,16 +40,45 @@ Do not reintroduce a required court catalog unless the owner explicitly asks for
 The suggestion engine prioritizes:
 
 - players with fewer matches
-- team level balance
+- team level balance as the strongest quality constraint
 - same-format matchups:
   - nam-nam vs nam-nam
   - nữ-nữ vs nữ-nữ
   - nam-nữ vs nam-nữ
-- new combinations through a small novelty nudge
+- new combinations through recent pair/roster penalties and a small novelty nudge
 - anti-repeat via `lastCourt`
 - fatigue and `JUST_FINISHED` penalties
 
 The engine should not pair very uneven level teams just to satisfy gender preference.
+
+Current level comparison uses an effective-level rule:
+
+- male players keep their displayed level
+- female players are treated as one level lower for balancing
+- example: nữ `TBY` balances with nam `Y+`
+- example: nữ `TB-` balances with nam `TBY`
+- example: nữ `TB` balances with nam `TB-`
+
+This rule only affects auto-suggestion scoring. User-facing labels remain unchanged.
+
+Current gender-format philosophy:
+
+- same-format matches are preferred when level balance is acceptable
+- `nam-nữ vs nam-nữ` is preferred strongly
+- `nam-nam vs nam-nam` and `nữ-nữ vs nữ-nữ` are preferred strongly
+- mixed-format matches such as `nam-nữ vs nam-nam` may be suggested only when they materially improve level balance or when eligible players are limited
+- `nam-nam vs nữ-nữ` should be heavily discouraged and normally handled manually by host/operator if desired
+
+Current eligibility tags:
+
+- `Chưa tới`: default attendance state; not eligible for auto-suggestion
+- `Đã tới`: eligible for auto-suggestion
+- `Ưu tiên`: eligible and boosted
+- `Host`: avoided when enough non-host players exist; may fill a match when needed
+- `Chấn thương`: excluded
+- `Về sớm`: excluded
+
+If auto-suggestion cannot produce a useful match because attendance tags, status, or gender-mode counts are insufficient, the UI must explain the reason and avoid a meaningless DB snapshot commit.
 
 ## Replacement Flow
 

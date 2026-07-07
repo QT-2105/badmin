@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { AlertCircle, Check, ChevronDown, ImageUp, Loader2, Pencil, Play, Plus, Save, Square, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { PlayerFeeInput } from '@/components/player/player-fee-input';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Button } from '@/components/ui/button';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { useShuttlecockProductOptions } from '@/hooks/use-inventory';
 import { usePlaySession, useScheduleMutations } from '@/hooks/use-play-dates';
 import { useSessionPlayerMutations, useSessionPlayers } from '@/hooks/use-session-players';
+import { hasPermission } from '@/lib/auth/permissions';
 import { formatCurrency } from '@/lib/date-format';
 import { getLevelLabel, LEVEL_OPTIONS } from '@/lib/player-labels';
 import { getSessionStatusLabel, normalizeSessionStatus } from '@/lib/session-status';
@@ -18,6 +21,7 @@ import type { SessionPlayerPayload } from '@/services/session-players-service';
 
 export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const { data: session, isLoading, error } = usePlaySession(sessionId);
+  const { data: currentUser } = useCurrentUser();
   const { data: players = [], isLoading: playersLoading, error: playersError } = useSessionPlayers(sessionId);
   const { data: shuttlecockProducts = [] } = useShuttlecockProductOptions();
   const { settings } = useAppSettings();
@@ -43,6 +47,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const runtimeLocked = normalizedStatus === 'COMPLETED' || normalizedStatus === 'CANCELLED';
   const requiredPlayers = (session?.courtCount ?? 1) * 6;
   const canStartSession = players.length >= requiredPlayers;
+  const canOperateSession = hasPermission(currentUser ?? null, 'session.operate');
+  const canCompleteSession = hasPermission(currentUser ?? null, 'session.complete');
   const selectedShuttlecock = shuttlecockProducts.find((product) => product.id === shuttlecockProductId);
   const selectedShuttlecockLabel = selectedShuttlecock
     ? selectedShuttlecock.brand
@@ -253,13 +259,13 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           <p className="mt-1 text-sm text-slate-400">{session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân · ${getSessionStatusLabel(session.status)}` : 'Đang tải'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {normalizedStatus === 'PENDING' ? (
+          {normalizedStatus === 'PENDING' && canOperateSession ? (
             <Button onClick={() => setStatus('ACTIVE')} disabled={updatePlaySession.isPending || !canStartSession}>
               {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Bắt đầu ca
             </Button>
           ) : null}
-          {normalizedStatus === 'ACTIVE' ? (
+          {normalizedStatus === 'ACTIVE' && canCompleteSession ? (
             <Button variant="secondary" onClick={requestCompleteSession} disabled={completePlaySession.isPending}>
               {completePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
               Hoàn tất ca
@@ -312,11 +318,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         <div className="mt-3 grid gap-3 md:grid-cols-[150px_1fr_130px_auto] md:items-end">
           <label className="block">
             <span className="text-xs text-slate-400">Chi phí sân</span>
-            <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
+            <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
           </label>
           <label className="block">
             <span className="text-xs text-slate-400">Loại cầu hao</span>
-            <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500">
+            <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500">
               <option value="">Chọn cầu</option>
               {shuttlecockProducts.map((product) => (
                 <option key={product.id} value={product.id}>{product.brand ? `${product.name} · ${product.brand}` : product.name}</option>
@@ -325,9 +331,9 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </label>
           <label className="block">
             <span className="text-xs text-slate-400">Cầu hao</span>
-            <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
+            <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
           </label>
-          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || updatePlaySession.isPending} className="h-11">
+          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11">
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
@@ -350,7 +356,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </div>
 
-        <form onSubmit={submitPlayer} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[minmax(220px,1.7fr)_86px_92px_110px_72px_auto] md:items-end">
+        {canOperateSession ? (
+        <form onSubmit={submitPlayer} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] md:items-end">
           <label className="block min-w-0">
             <span className="text-xs text-slate-400">Tên người chơi</span>
             <input
@@ -378,17 +385,18 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </label>
           <label className="block">
             <span className="text-xs text-slate-400">Phí</span>
-            <input type="number" min={0} step={1000} value={form.paymentAmount} onChange={(event) => setForm((current) => ({ ...current, paymentAmount: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+            <PlayerFeeInput
+              value={form.paymentAmount}
+              onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
+            />
           </label>
-          <label className="block min-w-0">
+          <label className="block w-12">
             <span className="text-xs text-slate-400">Ảnh</span>
             <span
-              className="mt-1 flex h-10 w-full cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-slate-950 transition hover:border-cyan-300/50 hover:bg-cyan-300/10"
+              className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-slate-950 text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-300/10"
               title="Chọn hoặc chụp ảnh người chơi"
             >
-              <span className={`grid h-8 w-8 place-items-center rounded-full border ${formAvatarFile ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-white/10 bg-white/[0.04] text-cyan-200'}`}>
-                <ImageUp className="h-4 w-4" />
-              </span>
+              <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-cyan-300' : ''}`} />
             </span>
             <input
               type="file"
@@ -404,6 +412,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             </Button>
           </div>
         </form>
+        ) : null}
 
         {playersLoading ? <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-400">Đang tải người chơi...</div> : null}
         {playersError ? <div className="mt-4 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{playersError.message}</div> : null}
@@ -452,13 +461,9 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                     </label>
                     <label className="block min-w-0">
                       <span className="text-xs text-slate-400">Phí</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1000}
+                      <PlayerFeeInput
                         value={editForm.paymentAmount}
-                        onChange={(event) => setEditForm((current) => ({ ...current, paymentAmount: event.target.value }))}
-                        className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+                        onChange={(value) => setEditForm((current) => ({ ...current, paymentAmount: value }))}
                       />
                     </label>
                     <label className="block min-w-0">
@@ -510,12 +515,16 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 <div className="font-mono text-slate-200">{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
                 <div className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
+                  {canOperateSession ? (
                   <Button type="button" variant="secondary" disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-10 px-3">
                     <Pencil className="h-4 w-4" />
                   </Button>
+                  ) : null}
+                  {canOperateSession ? (
                   <Button type="button" variant="danger" disabled={runtimeLocked || deletePlayer.isPending} onClick={() => deletePlayer.mutate(player.id)} className="h-10 px-3">
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  ) : null}
                 </div>
               </article>
             );
