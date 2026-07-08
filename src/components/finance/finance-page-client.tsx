@@ -9,14 +9,16 @@ import { useCurrentUser } from '@/hooks/use-auth';
 import { useTransactions, useFinanceMutations } from '@/hooks/use-finance';
 import { hasPermission } from '@/lib/auth/permissions';
 import { formatCurrency } from '@/lib/date-format';
+import { getFinanceTotals, getSignedAmount, normalizeAdjustmentType } from '@/lib/finance-calculation';
 
 type ReportPeriod = 'MONTH' | 'YEAR';
 type TransactionSort = 'NEWEST' | 'OLDEST';
 
 const today = new Date();
 const manualCategories = [
-  { value: 'SHUTTLECOCK', label: 'Cầu' },
   { value: 'COURT_FEE', label: 'Sân' },
+  { value: 'SHUTTLECOCK', label: 'Cầu' },
+  { value: 'SESSION_FEE', label: 'Slot' },
   { value: 'OTHER', label: 'Khác' }
 ] as const;
 
@@ -25,6 +27,7 @@ export function FinancePageClient() {
   const { createTransaction } = useFinanceMutations();
   const canWriteFinance = hasPermission(currentUser ?? null, 'finance.manage');
   const [transactionType, setTransactionType] = useState('INCOME');
+  const [adjustmentType, setAdjustmentType] = useState('NORMAL');
   const [category, setCategory] = useState('SHUTTLECOCK');
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
@@ -52,7 +55,7 @@ export function FinancePageClient() {
       return;
     }
     try {
-      await createTransaction.mutateAsync({ transactionType, category, title, quantity, unitPrice, note });
+      await createTransaction.mutateAsync({ transactionType, adjustmentType, category, title, quantity, unitPrice, note });
       setTitle('');
       setNote('');
       setUnitPrice(0);
@@ -76,14 +79,7 @@ export function FinancePageClient() {
     return sortedTransactions.slice(start, start + pageSize);
   }, [currentPage, pageSize, sortedTransactions, totalPages]);
 
-  const totals = reportTransactions.reduce(
-    (acc, item) => {
-      if (item.transactionType === 'INCOME') acc.income += item.totalAmount;
-      if (item.transactionType === 'EXPENSE') acc.expense += item.totalAmount;
-      return acc;
-    },
-    { income: 0, expense: 0 }
-  );
+  const totals = getFinanceTotals(reportTransactions);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 md:px-6">
@@ -134,7 +130,7 @@ export function FinancePageClient() {
         </div>
 
         {isFormOpen ? (
-          <form onSubmit={submit} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[1.6fr_110px_120px_90px_130px_auto] md:items-end">
+          <form onSubmit={submit} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[1.5fr_110px_150px_120px_90px_130px_auto] md:items-end">
             <label className="block md:col-span-1">
               <span className="text-xs text-slate-400">Tiêu đề</span>
               <input required value={title} onChange={(event) => setTitle(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
@@ -144,6 +140,13 @@ export function FinancePageClient() {
               <select value={transactionType} onChange={(event) => setTransactionType(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
                 <option value="INCOME">Thu</option>
                 <option value="EXPENSE">Chi</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-slate-400">Kiểu ghi nhận</span>
+              <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+                <option value="NORMAL">Ghi nhận thường</option>
+                <option value="DEDUCTION">{transactionType === 'INCOME' ? 'Điều chỉnh giảm thu' : 'Điều chỉnh giảm chi'}</option>
               </select>
             </label>
             <label className="block">
@@ -160,7 +163,7 @@ export function FinancePageClient() {
               <span className="text-xs text-slate-400">Đơn giá</span>
               <input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
             </label>
-            <label className="block md:col-span-5">
+            <label className="block md:col-span-6">
               <span className="text-xs text-slate-400">Ghi chú</span>
               <input value={note} onChange={(event) => setNote(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
             </label>
@@ -192,13 +195,15 @@ export function FinancePageClient() {
         <div className="mt-3 max-h-[420px] overflow-auto rounded-lg border border-white/10">
           {visibleTransactions.map((item) => (
             <article key={item.id} className="grid gap-2 border-b border-white/5 px-3 py-3 text-sm lg:grid-cols-[84px_minmax(0,2.4fr)_100px_110px_130px] lg:items-center">
-              <TransactionBadge type={item.transactionType} />
+              <TransactionBadge type={item.transactionType} adjustmentType={item.adjustmentType} />
               <div className="min-w-0">
                 <div className="break-words text-white">{item.title || item.category}</div>
                 <div className="break-words text-xs text-slate-500">{getCategoryLabel(item.category)} · {item.note || '-'}</div>
               </div>
               <div className="text-slate-300">{item.quantity} x {formatCurrency(item.unitPrice)}đ</div>
-              <div className="text-right font-mono text-white">{formatCurrency(item.totalAmount)}đ</div>
+              <div className={`text-right font-mono ${getSignedAmount(item.totalAmount, item.adjustmentType) >= 0 ? 'text-white' : 'text-amber-200'}`}>
+                {formatSignedCurrency(item.totalAmount, item.adjustmentType)}
+              </div>
               <div className="text-right text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '-'}</div>
             </article>
           ))}
@@ -218,10 +223,15 @@ export function FinancePageClient() {
   );
 }
 
-function TransactionBadge({ type }: { type: string }) {
+function TransactionBadge({ type, adjustmentType }: { type: string; adjustmentType?: string | null }) {
+  const isDeduction = normalizeAdjustmentType(adjustmentType) === 'DEDUCTION';
   const config = type === 'INCOME'
-    ? { label: 'Thu', className: 'bg-emerald-500/10 text-emerald-200' }
-    : { label: 'Chi', className: 'bg-rose-500/10 text-rose-200' };
+    ? isDeduction
+      ? { label: 'Giảm thu', className: 'bg-amber-500/10 text-amber-200' }
+      : { label: 'Thu', className: 'bg-emerald-500/10 text-emerald-200' }
+    : isDeduction
+      ? { label: 'Giảm chi', className: 'bg-cyan-500/10 text-cyan-200' }
+      : { label: 'Chi', className: 'bg-rose-500/10 text-rose-200' };
   return <span className={`inline-flex w-fit rounded-lg px-2 py-1 text-xs font-medium ${config.className}`}>{config.label}</span>;
 }
 
@@ -247,6 +257,12 @@ function getCategoryLabel(value: string): string {
   if (value === 'COURT_FEE') return 'Sân';
   if (value === 'SESSION_FEE') return 'Slot';
   return 'Khác';
+}
+
+function formatSignedCurrency(amount: number, adjustmentType?: string | null): string {
+  const signedAmount = getSignedAmount(amount, adjustmentType);
+  const prefix = signedAmount < 0 ? '-' : '';
+  return `${prefix}${formatCurrency(Math.abs(signedAmount))}đ`;
 }
 
 function Metric({ label, value, tone }: { label: string; value: string; tone: string }) {

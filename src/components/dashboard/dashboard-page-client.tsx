@@ -157,14 +157,18 @@ export function DashboardPageClient() {
                 <Link href="/schedule" className="text-xs font-semibold text-cyan-200 hover:text-cyan-100">Xem lịch</Link>
               </div>
               <div className="operational-x-scroll mt-3 flex-1">
-                <table className="min-w-[860px] w-full text-sm">
+                <table className="min-w-[1180px] w-full text-sm">
                   <thead className="text-xs text-slate-500">
                     <tr>
                       <th className="py-2 text-left font-medium">Ca chơi</th>
                       <th className="py-2 text-left font-medium">Trạng thái</th>
                       <th className="py-2 text-right font-medium">Người</th>
                       <th className="py-2 text-right font-medium">Đã thu</th>
-                      <th className="py-2 text-right font-medium">Chi phí</th>
+                      <th className="py-2 text-right font-medium">Số sân</th>
+                      <th className="py-2 text-right font-medium">Tiền sân</th>
+                      <th className="py-2 text-right font-medium">Số cầu</th>
+                      <th className="py-2 text-right font-medium">Tiền cầu</th>
+                      <th className="py-2 text-right font-medium">Tổng chi phí</th>
                       <th className="py-2 text-right font-medium">Lãi</th>
                       <th className="py-2 text-right font-medium">Thao tác</th>
                     </tr>
@@ -179,6 +183,10 @@ export function DashboardPageClient() {
                         <td className="py-3 text-slate-300">{getSessionStatusLabel(session.status)}</td>
                         <td className="py-3 text-right text-slate-300">{session.playerCount}</td>
                         <td className="py-3 text-right font-mono text-emerald-200">{formatCurrency(session.paidAmount)}đ</td>
+                        <td className="py-3 text-right text-slate-300">{session.courtCount}</td>
+                        <td className="py-3 text-right font-mono text-slate-200">{formatCurrency(session.courtCost)}đ</td>
+                        <td className="py-3 text-right text-slate-300">{session.shuttlecockPiecesUsed}</td>
+                        <td className="py-3 text-right font-mono text-amber-100">{formatCurrency(session.shuttlecockExpense)}đ</td>
                         <td className="py-3 text-right font-mono text-rose-200">{formatCurrency(session.totalExpense)}đ</td>
                         <td className={`py-3 text-right font-mono ${session.totalProfit >= 0 ? 'text-cyan-200' : 'text-rose-200'}`}>{formatCurrency(session.totalProfit)}đ</td>
                         <td className="py-3 text-right">

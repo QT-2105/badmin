@@ -93,13 +93,23 @@ Finance is lightweight operational finance.
 Manual finance transaction validation:
 
 - `transaction_type` must be `INCOME` or `EXPENSE`
+- `adjustment_type` must be `NORMAL` or `DEDUCTION`
 - `category` is required
 - `title` is required
 - `quantity` must be greater than 0
 - `unit_price` and `total_amount` cannot be negative
 
+Finance totals use net operational effect:
+
+- `NORMAL` income increases revenue
+- `DEDUCTION` income reduces revenue
+- `NORMAL` expense increases cost
+- `DEDUCTION` expense reduces cost
+- `total_amount` remains positive; do not encode deductions as negative money values
+
 Current manual categories exposed in UI:
 
+- `SESSION_FEE` -> Slot
 - `SHUTTLECOCK` -> Cầu
 - `COURT_FEE` -> Sân
 - `OTHER` -> Khác

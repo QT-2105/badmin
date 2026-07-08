@@ -19,6 +19,7 @@ export async function fetchTransactions(params?: {
 export async function createTransaction(payload: {
   sessionId?: string | null;
   transactionType: string;
+  adjustmentType?: string;
   category: string;
   title?: string;
   quantity?: number;

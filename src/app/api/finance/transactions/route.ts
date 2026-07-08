@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     const transaction = await createSessionTransaction({
       sessionId: payload.sessionId || null,
       transactionType: payload.transactionType,
+      adjustmentType: payload.adjustmentType,
       category: payload.category,
       title: payload.title,
       quantity: payload.quantity,

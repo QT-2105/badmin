@@ -78,7 +78,12 @@ export function InventoryPageClient() {
           return {
             ...result,
             sales: result.sales + movement.totalAmount,
-            saleTubes: result.saleTubes + (quantityBall / ballsPerTube)
+            saleTubes: result.saleTubes + (quantityBall / ballsPerTube),
+            saleBalls: result.saleBalls + quantityBall,
+            totalOutboundAmount: result.totalOutboundAmount + movement.totalAmount,
+            totalOutboundTubes: result.totalOutboundTubes + Math.floor(quantityBall / ballsPerTube),
+            totalOutboundLooseBalls: result.totalOutboundLooseBalls + (quantityBall % ballsPerTube),
+            totalOutboundBalls: result.totalOutboundBalls + quantityBall
           };
         }
         if (movement.movementType === 'PLAY_USAGE') {
@@ -87,12 +92,28 @@ export function InventoryPageClient() {
             usage: result.usage + movement.totalAmount,
             usageTubes: result.usageTubes + Math.floor(quantityBall / ballsPerTube),
             usageLooseBalls: result.usageLooseBalls + (quantityBall % ballsPerTube),
-            usageBalls: result.usageBalls + quantityBall
+            usageBalls: result.usageBalls + quantityBall,
+            totalOutboundAmount: result.totalOutboundAmount + movement.totalAmount,
+            totalOutboundTubes: result.totalOutboundTubes + Math.floor(quantityBall / ballsPerTube),
+            totalOutboundLooseBalls: result.totalOutboundLooseBalls + (quantityBall % ballsPerTube),
+            totalOutboundBalls: result.totalOutboundBalls + quantityBall
           };
         }
         return result;
       },
-      { sales: 0, usage: 0, saleTubes: 0, usageTubes: 0, usageLooseBalls: 0, usageBalls: 0 }
+      {
+        sales: 0,
+        usage: 0,
+        saleTubes: 0,
+        saleBalls: 0,
+        usageTubes: 0,
+        usageLooseBalls: 0,
+        usageBalls: 0,
+        totalOutboundAmount: 0,
+        totalOutboundTubes: 0,
+        totalOutboundLooseBalls: 0,
+        totalOutboundBalls: 0
+      }
     );
   }, [movements, reportMonth, reportPeriod, reportYear]);
   const sortedMovements = useMemo(() => [...movements].sort((left, right) => getTime(right.createdAt) - getTime(left.createdAt)), [movements]);
@@ -234,11 +255,21 @@ export function InventoryPageClient() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Metric label="Tổng loại cầu" value={`${products.length}`} tone="cyan" />
-        <Metric label="Tồn theo ống" value={`${totals.tubes} ống ${totals.looseBalls} quả`} tone="amber" />
-        <Metric label="Tồn theo quả" value={`${totals.balls} quả`} tone="amber" />
+        <Metric
+          label="Tồn kho"
+          value={`${totals.tubes} ống ${totals.looseBalls} quả`}
+          sub={`${totals.balls} quả`}
+          tone="amber"
+        />
         <Metric label="Giá trị tồn vốn" value={`${formatCurrency(totals.stockCost)}đ`} tone="yellow" />
-        <Metric label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} sub={`${formatQuantity(reportTotals.saleTubes)} ống`} tone="emerald" />
         <Metric label="Chi cầu hao ca" value={`${formatCurrency(reportTotals.usage)}đ`} sub={`${reportTotals.usageTubes} ống ${reportTotals.usageLooseBalls} quả (${reportTotals.usageBalls} quả)`} tone="rose" />
+        <Metric label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} sub={`${formatQuantity(reportTotals.saleTubes)} ống (${reportTotals.saleBalls} quả)`} tone="emerald" />
+        <Metric
+          label="Tổng tiền cầu"
+          value={`${formatCurrency(reportTotals.totalOutboundAmount)}đ`}
+          sub={`${reportTotals.totalOutboundTubes} ống ${reportTotals.totalOutboundLooseBalls} quả (${reportTotals.totalOutboundBalls} quả)`}
+          tone="violet"
+        />
       </section>
 
       {actionError ? <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{actionError}</div> : null}
@@ -460,15 +491,22 @@ function ProductSelect({ label, value, products, onChange }: { label: string; va
   );
 }
 
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: 'cyan' | 'amber' | 'yellow' | 'emerald' | 'rose' }) {
+function Metric({ label, value, sub, tone }: { label: string; value: React.ReactNode; sub?: string; tone: 'cyan' | 'amber' | 'yellow' | 'emerald' | 'rose' | 'violet' }) {
   const styles = {
     cyan: 'border-cyan-300/20 bg-cyan-400/[0.08] text-cyan-200',
     amber: 'border-amber-300/20 bg-amber-400/[0.08] text-amber-200',
     yellow: 'border-yellow-300/20 bg-yellow-400/[0.08] text-yellow-200',
     emerald: 'border-emerald-300/20 bg-emerald-400/[0.08] text-emerald-200',
-    rose: 'border-rose-300/20 bg-rose-400/[0.08] text-rose-200'
+    rose: 'border-rose-300/20 bg-rose-400/[0.08] text-rose-200',
+    violet: 'border-violet-300/20 bg-violet-400/[0.08] text-violet-200'
   }[tone];
-  return <div className={`rounded-xl border p-4 ${styles}`}><div className="text-xs text-slate-400">{label}</div><div className="mt-2 text-xl font-semibold">{value}</div>{sub ? <div className="mt-1 text-xs font-medium text-slate-400">{sub}</div> : null}</div>;
+  return (
+    <div className={`grid min-h-[116px] grid-rows-[20px_34px_18px] content-center gap-2 rounded-xl border p-4 ${styles}`}>
+      <div className="self-end text-xs leading-none text-slate-400">{label}</div>
+      <div className="self-center break-words text-xl font-semibold leading-tight">{value}</div>
+      <div className={`self-start text-xs font-medium leading-snug text-slate-400 ${sub ? '' : 'invisible'}`}>{sub || '-'}</div>
+    </div>
+  );
 }
 
 function formatQuantity(value: number): string {

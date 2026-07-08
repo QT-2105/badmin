@@ -93,6 +93,10 @@ export type DashboardSummary = {
     endTime: string;
     status: string;
     playerCount: number;
+    courtCount: number;
+    courtCost: number;
+    shuttlecockPiecesUsed: number;
+    shuttlecockExpense: number;
     paidAmount: number;
     expectedAmount: number;
     totalIncome: number;
@@ -119,6 +123,7 @@ export type SessionTransactionSummary = {
   id: string;
   sessionId: string | null;
   transactionType: string;
+  adjustmentType: string;
   category: string;
   title: string | null;
   quantity: number;

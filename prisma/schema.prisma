@@ -210,6 +210,7 @@ model session_transactions {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   session_id       String?        @db.Uuid
   transaction_type String         @db.VarChar(20)
+  adjustment_type  String         @default("NORMAL") @db.VarChar(20)
   category         String         @db.VarChar(30)
   title            String?        @db.VarChar(255)
   quantity         Decimal?       @default(1) @db.Decimal(12, 2)

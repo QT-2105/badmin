@@ -71,6 +71,8 @@ Thu chi UI currently:
 - defaults to current month
 - supports month/year reporting
 - creates manual vouchers without selecting a session
+- supports normal vouchers and deduction vouchers for reducing revenue or cost without negative money input
+- exposes only Slot, Cầu, Sân, and Khác categories for manual finance
 - requires title before submit
 - sorts transaction list only by newest or oldest
 - keeps create form collapsible with `Mở rộng` / `Thu gọn`

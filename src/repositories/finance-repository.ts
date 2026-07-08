@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
+import { getSignedAmount, normalizeAdjustmentType } from '@/lib/finance-calculation';
 import type { SessionTransactionSummary } from '@/types/domain';
 
 function toNumber(value: unknown): number {
@@ -14,6 +15,7 @@ function mapTransaction(row: {
   id: string;
   session_id: string | null;
   transaction_type: string;
+  adjustment_type: string | null;
   category: string;
   title: string | null;
   quantity: unknown;
@@ -26,6 +28,7 @@ function mapTransaction(row: {
     id: row.id,
     sessionId: row.session_id,
     transactionType: row.transaction_type,
+    adjustmentType: normalizeAdjustmentType(row.adjustment_type),
     category: row.category,
     title: row.title,
     quantity: toNumber(row.quantity),
@@ -40,7 +43,7 @@ async function refreshSessionFinance(sessionId: string): Promise<void> {
   const rows = await prisma.session_transactions.findMany({ where: { session_id: sessionId } });
   const totals = rows.reduce(
     (acc, row) => {
-      const amount = toNumber(row.total_amount);
+      const amount = getSignedAmount(row.total_amount, row.adjustment_type);
       if (row.transaction_type === 'INCOME') acc.income += amount;
       if (row.transaction_type === 'EXPENSE') acc.expense += amount;
       return acc;
@@ -78,6 +81,7 @@ export async function listSessionTransactions(options?: {
 export async function createSessionTransaction(input: {
   sessionId?: string | null;
   transactionType: string;
+  adjustmentType?: string | null;
   category: string;
   title?: string | null;
   quantity?: number;
@@ -88,8 +92,10 @@ export async function createSessionTransaction(input: {
   const quantity = Number(input.quantity ?? 1);
   const unitPrice = Number(input.unitPrice ?? 0);
   const totalAmount = input.totalAmount === undefined ? quantity * unitPrice : Number(input.totalAmount);
+  const adjustmentType = normalizeAdjustmentType(input.adjustmentType);
 
   if (!['INCOME', 'EXPENSE'].includes(input.transactionType)) throw new AppError('Loại thu chi không hợp lệ.');
+  if (input.adjustmentType && !['NORMAL', 'DEDUCTION'].includes(input.adjustmentType)) throw new AppError('Kiểu ghi nhận không hợp lệ.');
   if (!input.category?.trim()) throw new AppError('Vui lòng chọn phân loại thu chi.');
   if (!input.title?.trim()) throw new AppError('Vui lòng nhập tiêu đề phiếu thu chi.');
   if (!Number.isFinite(quantity) || quantity <= 0) throw new AppError('Số lượng phải lớn hơn 0.');
@@ -100,6 +106,7 @@ export async function createSessionTransaction(input: {
     data: {
       session_id: input.sessionId || null,
       transaction_type: input.transactionType,
+      adjustment_type: adjustmentType,
       category: input.category,
       title: input.title?.trim() || null,
       quantity,

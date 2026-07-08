@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { toTimeInput } from '@/lib/date-format';
+import { getSignedAmount } from '@/lib/finance-calculation';
 import { normalizeSessionStatus } from '@/lib/session-status';
 import type { DashboardSummary } from '@/types/domain';
 
@@ -36,12 +37,13 @@ function getPeriodRange(period: DashboardPeriod, month?: string | null, year?: s
 
 function getCategoryLabel(category: string): string {
   if (category === 'COURT_FEE') return 'Sân';
-  if (category === 'SHUTTLECOCK' || category === 'SHUTTLECOCK_USAGE') return 'Cầu';
+  if (category === 'SHUTTLECOCK_USAGE') return 'Cầu hao vãng lai';
+  if (category === 'SHUTTLECOCK') return 'Cầu chi khác';
   if (category === 'SESSION_FEE') return 'Slot';
   return 'Khác';
 }
 
-function buildDailyFinance(transactions: Array<{ created_at: Date | null; transaction_type: string; total_amount: unknown }>, start: Date, end: Date): DashboardSummary['dailyFinance'] {
+function buildDailyFinance(transactions: Array<{ created_at: Date | null; transaction_type: string; adjustment_type: string | null; total_amount: unknown }>, start: Date, end: Date): DashboardSummary['dailyFinance'] {
   const byDate = new Map<string, { income: number; expense: number }>();
   for (let cursor = new Date(start); cursor < end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
     byDate.set(toDateInput(cursor), { income: 0, expense: 0 });
@@ -52,8 +54,9 @@ function buildDailyFinance(transactions: Array<{ created_at: Date | null; transa
     const key = toDateInput(transaction.created_at);
     const current = byDate.get(key);
     if (!current) return;
-    if (transaction.transaction_type === 'INCOME') current.income += toNumber(transaction.total_amount);
-    if (transaction.transaction_type === 'EXPENSE') current.expense += toNumber(transaction.total_amount);
+    const signedAmount = getSignedAmount(transaction.total_amount, transaction.adjustment_type);
+    if (transaction.transaction_type === 'INCOME') current.income += signedAmount;
+    if (transaction.transaction_type === 'EXPENSE') current.expense += signedAmount;
   });
 
   return Array.from(byDate.entries()).map(([date, value]) => ({
@@ -87,7 +90,7 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     prisma.session_players.count({ where: { play_sessions: { play_dates: { play_date: { gte: range.start, lt: range.end } } } } }),
     prisma.session_transactions.findMany({
       where: { created_at: { gte: range.start, lt: range.end } },
-      select: { transaction_type: true, category: true, total_amount: true, created_at: true }
+      select: { transaction_type: true, adjustment_type: true, category: true, total_amount: true, created_at: true }
     }),
     prisma.session_players.aggregate({
       _sum: { payment_amount: true },
@@ -128,13 +131,13 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     { pieces: 0, tubes: 0, looseBalls: 0, value: 0 }
   );
 
-  const totalIncome = periodTransactions.filter((row) => row.transaction_type === 'INCOME').reduce((total, row) => total + toNumber(row.total_amount), 0);
-  const totalExpense = periodTransactions.filter((row) => row.transaction_type === 'EXPENSE').reduce((total, row) => total + toNumber(row.total_amount), 0);
+  const totalIncome = periodTransactions.filter((row) => row.transaction_type === 'INCOME').reduce((total, row) => total + getSignedAmount(row.total_amount, row.adjustment_type), 0);
+  const totalExpense = periodTransactions.filter((row) => row.transaction_type === 'EXPENSE').reduce((total, row) => total + getSignedAmount(row.total_amount, row.adjustment_type), 0);
 
   const costByCategory = new Map<string, number>();
   periodTransactions
     .filter((row) => row.transaction_type === 'EXPENSE')
-    .forEach((row) => costByCategory.set(row.category, (costByCategory.get(row.category) ?? 0) + toNumber(row.total_amount)));
+    .forEach((row) => costByCategory.set(row.category, (costByCategory.get(row.category) ?? 0) + getSignedAmount(row.total_amount, row.adjustment_type)));
 
   const lowStockProducts = inventoryRows
     .filter((row) => row.quantity_ball <= row.shuttlecock_products.balls_per_tube * 2)
@@ -194,6 +197,7 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     periodLabel: range.label,
     costBreakdown: Array.from(costByCategory.entries())
       .map(([category, amount]) => ({ category, label: getCategoryLabel(category), amount }))
+      .filter((item) => item.amount > 0)
       .sort((left, right) => right.amount - left.amount),
     dailyFinance: buildDailyFinance(periodTransactions, range.start, range.end),
     recentSessions: recentSessions.map((session) => {
@@ -212,6 +216,10 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
         endTime: toTimeInput(session.end_time),
         status: normalizeSessionStatus(session.status),
         playerCount: session.session_players.length,
+        courtCount: session.court_count,
+        courtCost: toNumber(session.court_cost),
+        shuttlecockPiecesUsed: Number(session.shuttlecock_pieces_used ?? 0),
+        shuttlecockExpense: Math.max(0, toNumber(session.total_expense) - toNumber(session.court_cost)),
         paidAmount,
         expectedAmount,
         totalIncome: toNumber(session.total_income),

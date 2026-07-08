@@ -123,7 +123,9 @@ protected_modules:
     protected_semantics:
       - manual transactions do not require session_id
       - title is required
-      - categories are Cầu/Sân/Khác for manual UI
+      - categories are Slot/Cầu/Sân/Khác for manual UI
+      - adjustment_type NORMAL adds to the selected transaction side
+      - adjustment_type DEDUCTION reduces the selected transaction side while keeping total_amount positive
       - period filter defaults to current month
       - transaction list sort is newest/oldest only
 
