@@ -20,6 +20,14 @@ export function PlayerFeeInput({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  function selectFee(fee: number) {
+    onChange(String(fee));
+    setOpen(false);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }
+
   useEffect(() => {
     if (!open) return undefined;
     function closeOnOutside(event: MouseEvent) {
@@ -52,9 +60,13 @@ export function PlayerFeeInput({
               <button
                 key={fee}
                 type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  selectFee(fee);
+                }}
                 onClick={() => {
-                  onChange(String(fee));
-                  setOpen(false);
+                  selectFee(fee);
                 }}
                 className={cn(
                   'flex h-9 items-center justify-between rounded-md px-3 text-sm font-semibold transition',

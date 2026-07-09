@@ -456,7 +456,7 @@ function SuggestionModePicker({
 }
 
 function PlayerStatusOverview({ players }: { players: Player[] }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const tagStats = useMemo(
     () =>
       PLAYER_TAG_OPTIONS.map((tag) => ({

@@ -5,6 +5,7 @@ import type { Route } from 'next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, LogIn } from 'lucide-react';
 
+import { consumeSessionExpiredNotice } from '@/components/auth/auth-session-boundary';
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
 import { useBranding } from '@/hooks/use-branding';
@@ -20,6 +21,7 @@ export function LoginPageClient() {
   const [loginName, setLoginName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [sessionNotice] = useState(() => consumeSessionExpiredNotice(searchParams));
   const next = searchParams.get('next') || '/dashboard';
   const isBootstrap = needsBootstrap === true;
 
@@ -83,6 +85,12 @@ export function LoginPageClient() {
             />
           </label>
         </div>
+
+        {sessionNotice ? (
+          <div className="mt-4 rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
+            {sessionNotice}
+          </div>
+        ) : null}
 
         {login.error || bootstrap.error ? (
           <div className="mt-4 rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
