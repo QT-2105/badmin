@@ -30,6 +30,39 @@ const config: Config = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))'
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))'
+        },
+        surface: {
+          DEFAULT: 'hsl(var(--surface))',
+          muted: 'hsl(var(--surface-muted))',
+          elevated: 'hsl(var(--surface-elevated))'
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          soft: 'hsl(var(--success-soft))'
+        },
+        danger: {
+          DEFAULT: 'hsl(var(--danger))',
+          soft: 'hsl(var(--danger-soft))'
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          soft: 'hsl(var(--warning-soft))'
+        },
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          soft: 'hsl(var(--info-soft))'
+        },
+        inventory: {
+          DEFAULT: 'hsl(var(--inventory))',
+          soft: 'hsl(var(--inventory-soft))'
         }
       },
       borderRadius: {

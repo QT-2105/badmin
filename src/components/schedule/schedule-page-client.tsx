@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { NoticeCard, PageHeader, PageShell, SectionCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDates, useScheduleMutations } from '@/hooks/use-play-dates';
 import { hasPermission } from '@/lib/auth/permissions';
@@ -38,7 +39,7 @@ export function SchedulePageClient() {
     }
   }
 
-function togglePlayDateSessions(id: string) {
+  function togglePlayDateSessions(id: string) {
     setExpandedDateIds((current) => {
       const next = new Set(current);
       if (next.has(id)) {
@@ -73,39 +74,39 @@ function togglePlayDateSessions(id: string) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 md:px-6">
-      <header>
-        <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Playing schedule</p>
-        <h1 className="mt-1 text-2xl font-semibold text-white">Lịch chơi</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-400">Tạo ngày chơi và mở từng ca để vận hành runtime sân.</p>
-      </header>
+    <PageShell maxWidth="max-w-6xl">
+      <PageHeader
+        eyebrow="Playing schedule"
+        title="Lịch chơi"
+        description="Tạo ngày chơi trước, mở chi tiết ngày để tạo ca, sau đó vào chi tiết ca để thêm người chơi, bắt đầu ca và điều phối sân."
+      />
 
       {canManageSchedule ? (
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+      <SectionCard>
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto] md:items-end">
           <label className="block">
-            <span className="text-xs text-slate-400">Ngày chơi</span>
-            <input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+            <span className={formLabelClass}>Ngày chơi</span>
+            <input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Tiêu đề</span>
-            <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+            <span className={formLabelClass}>Tiêu đề</span>
+            <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Ghi chú</span>
-            <input value={note} onChange={(event) => setNote(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+            <span className={formLabelClass}>Ghi chú</span>
+            <input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
           </label>
           <Button type="submit" disabled={createPlayDate.isPending} className="h-11">
             {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
             Tạo ngày
           </Button>
         </form>
-      </section>
+      </SectionCard>
       ) : null}
 
-      {isLoading ? <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Đang tải lịch chơi...</div> : null}
-      {error ? <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error.message}</div> : null}
-      {actionError ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">{actionError}</div> : null}
+      {isLoading ? <NoticeCard>Đang tải lịch chơi...</NoticeCard> : null}
+      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+      {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
 
       <section className="grid gap-3 lg:grid-cols-2">
         {sortedPlayDates.map((item) => {
@@ -119,43 +120,43 @@ function togglePlayDateSessions(id: string) {
             key={item.id}
             className={`rounded-xl border p-4 transition-colors ${
               isToday
-                ? 'border-cyan-300/40 bg-cyan-400/[0.08] shadow-[0_0_0_1px_rgba(34,211,238,0.08)]'
+                ? 'border-info/40 bg-info-soft shadow-soft'
                 : hasIncompleteSession
-                  ? 'border-amber-300/30 bg-amber-400/[0.06]'
-                  : 'border-white/10 bg-white/[0.04]'
+                  ? 'border-warning/30 bg-warning-soft'
+                  : 'border-border bg-surface'
             }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-semibold text-white">{item.title || item.playDate}</div>
-                  {isToday ? <span className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-100">Hôm nay</span> : null}
+                  <div className="text-sm font-semibold text-foreground">{item.title || item.playDate}</div>
+                  {isToday ? <span className="rounded-full border border-info/30 bg-info-soft px-2 py-0.5 text-[11px] font-semibold text-info">Hôm nay</span> : null}
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>{item.playDate} · {item.sessionCount} ca</span>
                   {item.sessions.length > 0 ? (
                     <button
                       type="button"
                       onClick={() => togglePlayDateSessions(item.id)}
-                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[11px] font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-                      aria-label={expanded ? 'Thu gọn ca' : 'Mở rộng ca'}
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-border bg-surface-muted px-2 text-[11px] font-semibold text-foreground transition hover:bg-muted"
+                      aria-label={expanded ? 'Thu gọn danh sách ca' : 'Mở danh sách ca'}
                     >
                       {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      {expanded ? 'Thu gọn ca' : 'Mở ca'}
+                      {expanded ? 'Thu gọn' : 'Danh sách ca'}
                     </button>
                   ) : null}
                 </div>
                 {(hasIncompleteSession || isPast) ? (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {hasIncompleteSession ? <span className="rounded-full border border-amber-300/30 bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-100">Có ca chưa hoàn tất</span> : null}
-                    {isPast ? <span className="rounded-full border border-slate-500/30 bg-slate-700/30 px-2 py-0.5 text-[11px] text-slate-300">Chỉ xem lại</span> : null}
+                    {hasIncompleteSession ? <span className="rounded-full border border-warning/30 bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">Có ca chưa hoàn tất</span> : null}
+                    {isPast ? <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Chỉ xem lại</span> : null}
                   </div>
                 ) : null}
-                {item.note ? <div className="mt-2 text-sm text-slate-300">{item.note}</div> : null}
+                {item.note ? <div className="mt-2 text-sm text-muted-foreground">{item.note}</div> : null}
               </div>
               <div className="flex shrink-0 gap-2">
                 <Link href={`/schedule/${item.id}`}>
-                  <Button size="sm" variant="secondary">Mở</Button>
+                  <Button size="sm" variant="secondary">Chi tiết ngày</Button>
                 </Link>
                 {!isPast && canManageSchedule ? (
                   <Button size="sm" variant="danger" disabled={deletePlayDate.isPending} onClick={() => void removePlayDate(item.id)}>
@@ -167,7 +168,11 @@ function togglePlayDateSessions(id: string) {
             {item.sessions.length > 0 && expanded ? (
               <div className="mt-3 space-y-2">
                 {sortedSessions.map((session) => (
-                  <Link key={session.id} href={`/sessions/${session.id}`} className="block rounded-lg bg-slate-950/60 px-3 py-2 text-sm text-slate-200 hover:bg-slate-900">
+                  <Link
+                    key={session.id}
+                    href={`/sessions/${session.id}`}
+                    className="block rounded-lg border border-info/25 bg-info-soft px-3 py-2 text-sm font-semibold text-info transition hover:border-info/50 hover:bg-info-soft/80"
+                  >
                     {session.name} · {session.startTime}-{session.endTime} · {session.courtCount} sân
                   </Link>
                 ))}
@@ -179,8 +184,8 @@ function togglePlayDateSessions(id: string) {
       </section>
 
       {!isLoading && playDates.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-sm text-slate-400">Chưa có ngày chơi nào. Tạo ngày chơi đầu tiên ở trên.</div>
+        <div className="rounded-xl border border-dashed border-border bg-surface-muted p-5 text-sm text-muted-foreground">Chưa có ngày chơi nào. Tạo ngày chơi đầu tiên ở trên.</div>
       ) : null}
-    </div>
+    </PageShell>
   );
 }

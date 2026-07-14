@@ -43,7 +43,7 @@ export function FullscreenToggle({
       title={label}
       aria-label={label}
       className={cn(
-        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
         compact && 'w-10 px-0',
         className
       )}

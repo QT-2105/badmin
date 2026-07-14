@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { MetricCard, NoticeCard, PageHeader, PageShell, SectionCard, ToolbarCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useTransactions, useFinanceMutations } from '@/hooks/use-finance';
@@ -82,90 +83,86 @@ export function FinancePageClient() {
   const totals = getFinanceTotals(reportTransactions);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 md:px-6">
-      <header>
-        <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Operational finance</p>
-        <h1 className="mt-1 text-2xl font-semibold text-white">Thu chi</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-400">Ghi nhận thu chi vận hành nhập tay. Giao dịch tự sinh từ hoàn tất ca vẫn được đối soát theo ca chơi.</p>
-      </header>
+    <PageShell maxWidth="max-w-6xl">
+      <PageHeader
+        eyebrow="Operational finance"
+        title="Thu chi"
+        description="Theo dõi thu, chi và lợi nhuận theo tháng hoặc năm. Phiếu tự sinh từ hoàn tất ca dùng để đối soát, phiếu nhập tay dùng cho khoản cầu, sân, slot hoặc điều chỉnh giảm."
+      />
 
-      {canWriteFinance ? (
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-sm font-semibold text-white">Kỳ báo cáo</div>
-            <div className="text-xs text-slate-400">Mặc định tính theo tháng hiện tại.</div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+      <ToolbarCard
+        title="Kỳ báo cáo"
+        description="Mặc định tính theo tháng hiện tại."
+        actions={(
+          <>
+            <select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
               <option value="MONTH">Theo tháng</option>
               <option value="YEAR">Theo năm</option>
             </select>
             {reportPeriod === 'MONTH' ? (
-              <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className={compactFormInputClass} />
             ) : (
-              <input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className="h-10 w-28 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
             )}
-          </div>
-        </div>
-      </section>
-      ) : null}
+          </>
+        )}
+      />
 
       <section className="grid gap-3 md:grid-cols-3">
-        <Metric label="Doanh thu" value={`${formatCurrency(totals.income)}đ`} tone="text-emerald-300" />
-        <Metric label="Chi phí" value={`${formatCurrency(totals.expense)}đ`} tone="text-rose-300" />
-        <Metric label="Lợi nhuận" value={`${formatCurrency(totals.income - totals.expense)}đ`} tone="text-cyan-300" />
+        <MetricCard label="Doanh thu" value={`${formatCurrency(totals.income)}đ`} tone="income" />
+        <MetricCard label="Chi phí" value={`${formatCurrency(totals.expense)}đ`} tone="expense" />
+        <MetricCard label="Lợi nhuận" value={`${formatCurrency(totals.income - totals.expense)}đ`} tone="profit" valueClassName={totals.income - totals.expense >= 0 ? undefined : 'text-danger'} />
       </section>
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-white">Tạo phiếu thu chi</h2>
-            <p className="text-xs text-slate-400">Dùng cho các khoản vận hành nhập tay: cầu, sân, khác. Không cần chọn ca chơi.</p>
-          </div>
+      {canWriteFinance ? (
+      <SectionCard
+        title="Tạo phiếu thu chi"
+        description="Dùng cho các khoản vận hành nhập tay: cầu, sân, slot, khác. Không cần chọn ca chơi."
+        actions={(
           <Button type="button" variant="secondary" size="sm" onClick={() => setIsFormOpen((open) => !open)}>
             {isFormOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {isFormOpen ? 'Thu gọn' : 'Mở rộng'}
           </Button>
-        </div>
+        )}
+      >
 
         {isFormOpen ? (
-          <form onSubmit={submit} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[1.5fr_110px_150px_120px_90px_130px_auto] md:items-end">
+          <form onSubmit={submit} className="grid gap-3 rounded-lg bg-surface-muted p-3 md:grid-cols-[1.5fr_110px_150px_120px_90px_130px_auto] md:items-end">
             <label className="block md:col-span-1">
-              <span className="text-xs text-slate-400">Tiêu đề</span>
-              <input required value={title} onChange={(event) => setTitle(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <span className={formLabelClass}>Tiêu đề</span>
+              <input required value={title} onChange={(event) => setTitle(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-400">Loại</span>
-              <select value={transactionType} onChange={(event) => setTransactionType(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+              <span className={formLabelClass}>Loại</span>
+              <select value={transactionType} onChange={(event) => setTransactionType(event.target.value)} className={formInputClass}>
                 <option value="INCOME">Thu</option>
                 <option value="EXPENSE">Chi</option>
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-slate-400">Kiểu ghi nhận</span>
-              <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+              <span className={formLabelClass}>Kiểu ghi nhận</span>
+              <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value)} className={formInputClass}>
                 <option value="NORMAL">Ghi nhận thường</option>
                 <option value="DEDUCTION">{transactionType === 'INCOME' ? 'Điều chỉnh giảm thu' : 'Điều chỉnh giảm chi'}</option>
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-slate-400">Phân Loại</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+              <span className={formLabelClass}>Phân Loại</span>
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className={formInputClass}>
                 {manualCategories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-slate-400">SL</span>
-              <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <span className={formLabelClass}>SL</span>
+              <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className={formInputClass} />
             </label>
             <label className="block">
-              <span className="text-xs text-slate-400">Đơn giá</span>
-              <input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <span className={formLabelClass}>Đơn giá</span>
+              <input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={formInputClass} />
             </label>
             <label className="block md:col-span-6">
-              <span className="text-xs text-slate-400">Ghi chú</span>
-              <input value={note} onChange={(event) => setNote(event.target.value)} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
+              <span className={formLabelClass}>Ghi chú</span>
+              <input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
             </label>
             <Button type="submit" disabled={createTransaction.isPending} className="h-11">
               {createTransaction.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -173,43 +170,55 @@ export function FinancePageClient() {
             </Button>
           </form>
         ) : null}
-      </section>
+      </SectionCard>
+      ) : null}
 
-      {isLoading ? <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Đang tải giao dịch...</div> : null}
-      {error ? <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error.message}</div> : null}
-      {actionError ? <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">{actionError}</div> : null}
+      {isLoading ? <NoticeCard>Đang tải giao dịch...</NoticeCard> : null}
+      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+      {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-sm font-semibold text-white">Danh sách thu chi</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as TransactionSort)} className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+      <SectionCard
+        title="Danh sách thu chi"
+        description="Danh sách đang hiển thị theo kỳ báo cáo đã chọn; dùng sắp xếp mới nhất hoặc cũ nhất để đối soát nhanh."
+        actions={(
+          <>
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as TransactionSort)} className={compactFormInputClass}>
               <option value="NEWEST">Mới nhất</option>
               <option value="OLDEST">Cũ nhất</option>
             </select>
-            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value) as PageSize)} className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none">
+            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value) as PageSize)} className={`${compactFormInputClass} sm:w-32`}>
               {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
             </select>
+          </>
+        )}
+      >
+        <div className="operational-x-scroll max-h-[420px] overflow-auto rounded-lg border border-border">
+          <div className="min-w-[880px]">
+            <div className="sticky top-0 z-10 grid grid-cols-[94px_minmax(0,2.4fr)_120px_130px_160px] items-center gap-3 border-b border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <div>Loại</div>
+              <div>Nội dung</div>
+              <div>SL x Đơn giá</div>
+              <div className="text-right">Số tiền</div>
+              <div className="text-right">Thời gian</div>
+            </div>
+            {visibleTransactions.map((item) => (
+              <article key={item.id} className="grid grid-cols-[94px_minmax(0,2.4fr)_120px_130px_160px] items-center gap-3 border-b border-border px-3 py-3 text-sm">
+                <TransactionBadge type={item.transactionType} adjustmentType={item.adjustmentType} />
+                <div className="min-w-0">
+                  <div className="break-words font-medium text-foreground">{item.title || item.category}</div>
+                  <div className="break-words text-xs text-muted-foreground">{getCategoryLabel(item.category)} · {item.note || '-'}</div>
+                </div>
+                <div className="text-muted-foreground">{item.quantity} x {formatCurrency(item.unitPrice)}đ</div>
+                <div className={`text-right font-mono font-semibold ${getSignedAmount(item.totalAmount, item.adjustmentType) >= 0 ? 'text-foreground' : 'text-warning'}`}>
+                  {formatSignedCurrency(item.totalAmount, item.adjustmentType)}
+                </div>
+                <div className="text-right text-xs text-muted-foreground">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '-'}</div>
+              </article>
+            ))}
+            {!isLoading && visibleTransactions.length === 0 ? (
+              <div className="p-5 text-center text-sm text-muted-foreground">Chưa có giao dịch trong kỳ báo cáo đang chọn.</div>
+            ) : null}
           </div>
-        </div>
-        <div className="mt-3 max-h-[420px] overflow-auto rounded-lg border border-white/10">
-          {visibleTransactions.map((item) => (
-            <article key={item.id} className="grid gap-2 border-b border-white/5 px-3 py-3 text-sm lg:grid-cols-[84px_minmax(0,2.4fr)_100px_110px_130px] lg:items-center">
-              <TransactionBadge type={item.transactionType} adjustmentType={item.adjustmentType} />
-              <div className="min-w-0">
-                <div className="break-words text-white">{item.title || item.category}</div>
-                <div className="break-words text-xs text-slate-500">{getCategoryLabel(item.category)} · {item.note || '-'}</div>
-              </div>
-              <div className="text-slate-300">{item.quantity} x {formatCurrency(item.unitPrice)}đ</div>
-              <div className={`text-right font-mono ${getSignedAmount(item.totalAmount, item.adjustmentType) >= 0 ? 'text-white' : 'text-amber-200'}`}>
-                {formatSignedCurrency(item.totalAmount, item.adjustmentType)}
-              </div>
-              <div className="text-right text-xs text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '-'}</div>
-            </article>
-          ))}
-          {!isLoading && visibleTransactions.length === 0 ? (
-            <div className="p-5 text-center text-sm text-slate-400">Chưa có giao dịch trong kỳ báo cáo đang chọn.</div>
-          ) : null}
         </div>
         <PaginationControls
           currentPage={Math.min(currentPage, totalPages)}
@@ -218,8 +227,8 @@ export function FinancePageClient() {
           pageSize={pageSize}
           onPageChange={setCurrentPage}
         />
-      </section>
-    </div>
+      </SectionCard>
+    </PageShell>
   );
 }
 
@@ -227,12 +236,12 @@ function TransactionBadge({ type, adjustmentType }: { type: string; adjustmentTy
   const isDeduction = normalizeAdjustmentType(adjustmentType) === 'DEDUCTION';
   const config = type === 'INCOME'
     ? isDeduction
-      ? { label: 'Giảm thu', className: 'bg-amber-500/10 text-amber-200' }
-      : { label: 'Thu', className: 'bg-emerald-500/10 text-emerald-200' }
+      ? { label: 'Giảm thu', className: 'border-warning/55 bg-surface text-warning' }
+      : { label: 'Thu', className: 'border-success/45 bg-surface text-success' }
     : isDeduction
-      ? { label: 'Giảm chi', className: 'bg-cyan-500/10 text-cyan-200' }
-      : { label: 'Chi', className: 'bg-rose-500/10 text-rose-200' };
-  return <span className={`inline-flex w-fit rounded-lg px-2 py-1 text-xs font-medium ${config.className}`}>{config.label}</span>;
+      ? { label: 'Giảm chi', className: 'border-info/45 bg-surface text-info' }
+      : { label: 'Chi', className: 'border-danger/45 bg-surface text-danger' };
+  return <span className={`inline-flex w-fit rounded-lg border px-2 py-1 text-xs font-semibold ${config.className}`}>{config.label}</span>;
 }
 
 function getTime(value: string | null): number {
@@ -263,20 +272,4 @@ function formatSignedCurrency(amount: number, adjustmentType?: string | null): s
   const signedAmount = getSignedAmount(amount, adjustmentType);
   const prefix = signedAmount < 0 ? '-' : '';
   return `${prefix}${formatCurrency(Math.abs(signedAmount))}đ`;
-}
-
-function Metric({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <div className={`rounded-xl border p-4 ${getMetricSurfaceTone(label)}`}>
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className={`mt-2 text-xl font-semibold ${tone}`}>{value}</div>
-    </div>
-  );
-}
-
-function getMetricSurfaceTone(label: string): string {
-  if (label.includes('Doanh thu')) return 'border-emerald-300/20 bg-emerald-400/[0.08]';
-  if (label.includes('Chi phí')) return 'border-rose-300/20 bg-rose-400/[0.08]';
-  if (label.includes('Lợi nhuận')) return 'border-cyan-300/20 bg-cyan-400/[0.08]';
-  return 'border-white/10 bg-white/[0.04]';
 }

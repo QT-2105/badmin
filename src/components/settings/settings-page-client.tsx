@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
+import { PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useBranding, useBrandingMutations } from '@/hooks/use-branding';
 import { normalizeMaxCourtCount } from '@/lib/app-settings';
@@ -74,12 +75,12 @@ export function SettingsPageClient() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 md:px-6">
-      <header>
-        <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/80">Cấu hình vận hành</p>
-        <h1 className="text-2xl font-semibold text-white">Cài đặt</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-400">Tinh chỉnh các hành vi tự động của chương trình.</p>
-      </header>
+    <PageShell>
+      <PageHeader
+        eyebrow="Cấu hình vận hành"
+        title="Cài đặt"
+        description="Cập nhật thông tin CLB, giới hạn số sân và các hành vi tự động khi hoàn tất ca. Chỉ bật những cấu hình phù hợp với cách vận hành thực tế."
+      />
 
       <SettingsCard
         title="Thông tin CLB"
@@ -97,13 +98,13 @@ export function SettingsPageClient() {
               textClassName="text-2xl"
             />
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+          <div className="rounded-2xl border border-border bg-surface-muted p-3">
             <label className="block min-w-0">
-              <span className="text-xs font-medium text-slate-400">Tên hiển thị</span>
+              <span className={formLabelClass}>Tên hiển thị</span>
               <input
                 value={clubName}
                 onChange={(event) => setClubName(event.target.value)}
-                className="mt-1 h-12 w-full rounded-xl border border-white/10 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-cyan-300/50"
+                className={formInputClass}
                 placeholder="Tên CLB"
               />
             </label>
@@ -112,7 +113,7 @@ export function SettingsPageClient() {
                 {brandingMutations.updateName.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Lưu tên
               </Button>
-              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.08]">
+              <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-foreground transition hover:bg-muted">
                 {brandingMutations.uploadLogo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
                 Tải logo
                 <input
@@ -163,16 +164,16 @@ export function SettingsPageClient() {
         onToggle={() => setExpandedSections((current) => ({ ...current, schedule: !current.schedule }))}
       >
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <label className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-            <span className="block text-sm font-medium text-white">Số sân tối đa cho một ca</span>
-            <span className="mt-0.5 block text-xs text-slate-400">Màn tạo/sửa ca sẽ không cho nhập vượt giới hạn này.</span>
+          <label className="rounded-lg border border-border bg-surface-muted p-3">
+            <span className="block text-sm font-medium text-foreground">Số sân tối đa cho một ca</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">Màn tạo/sửa ca sẽ không cho nhập vượt giới hạn này.</span>
             <input
               type="number"
               min={1}
               max={12}
               value={settings.maxCourtCountPerSession}
               onChange={(event) => setSetting('maxCourtCountPerSession', normalizeMaxCourtCount(event.target.value))}
-              className="mt-3 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+              className={formInputClass}
             />
           </label>
         </div>
@@ -231,7 +232,7 @@ export function SettingsPageClient() {
           </button>
         </div>
       </SettingsCard>
-    </div>
+    </PageShell>
   );
 }
 
@@ -253,21 +254,21 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-xl border p-3 ${danger ? 'border-rose-400/20 bg-rose-500/10' : 'border-white/10 bg-slate-900/70'}`}>
+    <section className={`rounded-xl border p-3 shadow-soft ${danger ? 'border-danger/25 bg-danger-soft' : 'border-border bg-surface'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${danger ? 'bg-rose-400/15 text-rose-200' : 'bg-cyan-400/10 text-cyan-200'}`}>
+          <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${danger ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}>
             {icon}
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white">{title}</h2>
-            <p className={`mt-1 text-sm ${danger ? 'text-rose-100/80' : 'text-slate-400'}`}>{description}</p>
+            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            <p className={`mt-1 text-sm ${danger ? 'text-danger' : 'text-muted-foreground'}`}>{description}</p>
           </div>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-surface-muted text-muted-foreground transition hover:bg-muted hover:text-foreground"
           aria-label={expanded ? 'Thu gọn' : 'Mở rộng'}
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -280,12 +281,12 @@ function SettingsCard({
 
 function SettingToggle({ checked, title, description, onChange }: { checked: boolean; title: string; description: string; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06]">
+    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-surface-muted p-3 transition-colors hover:bg-muted">
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-white">{title}</span>
-        <span className="mt-0.5 block text-xs text-slate-400">{description}</span>
+        <span className="block text-sm font-medium text-foreground">{title}</span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{description}</span>
       </span>
-      <span className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${checked ? 'border-cyan-300/40 bg-cyan-400' : 'border-white/10 bg-slate-950'}`}>
+      <span className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${checked ? 'border-primary/40 bg-primary' : 'border-border bg-background'}`}>
         <input
           type="checkbox"
           checked={checked}

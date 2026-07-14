@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCurrentUser, useLogoutMutation } from '@/hooks/use-auth';
 import { useBranding } from '@/hooks/use-branding';
 import { getRoleLabel, hasPermission, type PermissionKey } from '@/lib/auth/permissions';
@@ -43,28 +44,28 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [collapsed]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="min-h-screen">
         <aside
           className={cn(
-            'fixed left-0 top-0 z-30 hidden h-screen border-r border-white/10 bg-slate-950/95 md:flex md:flex-col transition-[width] duration-200',
+            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border bg-surface/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200',
             collapsed ? 'w-[72px]' : 'w-60'
           )}
         >
-          <div className="flex h-16 items-center justify-between gap-2 border-b border-white/10 px-3">
+          <div className="flex h-16 items-center justify-between gap-2 border-b border-border px-3">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
               {!collapsed ? (
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-white">{branding?.clubName || 'Badmin'}</span>
-                  <span className="block truncate text-[11px] text-slate-400">Vận hành sân</span>
+                  <span className="block truncate text-sm font-semibold text-foreground">{branding?.clubName || 'Badmin'}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">Vận hành sân</span>
                 </span>
               ) : null}
             </Link>
             <button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-100"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             >
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -81,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={item.href as Route}
                   className={cn(
                     'flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
-                    active ? 'bg-cyan-400/15 text-cyan-200' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100',
+                    active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     collapsed && 'justify-center px-0'
                   )}
                   title={collapsed ? item.label : undefined}
@@ -93,20 +94,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-white/10 p-2">
+          <div className="border-t border-border p-2">
             {!collapsed && currentUser ? (
-              <div className="mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-2">
-                <div className="truncate text-xs font-semibold text-white">{currentUser.displayName}</div>
-                <div className="mt-0.5 truncate text-[11px] text-slate-400">{getRoleLabel(currentUser.role)}</div>
+              <div className="mb-2 rounded-xl border border-border bg-surface-muted p-2">
+                <div className="truncate text-xs font-semibold text-foreground">{currentUser.displayName}</div>
+                <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{getRoleLabel(currentUser.role)}</div>
               </div>
             ) : null}
             <FullscreenToggle compact={collapsed} className="w-full justify-center" />
+            <ThemeToggle compact={collapsed} className="mt-2 w-full justify-center" />
             <button
               type="button"
               onClick={() => void logout.mutateAsync()}
               disabled={logout.isPending}
               className={cn(
-                'mt-2 flex h-10 w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-60',
+                'mt-2 flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-60',
                 collapsed && 'justify-center px-0'
               )}
               title={collapsed ? 'Đăng xuất' : undefined}
@@ -124,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             collapsed ? 'md:ml-[72px]' : 'md:ml-60'
           )}
         >
-          <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-white/10 bg-slate-950/90 px-3 backdrop-blur md:hidden">
+          <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-surface/90 px-3 backdrop-blur md:hidden">
             <Link href="/dashboard">
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
             </Link>
@@ -138,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     href={item.href as Route}
                     className={cn(
                       'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold',
-                      active ? 'bg-cyan-400/15 text-cyan-200' : 'text-slate-400'
+                      active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -147,10 +149,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 );
               })}
               <FullscreenToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
+              <ThemeToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
               <button
                 type="button"
                 onClick={() => void logout.mutateAsync()}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-300"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-muted text-muted-foreground"
                 aria-label="Đăng xuất"
               >
                 <LogOut className="h-3.5 w-3.5" />

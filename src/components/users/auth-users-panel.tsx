@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Loader2, Save, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { SectionCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
 import { useAuthUserMutations, useAuthUsers, useCurrentUser, useRolePermissionMutations, useRolePermissions } from '@/hooks/use-auth';
 import { getRoleLabel, PERMISSION_DEFINITIONS, USER_ROLES, type PermissionKey, type UserRole, type UserStatus } from '@/lib/auth/permissions';
@@ -95,7 +96,7 @@ export function AuthUsersPanel() {
 
   return (
     <div className="grid gap-4">
-      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+      <SectionCard>
         <div className="mb-3 grid gap-2 md:grid-cols-4">
           {USER_ROLES.map((role) => (
             <RoleNote key={role} role={role} description={roleDescriptions[role]} />
@@ -104,41 +105,41 @@ export function AuthUsersPanel() {
 
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr_0.8fr_0.8fr_auto] lg:items-end">
           <label className="block">
-            <span className="text-xs font-medium text-slate-400">Tên đăng nhập</span>
+            <span className={formLabelClass}>Tên đăng nhập</span>
             <input
               type="text"
               autoComplete="username"
               value={newUser.email}
               onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
-              className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
+              className={formInputClass}
               placeholder="operator01"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-slate-400">Tên hiển thị</span>
+            <span className={formLabelClass}>Tên hiển thị</span>
             <input
               value={newUser.displayName}
               onChange={(event) => setNewUser((current) => ({ ...current, displayName: event.target.value }))}
-              className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
+              className={formInputClass}
               placeholder="Tên operator"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-slate-400">Mật khẩu</span>
+            <span className={formLabelClass}>Mật khẩu</span>
             <input
               type="password"
               value={newUser.password}
               onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))}
-              className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
+              className={formInputClass}
               placeholder="Tối thiểu 8 ký tự"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-slate-400">Role</span>
+            <span className={formLabelClass}>Role</span>
             <select
               value={newUser.role}
               onChange={(event) => setNewUser((current) => ({ ...current, role: event.target.value as UserRole }))}
-              className="mt-1 h-11 w-full rounded-xl border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
+              className={formInputClass}
             >
               {USER_ROLES.map((role) => (
                 <option key={role} value={role}>{getRoleLabel(role)}</option>
@@ -156,83 +157,96 @@ export function AuthUsersPanel() {
           </Button>
         </div>
         {authMutations.createUser.error ? (
-          <p className="mt-2 text-sm text-rose-100">{authMutations.createUser.error.message}</p>
+          <p className="mt-2 text-sm font-medium text-danger">{authMutations.createUser.error.message}</p>
         ) : null}
-      </section>
+      </SectionCard>
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-sm font-semibold text-white">Danh sách user</h2>
+      <SectionCard
+        title="Danh sách user"
+        description="Chỉnh tên đăng nhập, tên hiển thị, role, trạng thái và mật khẩu mới cho từng tài khoản nội bộ."
+        actions={(
           <select
             value={usersPageSize}
             onChange={(event) => {
               setUsersPageSize(Number(event.target.value) as PageSize);
               setUsersPage(1);
             }}
-            className="h-10 w-fit rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+            className={`${compactFormInputClass} sm:w-32`}
           >
             {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
           </select>
-        </div>
-        <div className="mt-3 max-h-[460px] overflow-auto rounded-lg border border-white/10">
-          {visibleUsers.map((user) => (
-            <article key={user.id} className="grid gap-3 border-b border-white/5 px-3 py-3 text-sm lg:grid-cols-[1.1fr_1.1fr_1fr_140px_120px_1fr_auto] lg:items-center">
-              <input
-                defaultValue={user.email}
-                onBlur={(event) => {
-                  if (event.target.value !== user.email) void handleUpdateUser(user.id, { email: event.target.value });
-                }}
-                className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm font-semibold text-white outline-none focus:border-cyan-300/50"
-                aria-label="Tên đăng nhập"
-              />
-              <input
-                defaultValue={user.displayName}
-                onBlur={(event) => {
-                  if (event.target.value !== user.displayName) void handleUpdateUser(user.id, { displayName: event.target.value });
-                }}
-                className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
-                aria-label="Tên hiển thị"
-              />
-              <div className="min-w-0 text-xs text-slate-500">
-                Lần cuối: {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('vi-VN') : 'Chưa đăng nhập'}
-              </div>
-              <select
-                value={user.role}
-                onChange={(event) => void handleUpdateUser(user.id, { role: event.target.value as UserRole })}
-                className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
-              >
-                {USER_ROLES.map((role) => (
-                  <option key={role} value={role}>{getRoleLabel(role)}</option>
-                ))}
-              </select>
-              <select
-                value={user.status}
-                onChange={(event) => void handleUpdateUser(user.id, { status: event.target.value as UserStatus })}
-                className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
-              >
-                <option value="ACTIVE">Đang dùng</option>
-                <option value="DISABLED">Tạm khóa</option>
-              </select>
-              <input
-                type="password"
-                value={userPasswords[user.id] ?? ''}
-                onChange={(event) => setUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
-                className="h-10 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
-                placeholder="Mật khẩu mới"
-              />
-              <button
-                type="button"
-                onClick={() => void handleUpdateUser(user.id, { password: userPasswords[user.id] ?? '' })}
-                disabled={!userPasswords[user.id] || authMutations.updateUser.isPending}
-                className="h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Lưu
-              </button>
-            </article>
-          ))}
-          {authUsers.length === 0 ? (
-            <div className="p-5 text-center text-sm text-slate-400">Chưa có tài khoản đăng nhập.</div>
-          ) : null}
+        )}
+      >
+        <div className="operational-x-scroll max-h-[460px] overflow-auto rounded-lg border border-border">
+          <div className="min-w-[1120px]">
+            <div className="sticky top-0 z-10 grid grid-cols-[1.1fr_1.1fr_1fr_140px_120px_1fr_auto] items-center gap-3 border-b border-border bg-surface px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <div>Tên đăng nhập</div>
+              <div>Tên hiển thị</div>
+              <div>Đăng nhập gần nhất</div>
+              <div>Role</div>
+              <div>Trạng thái</div>
+              <div>Mật khẩu mới</div>
+              <div className="text-right">Lưu</div>
+            </div>
+            {visibleUsers.map((user) => (
+              <article key={user.id} className="grid grid-cols-[1.1fr_1.1fr_1fr_140px_120px_1fr_auto] items-center gap-3 border-b border-border px-3 py-3 text-sm">
+                <input
+                  defaultValue={user.email}
+                  onBlur={(event) => {
+                    if (event.target.value !== user.email) void handleUpdateUser(user.id, { email: event.target.value });
+                  }}
+                  className={`${formInputClass} h-10 font-semibold`}
+                  aria-label="Tên đăng nhập"
+                />
+                <input
+                  defaultValue={user.displayName}
+                  onBlur={(event) => {
+                    if (event.target.value !== user.displayName) void handleUpdateUser(user.id, { displayName: event.target.value });
+                  }}
+                  className={`${formInputClass} h-10`}
+                  aria-label="Tên hiển thị"
+                />
+                <div className="min-w-0 text-xs text-muted-foreground">
+                  {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('vi-VN') : 'Chưa đăng nhập'}
+                </div>
+                <select
+                  value={user.role}
+                  onChange={(event) => void handleUpdateUser(user.id, { role: event.target.value as UserRole })}
+                  className={`${formInputClass} h-10`}
+                >
+                  {USER_ROLES.map((role) => (
+                    <option key={role} value={role}>{getRoleLabel(role)}</option>
+                  ))}
+                </select>
+                <select
+                  value={user.status}
+                  onChange={(event) => void handleUpdateUser(user.id, { status: event.target.value as UserStatus })}
+                  className={`${formInputClass} h-10`}
+                >
+                  <option value="ACTIVE">Đang dùng</option>
+                  <option value="DISABLED">Tạm khóa</option>
+                </select>
+                <input
+                  type="password"
+                  value={userPasswords[user.id] ?? ''}
+                  onChange={(event) => setUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
+                  className={`${formInputClass} h-10`}
+                  placeholder="Mật khẩu mới"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleUpdateUser(user.id, { password: userPasswords[user.id] ?? '' })}
+                  disabled={!userPasswords[user.id] || authMutations.updateUser.isPending}
+                  className="h-10 rounded-lg border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Lưu
+                </button>
+              </article>
+            ))}
+            {authUsers.length === 0 ? (
+              <div className="p-5 text-center text-sm text-muted-foreground">Chưa có tài khoản đăng nhập.</div>
+            ) : null}
+          </div>
         </div>
         <PaginationControls
           currentPage={Math.min(usersPage, totalUserPages)}
@@ -241,31 +255,30 @@ export function AuthUsersPanel() {
           pageSize={usersPageSize}
           onPageChange={setUsersPage}
         />
-      </section>
+      </SectionCard>
       {authMutations.updateUser.error ? (
-        <p className="text-sm text-rose-100">{authMutations.updateUser.error.message}</p>
+        <p className="text-sm font-medium text-danger">{authMutations.updateUser.error.message}</p>
       ) : null}
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-white">Cấu hình phân quyền role</h2>
-            <p className="mt-1 text-sm text-slate-400">Chủ CLB luôn có full quyền. Các role còn lại có thể bật/tắt quyền theo nhu cầu vận hành.</p>
-          </div>
+      <SectionCard
+        title="Cấu hình phân quyền role"
+        description="Chủ CLB luôn có full quyền. Các role còn lại có thể bật/tắt quyền theo nhu cầu vận hành."
+        actions={(
           <Button type="button" variant="secondary" size="sm" onClick={() => setPermissionsExpanded((open) => !open)}>
             {permissionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             {permissionsExpanded ? 'Thu gọn' : 'Mở rộng'}
           </Button>
-        </div>
+        )}
+      >
         {permissionsExpanded ? (
           <>
-            <div className="mt-3 flex flex-col gap-3 rounded-lg bg-white/[0.03] p-3 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-3 rounded-lg bg-surface-muted p-3 md:flex-row md:items-end md:justify-between">
               <label className="block md:w-72">
-                <span className="text-xs text-slate-400">Role cấu hình</span>
+                <span className={formLabelClass}>Role cấu hình</span>
                 <select
                   value={selectedRole}
                   onChange={(event) => setSelectedRole(event.target.value as UserRole)}
-                  className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+                  className={`${formInputClass} h-10`}
                 >
                   {USER_ROLES.map((role) => (
                     <option key={role} value={role}>{getRoleLabel(role)}</option>
@@ -273,7 +286,7 @@ export function AuthUsersPanel() {
                 </select>
               </label>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-400">
+                <span className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
                   {selectedRole === 'OWNER' ? 'Chủ CLB luôn full quyền' : `${selectedPermissions.length} quyền đang bật`}
                 </span>
                 {selectedRole !== 'OWNER' ? (
@@ -281,7 +294,7 @@ export function AuthUsersPanel() {
                     type="button"
                     onClick={() => void saveRolePermissions(selectedRole)}
                     disabled={currentUser?.role !== 'OWNER' || roleMutations.updateRolePermissions.isPending}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-400/10 px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-info/30 bg-info-soft px-3 text-xs font-semibold text-info transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {roleMutations.updateRolePermissions.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                     Lưu quyền
@@ -290,12 +303,12 @@ export function AuthUsersPanel() {
               </div>
             </div>
             {roleMutations.updateRolePermissions.error ? (
-              <p className="mt-2 text-sm text-rose-100">{roleMutations.updateRolePermissions.error.message}</p>
+              <p className="mt-2 text-sm font-medium text-danger">{roleMutations.updateRolePermissions.error.message}</p>
             ) : null}
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {Object.entries(permissionGroups).map(([group, items]) => (
-                <div key={`${selectedRole}-${group}`} className="rounded-xl border border-white/10 bg-white/[0.02] p-2">
-                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{group}</div>
+                <div key={`${selectedRole}-${group}`} className="rounded-xl border border-border bg-surface-muted p-2">
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{group}</div>
                   <div className="grid gap-2">
                     {items.map((item) => {
                       const checked = selectedRole === 'OWNER' || selectedPermissions.includes(item.key);
@@ -303,8 +316,8 @@ export function AuthUsersPanel() {
                         <label
                           key={`${selectedRole}-${item.key}`}
                           className={cn(
-                            'flex items-center gap-2 rounded-lg border border-white/10 px-2 py-2 text-xs text-slate-300',
-                            checked ? 'bg-cyan-400/10 text-cyan-100' : 'bg-slate-950/50'
+                            'flex items-center gap-2 rounded-lg border border-border px-2 py-2 text-xs text-muted-foreground',
+                            checked ? 'border-info/45 bg-surface text-info' : 'bg-background'
                           )}
                         >
                           <input
@@ -324,16 +337,16 @@ export function AuthUsersPanel() {
             </div>
           </>
         ) : null}
-      </section>
+      </SectionCard>
     </div>
   );
 }
 
 function RoleNote({ role, description }: { role: UserRole; description: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
-      <div className="text-xs font-semibold text-cyan-100">{getRoleLabel(role)}</div>
-      <p className="mt-1 text-xs leading-5 text-slate-400">{description}</p>
+    <div className="rounded-xl border border-border bg-surface-muted p-3">
+      <div className="text-xs font-semibold text-info">{getRoleLabel(role)}</div>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
     </div>
   );
 }
