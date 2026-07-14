@@ -72,7 +72,7 @@ const config: Config = {
         sm: '0.375rem'
       },
       boxShadow: {
-        soft: '0 10px 30px rgba(0, 0, 0, 0.18)'
+        soft: 'var(--shadow-soft)'
       }
     }
   },

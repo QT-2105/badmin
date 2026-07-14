@@ -83,11 +83,11 @@ export function FinancePageClient() {
   const totals = getFinanceTotals(reportTransactions);
 
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell>
       <PageHeader
-        eyebrow="Operational finance"
+        eyebrow="Thu chi vận hành"
         title="Thu chi"
-        description="Theo dõi thu, chi và lợi nhuận theo tháng hoặc năm. Phiếu tự sinh từ hoàn tất ca dùng để đối soát, phiếu nhập tay dùng cho khoản cầu, sân, slot hoặc điều chỉnh giảm."
+        description="Theo dõi thu, chi và lợi nhuận theo kỳ báo cáo, gồm phiếu tự sinh từ ca và phiếu nhập tay."
       />
 
       <ToolbarCard

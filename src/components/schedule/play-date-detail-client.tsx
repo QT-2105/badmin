@@ -117,7 +117,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
   }
 
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell>
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <Link href="/schedule" className="text-xs font-medium text-info hover:text-info/80">← Lịch chơi</Link>

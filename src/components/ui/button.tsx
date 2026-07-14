@@ -12,17 +12,17 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-primary text-primary-foreground shadow-[0_12px_30px_hsl(var(--primary)/0.22)] hover:bg-primary/90 focus-visible:ring-primary/60',
+    'bg-primary text-primary-foreground shadow-[0_1px_2px_hsl(var(--primary)/0.20)] hover:bg-primary/90 focus-visible:ring-primary/60',
   secondary:
     'bg-secondary text-secondary-foreground ring-1 ring-inset ring-border hover:bg-muted focus-visible:ring-ring/40',
   ghost: 'bg-transparent text-foreground hover:bg-muted focus-visible:ring-ring/35',
-  danger: 'bg-danger text-white shadow-[0_12px_30px_hsl(var(--danger)/0.2)] hover:bg-danger/90 focus-visible:ring-danger/50'
+  danger: 'bg-danger text-white shadow-[0_1px_2px_hsl(var(--danger)/0.18)] hover:bg-danger/90 focus-visible:ring-danger/50'
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-11 rounded-xl px-3 text-sm',
-  md: 'h-12 rounded-2xl px-4 text-sm',
-  lg: 'h-14 rounded-2xl px-5 text-base'
+  sm: 'h-8 rounded-lg px-3 text-sm',
+  md: 'h-10 rounded-lg px-4 text-sm',
+  lg: 'h-11 rounded-xl px-5 text-base'
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -32,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          'inline-flex items-center justify-center gap-2 font-medium transition-colors outline-none backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
+          'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors outline-none backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
           variantStyles[variant],
           sizeStyles[size],
           className

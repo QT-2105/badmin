@@ -74,9 +74,9 @@ export function SchedulePageClient() {
   }
 
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell>
       <PageHeader
-        eyebrow="Playing schedule"
+        eyebrow="Lịch vận hành"
         title="Lịch chơi"
         description="Tạo ngày chơi trước, mở chi tiết ngày để tạo ca, sau đó vào chi tiết ca để thêm người chơi, bắt đầu ca và điều phối sân."
       />
@@ -118,11 +118,11 @@ export function SchedulePageClient() {
           return (
           <article
             key={item.id}
-            className={`rounded-xl border p-4 transition-colors ${
+            className={`rounded-xl border p-4 shadow-soft transition-colors ${
               isToday
-                ? 'border-info/40 bg-info-soft shadow-soft'
+                ? 'border-info/45 bg-surface ring-1 ring-info/15'
                 : hasIncompleteSession
-                  ? 'border-warning/30 bg-warning-soft'
+                  ? 'border-warning/45 bg-surface ring-1 ring-warning/15'
                   : 'border-border bg-surface'
             }`}
           >
@@ -149,7 +149,7 @@ export function SchedulePageClient() {
                 {(hasIncompleteSession || isPast) ? (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {hasIncompleteSession ? <span className="rounded-full border border-warning/30 bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">Có ca chưa hoàn tất</span> : null}
-                    {isPast ? <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Chỉ xem lại</span> : null}
+                    {isPast ? <span className="rounded-full border border-border bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Chỉ xem lại</span> : null}
                   </div>
                 ) : null}
                 {item.note ? <div className="mt-2 text-sm text-muted-foreground">{item.note}</div> : null}

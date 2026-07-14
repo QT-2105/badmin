@@ -15,13 +15,33 @@ import { useBranding } from '@/hooks/use-branding';
 import { getRoleLabel, hasPermission, type PermissionKey } from '@/lib/auth/permissions';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: BarChart3, permission: 'dashboard.view' },
-  { href: '/schedule', label: 'Lịch chơi', icon: CalendarDays, permission: 'schedule.view' },
-  { href: '/finance', label: 'Thu chi', icon: CircleDollarSign, permission: 'finance.view' },
-  { href: '/inventory', label: 'Kho cầu', icon: Package, permission: 'inventory.view' },
-  { href: '/users', label: 'User', icon: ShieldCheck, permission: 'users.manage' },
-  { href: '/settings', label: 'Cài đặt', icon: Settings2, permission: 'settings.manage' }
+const navGroups = [
+  {
+    label: 'Tổng quan',
+    items: [
+      { href: '/dashboard', label: 'Dashboard', icon: BarChart3, permission: 'dashboard.view' }
+    ]
+  },
+  {
+    label: 'Vận hành',
+    items: [
+      { href: '/schedule', label: 'Lịch chơi', icon: CalendarDays, permission: 'schedule.view' }
+    ]
+  },
+  {
+    label: 'Tài chính',
+    items: [
+      { href: '/finance', label: 'Thu chi', icon: CircleDollarSign, permission: 'finance.view' },
+      { href: '/inventory', label: 'Kho cầu', icon: Package, permission: 'inventory.view' }
+    ]
+  },
+  {
+    label: 'Hệ thống',
+    items: [
+      { href: '/users', label: 'Người dùng', icon: ShieldCheck, permission: 'users.manage' },
+      { href: '/settings', label: 'Cài đặt', icon: Settings2, permission: 'settings.manage' }
+    ]
+  }
 ] as const;
 
 function isNavItemActive(pathname: string, href: string): boolean {
@@ -33,7 +53,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: branding } = useBranding();
   const { data: currentUser } = useCurrentUser();
   const logout = useLogoutMutation();
-  const visibleNavItems = navItems.filter((item) => hasPermission(currentUser ?? null, item.permission as PermissionKey));
+  const visibleNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => hasPermission(currentUser ?? null, item.permission as PermissionKey))
+    }))
+    .filter((group) => group.items.length > 0);
+  const visibleNavItems = visibleNavGroups.flatMap((group) => group.items);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('badmin_sidebar_collapsed') === 'true';
@@ -49,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <aside
           className={cn(
             'fixed left-0 top-0 z-30 hidden h-screen border-r border-border bg-surface/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200',
-            collapsed ? 'w-[72px]' : 'w-60'
+            collapsed ? 'w-[72px]' : 'w-[232px]'
           )}
         >
           <div className="flex h-16 items-center justify-between gap-2 border-b border-border px-3">
@@ -72,33 +98,49 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 px-2 py-3">
-            {visibleNavItems.map((item) => {
-              const active = isNavItemActive(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href as Route}
-                  className={cn(
-                    'flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
-                    active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    collapsed && 'justify-center px-0'
-                  )}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {!collapsed ? <span>{item.label}</span> : null}
-                </Link>
-              );
-            })}
+          <nav className="flex-1 space-y-4 px-2 py-4">
+            {visibleNavGroups.map((group) => (
+              <div key={group.label} className="space-y-1">
+                {!collapsed ? (
+                  <div className="px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    {group.label}
+                  </div>
+                ) : null}
+                {group.items.map((item) => {
+                  const active = isNavItemActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href as Route}
+                      className={cn(
+                        'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
+                        active
+                          ? 'bg-primary/10 text-primary ring-1 ring-primary/10 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                        collapsed && 'justify-center px-0'
+                      )}
+                      title={collapsed ? `${group.label} · ${item.label}` : undefined}
+                    >
+                      <Icon className="h-[18px] w-[18px] shrink-0" />
+                      {!collapsed ? <span>{item.label}</span> : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="border-t border-border p-2">
             {!collapsed && currentUser ? (
-              <div className="mb-2 rounded-xl border border-border bg-surface-muted p-2">
-                <div className="truncate text-xs font-semibold text-foreground">{currentUser.displayName}</div>
-                <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{getRoleLabel(currentUser.role)}</div>
+              <div className="mb-2 flex items-center gap-2 px-1 py-1.5">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  {currentUser.displayName.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-semibold text-foreground">{currentUser.displayName}</div>
+                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{getRoleLabel(currentUser.role)}</div>
+                </div>
               </div>
             ) : null}
             <FullscreenToggle compact={collapsed} className="w-full justify-center" />
@@ -123,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main
           className={cn(
             'min-w-0 transition-[margin-left] duration-200',
-            collapsed ? 'md:ml-[72px]' : 'md:ml-60'
+            collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'
           )}
         >
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-surface/90 px-3 backdrop-blur md:hidden">
@@ -140,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     href={item.href as Route}
                     className={cn(
                       'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold',
-                      active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+                      active ? 'bg-primary/10 text-primary ring-1 ring-primary/10' : 'text-muted-foreground'
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />

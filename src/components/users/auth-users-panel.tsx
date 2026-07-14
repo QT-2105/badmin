@@ -162,8 +162,8 @@ export function AuthUsersPanel() {
       </SectionCard>
 
       <SectionCard
-        title="Danh sách user"
-        description="Chỉnh tên đăng nhập, tên hiển thị, role, trạng thái và mật khẩu mới cho từng tài khoản nội bộ."
+        title="Danh sách người dùng"
+        description="Chỉnh tên đăng nhập, tên hiển thị, vai trò, trạng thái và mật khẩu mới cho từng tài khoản nội bộ."
         actions={(
           <select
             value={usersPageSize}
@@ -183,7 +183,7 @@ export function AuthUsersPanel() {
               <div>Tên đăng nhập</div>
               <div>Tên hiển thị</div>
               <div>Đăng nhập gần nhất</div>
-              <div>Role</div>
+              <div>Vai trò</div>
               <div>Trạng thái</div>
               <div>Mật khẩu mới</div>
               <div className="text-right">Lưu</div>
@@ -261,8 +261,8 @@ export function AuthUsersPanel() {
       ) : null}
 
       <SectionCard
-        title="Cấu hình phân quyền role"
-        description="Chủ CLB luôn có full quyền. Các role còn lại có thể bật/tắt quyền theo nhu cầu vận hành."
+        title="Cấu hình phân quyền vai trò"
+        description="Chủ CLB luôn có full quyền. Các vai trò còn lại có thể bật/tắt quyền theo nhu cầu vận hành."
         actions={(
           <Button type="button" variant="secondary" size="sm" onClick={() => setPermissionsExpanded((open) => !open)}>
             {permissionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -274,7 +274,7 @@ export function AuthUsersPanel() {
           <>
             <div className="flex flex-col gap-3 rounded-lg bg-surface-muted p-3 md:flex-row md:items-end md:justify-between">
               <label className="block md:w-72">
-                <span className={formLabelClass}>Role cấu hình</span>
+                <span className={formLabelClass}>Vai trò cấu hình</span>
                 <select
                   value={selectedRole}
                   onChange={(event) => setSelectedRole(event.target.value as UserRole)}

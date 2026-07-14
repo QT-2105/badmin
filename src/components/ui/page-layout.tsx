@@ -15,67 +15,67 @@ const metricToneStyles: Record<MetricTone, { card: string; label: string; value:
     icon: 'text-muted-foreground'
   },
   income: {
-    card: 'border-success/45 bg-surface ring-1 ring-success/10',
+    card: 'border-border bg-surface ring-1 ring-success/10',
     label: 'text-foreground',
     value: 'text-success',
     sub: 'text-muted-foreground',
     icon: 'text-success'
   },
   expense: {
-    card: 'border-danger/45 bg-surface ring-1 ring-danger/10',
+    card: 'border-border bg-surface ring-1 ring-danger/10',
     label: 'text-foreground',
     value: 'text-danger',
     sub: 'text-muted-foreground',
     icon: 'text-danger'
   },
   profit: {
-    card: 'border-info/45 bg-surface ring-1 ring-info/10',
+    card: 'border-border bg-surface ring-1 ring-info/10',
     label: 'text-foreground',
     value: 'text-info',
     sub: 'text-muted-foreground',
     icon: 'text-info'
   },
   inventory: {
-    card: 'border-inventory/50 bg-surface ring-1 ring-inventory/10',
+    card: 'border-border bg-surface ring-1 ring-inventory/10',
     label: 'text-foreground',
     value: 'text-inventory',
     sub: 'text-muted-foreground',
     icon: 'text-inventory'
   },
   warning: {
-    card: 'border-warning/50 bg-surface ring-1 ring-warning/10',
+    card: 'border-border bg-surface ring-1 ring-warning/10',
     label: 'text-foreground',
     value: 'text-warning',
     sub: 'text-muted-foreground',
     icon: 'text-warning'
   },
   info: {
-    card: 'border-info/45 bg-surface ring-1 ring-info/10',
+    card: 'border-border bg-surface ring-1 ring-info/10',
     label: 'text-foreground',
     value: 'text-info',
     sub: 'text-muted-foreground',
     icon: 'text-info'
   },
   success: {
-    card: 'border-success/45 bg-surface ring-1 ring-success/10',
+    card: 'border-border bg-surface ring-1 ring-success/10',
     label: 'text-foreground',
     value: 'text-success',
     sub: 'text-muted-foreground',
     icon: 'text-success'
   },
   danger: {
-    card: 'border-danger/45 bg-surface ring-1 ring-danger/10',
+    card: 'border-border bg-surface ring-1 ring-danger/10',
     label: 'text-foreground',
     value: 'text-danger',
     sub: 'text-muted-foreground',
     icon: 'text-danger'
   },
   violet: {
-    card: 'border-violet-500/45 bg-surface ring-1 ring-violet-500/10',
+    card: 'border-border bg-surface ring-1 ring-info/10',
     label: 'text-foreground',
-    value: 'text-violet-700 dark:text-violet-200',
+    value: 'text-info',
     sub: 'text-muted-foreground',
-    icon: 'text-violet-700 dark:text-violet-200'
+    icon: 'text-info'
   }
 };
 
@@ -90,7 +90,7 @@ const noticeToneStyles: Record<NoticeTone, string> = {
 export function PageShell({
   children,
   className,
-  maxWidth = 'max-w-7xl',
+  maxWidth = 'max-w-none',
   minWidth
 }: {
   children: ReactNode;
@@ -100,7 +100,7 @@ export function PageShell({
 }) {
   return (
     <div className={cn('operational-x-scroll w-full')}>
-      <div className={cn('mx-auto flex w-full flex-col gap-4 px-4 py-5 md:px-6', maxWidth, minWidth, className)}>
+      <div className={cn('mx-auto flex w-full flex-col gap-5 px-4 py-5 md:px-6 md:py-6 xl:px-8', maxWidth, minWidth, className)}>
         {children}
       </div>
     </div>
@@ -121,9 +121,9 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
       <div className="min-w-0">
-        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.22em] text-info">{eyebrow}</p> : null}
-        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
-        {description ? <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
+        {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.18em] text-info">{eyebrow}</p> : null}
+        <h1 className="mt-1 font-display text-[30px] font-bold leading-tight tracking-tight text-foreground md:text-[32px]">{title}</h1>
+        {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
@@ -144,11 +144,11 @@ export function ToolbarCard({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-xl border border-border bg-surface px-3 py-2.5 shadow-soft', className)}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className={cn('rounded-xl border border-border bg-surface px-4 py-3 shadow-soft', className)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {(title || description) ? (
           <div className="min-w-0">
-            {title ? <div className="text-sm font-semibold text-foreground">{title}</div> : null}
+            {title ? <div className="text-base font-semibold text-foreground">{title}</div> : null}
             {description ? <div className="text-xs leading-5 text-muted-foreground">{description}</div> : null}
           </div>
         ) : null}
@@ -175,12 +175,12 @@ export function SectionCard({
   contentClassName?: string;
 }) {
   return (
-    <section className={cn('rounded-xl border border-border bg-surface p-4 shadow-soft', className)}>
+    <section className={cn('rounded-xl border border-border bg-surface p-4 shadow-soft md:p-5', className)}>
       {(title || description || actions) ? (
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
-            {description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}
+            {title ? <h2 className="text-lg font-semibold leading-snug text-foreground">{title}</h2> : null}
+            {description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p> : null}
           </div>
           {actions ? <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">{actions}</div> : null}
         </div>
@@ -213,12 +213,12 @@ export function MetricCard({
 }) {
   const toneStyle = metricToneStyles[tone];
   return (
-    <div className={cn('grid min-h-[112px] grid-rows-[24px_1fr_22px] gap-2 rounded-xl border p-4', toneStyle.card, className)}>
+    <div className={cn('relative grid min-h-[112px] grid-rows-[22px_1fr_22px] gap-2 overflow-hidden rounded-xl border p-4 before:absolute before:inset-y-4 before:left-0 before:w-1 before:rounded-r-full before:bg-current before:opacity-60', toneStyle.card, toneStyle.icon, className)}>
       <div className="flex items-center justify-between gap-3">
-        <div className={cn('truncate text-sm font-semibold uppercase tracking-[0.12em]', toneStyle.label, labelClassName)}>{label}</div>
+        <div className={cn('truncate text-[13px] font-semibold uppercase tracking-[0.12em]', toneStyle.label, labelClassName)}>{label}</div>
         {Icon ? <Icon className={cn('h-4 w-4 shrink-0', toneStyle.icon)} /> : null}
       </div>
-      <div className={cn('self-center break-words font-display text-3xl font-semibold leading-tight tracking-tight', toneStyle.value, valueClassName)}>{value}</div>
+      <div className={cn('self-center break-words font-display text-[30px] font-bold leading-tight tracking-tight tabular-nums', toneStyle.value, valueClassName)}>{value}</div>
       <div className={cn('self-start text-sm font-medium leading-snug', toneStyle.sub, sub ? '' : 'invisible', subClassName)}>{sub || '-'}</div>
     </div>
   );
@@ -241,9 +241,9 @@ export function NoticeCard({
 }
 
 export const formInputClass =
-  'mt-1 h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring disabled:text-muted-foreground';
+  'mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:text-muted-foreground';
 
 export const compactFormInputClass =
-  'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring disabled:text-muted-foreground sm:w-40';
+  'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:text-muted-foreground sm:w-40';
 
 export const formLabelClass = 'text-xs font-medium text-muted-foreground';

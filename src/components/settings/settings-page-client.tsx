@@ -254,14 +254,14 @@ function SettingsCard({
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-xl border p-3 shadow-soft ${danger ? 'border-danger/25 bg-danger-soft' : 'border-border bg-surface'}`}>
+    <section className={`rounded-xl border p-4 shadow-soft ${danger ? 'border-danger/25 bg-danger-soft' : 'border-border bg-surface'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${danger ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}>
+          <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${danger ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}>
             {icon}
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            <h2 className="text-lg font-semibold leading-snug text-foreground">{title}</h2>
             <p className={`mt-1 text-sm ${danger ? 'text-danger' : 'text-muted-foreground'}`}>{description}</p>
           </div>
         </div>

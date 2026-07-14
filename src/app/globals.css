@@ -34,8 +34,9 @@
   --warning-soft: 43 95% 92%;
   --info: 195 86% 44%;
   --info-soft: 194 85% 92%;
-  --inventory: 44 88% 48%;
-  --inventory-soft: 48 95% 91%;
+  --inventory: 195 86% 44%;
+  --inventory-soft: 194 85% 92%;
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.05);
   --radius: 1.125rem;
 }
 
@@ -69,8 +70,9 @@
   --warning-soft: 43 70% 13%;
   --info: 188 92% 62%;
   --info-soft: 190 72% 13%;
-  --inventory: 48 96% 63%;
-  --inventory-soft: 44 72% 13%;
+  --inventory: 188 92% 62%;
+  --inventory-soft: 190 72% 13%;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
 * {
@@ -83,8 +85,8 @@ html {
 
 html.dark {
   background:
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 28%),
-    radial-gradient(circle at top right, rgba(168, 85, 247, 0.1), transparent 24%),
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.06), transparent 24%),
     hsl(var(--background));
 }
 

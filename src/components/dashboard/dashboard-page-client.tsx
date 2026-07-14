@@ -30,8 +30,8 @@ export function DashboardPageClient() {
     <PageShell minWidth="min-w-[720px] md:min-w-0">
       <PageHeader
         eyebrow="Tổng quan vận hành"
-        title="Dashboard"
-        description="Xem nhanh doanh thu, chi phí, lợi nhuận, tồn kho và các ca cần xử lý trong kỳ. Điều phối realtime luôn mở từ chi tiết từng ca chơi."
+        title="Tổng quan"
+        description="Theo dõi doanh thu, chi phí, lợi nhuận, tồn kho và các ca cần xử lý trong kỳ."
         actions={(
           <>
           <Link href="/schedule"><Button size="sm" variant="secondary">Lịch chơi</Button></Link>
@@ -91,7 +91,7 @@ export function DashboardPageClient() {
           <SectionCard
             title="Dòng tiền theo ngày"
             description="Thu, chi và lợi nhuận trong kỳ."
-            className="min-h-[320px]"
+            className="min-h-[300px]"
             contentClassName="flex min-h-0 flex-1 flex-col"
             actions={(
                 <div className="hidden gap-3 text-xs text-muted-foreground sm:flex">
@@ -104,7 +104,7 @@ export function DashboardPageClient() {
               <div className="operational-x-scroll mt-4 flex min-h-0 flex-1 items-end gap-1 pb-2">
                 {data.dailyFinance.map((item) => (
                   <div key={item.date} className="flex min-w-[28px] flex-1 flex-col items-center gap-1">
-                    <div className="flex h-44 w-full items-end justify-center gap-0.5">
+                    <div className="flex h-40 w-full items-end justify-center gap-0.5">
                       <Bar value={item.income} max={chartMax} className="bg-emerald-400/80" />
                       <Bar value={item.expense} max={chartMax} className="bg-rose-400/80" />
                       <Bar value={Math.abs(item.profit)} max={chartMax} className={item.profit >= 0 ? 'bg-cyan-300/80' : 'bg-amber-300/80'} />

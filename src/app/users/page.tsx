@@ -9,9 +9,9 @@ export default async function UsersPage() {
     <AppShell>
       <PageShell>
         <PageHeader
-          eyebrow="User access"
-          title="User"
-          description="Tạo tài khoản đăng nhập, chỉnh quyền theo role và khóa/mở quyền thao tác các màn hình quan trọng. User hệ thống tách biệt hoàn toàn với người chơi trong từng ca."
+          eyebrow="Quản lý truy cập"
+          title="Người dùng"
+          description="Tạo tài khoản đăng nhập, chỉnh quyền theo role và khóa/mở quyền thao tác các màn hình quan trọng."
         />
         <AuthUsersPanel />
       </PageShell>
