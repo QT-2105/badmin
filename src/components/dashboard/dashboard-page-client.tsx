@@ -6,16 +6,96 @@ import { AlertTriangle, CircleDollarSign, Package, TrendingDown, TrendingUp } fr
 import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table';
+import type { DataTableColumn } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/feedback';
 import { Input, Select } from '@/components/ui/form';
 import { MetricCard, NoticeCard, PageHeader, PageShell, SectionCard, ToolbarCard, compactFormInputClass } from '@/components/ui/page-layout';
 import { useDashboardSummary } from '@/hooks/use-dashboard-summary';
 import { formatCurrency } from '@/lib/date-format';
 import { getSessionStatusLabel } from '@/lib/session-status';
+import type { DashboardSummary } from '@/types/domain';
 
 type ReportPeriod = 'MONTH' | 'YEAR';
+type RecentSession = DashboardSummary['recentSessions'][number];
 
 const today = new Date();
+
+const recentSessionColumns: DataTableColumn<RecentSession>[] = [
+  {
+    key: 'session',
+    header: 'Ca chơi',
+    render: (session) => (
+      <div>
+        <div className="font-medium text-foreground">{session.name}</div>
+        <div className="text-xs text-muted-foreground">{session.playDate} · {session.startTime}-{session.endTime}</div>
+      </div>
+    )
+  },
+  {
+    key: 'status',
+    header: 'Trạng thái',
+    render: (session) => <span className="text-muted-foreground">{getSessionStatusLabel(session.status)}</span>
+  },
+  {
+    key: 'players',
+    header: 'Người',
+    align: 'right',
+    render: (session) => <span className="text-muted-foreground">{session.playerCount}</span>
+  },
+  {
+    key: 'paidAmount',
+    header: 'Đã thu',
+    align: 'right',
+    render: (session) => <span className="font-mono text-success">{formatCurrency(session.paidAmount)}đ</span>
+  },
+  {
+    key: 'courtCount',
+    header: 'Số sân',
+    align: 'right',
+    render: (session) => <span className="text-muted-foreground">{session.courtCount}</span>
+  },
+  {
+    key: 'courtCost',
+    header: 'Tiền sân',
+    align: 'right',
+    render: (session) => <span className="font-mono text-foreground">{formatCurrency(session.courtCost)}đ</span>
+  },
+  {
+    key: 'shuttlecockPiecesUsed',
+    header: 'Số cầu',
+    align: 'right',
+    render: (session) => <span className="text-muted-foreground">{session.shuttlecockPiecesUsed}</span>
+  },
+  {
+    key: 'shuttlecockExpense',
+    header: 'Tiền cầu',
+    align: 'right',
+    render: (session) => <span className="font-mono text-inventory">{formatCurrency(session.shuttlecockExpense)}đ</span>
+  },
+  {
+    key: 'totalExpense',
+    header: 'Tổng chi phí',
+    align: 'right',
+    render: (session) => <span className="font-mono text-danger">{formatCurrency(session.totalExpense)}đ</span>
+  },
+  {
+    key: 'totalProfit',
+    header: 'Lãi',
+    align: 'right',
+    render: (session) => <span className={`font-mono ${session.totalProfit >= 0 ? 'text-info' : 'text-danger'}`}>{formatCurrency(session.totalProfit)}đ</span>
+  },
+  {
+    key: 'action',
+    header: 'Thao tác',
+    align: 'right',
+    render: (session) => (
+      <Link href={`/sessions/${session.id}`}>
+        <Button size="sm" variant="secondary" className="h-9">Chi tiết</Button>
+      </Link>
+    )
+  }
+];
 
 export function DashboardPageClient() {
   const [period, setPeriod] = useState<ReportPeriod>('MONTH');
@@ -160,49 +240,15 @@ export function DashboardPageClient() {
           </section>
 
           <SectionCard title="Ca chơi gần đây" actions={<Link href="/schedule" className="text-xs font-semibold text-info hover:opacity-80">Xem lịch</Link>} className="min-h-[360px]" contentClassName="flex flex-1 flex-col">
-              <div className="operational-x-scroll mt-3 flex-1">
-                <table className="min-w-[1180px] w-full text-sm">
-                  <thead className="text-xs text-muted-foreground">
-                    <tr>
-                      <th className="py-2 text-left font-medium">Ca chơi</th>
-                      <th className="py-2 text-left font-medium">Trạng thái</th>
-                      <th className="py-2 text-right font-medium">Người</th>
-                      <th className="py-2 text-right font-medium">Đã thu</th>
-                      <th className="py-2 text-right font-medium">Số sân</th>
-                      <th className="py-2 text-right font-medium">Tiền sân</th>
-                      <th className="py-2 text-right font-medium">Số cầu</th>
-                      <th className="py-2 text-right font-medium">Tiền cầu</th>
-                      <th className="py-2 text-right font-medium">Tổng chi phí</th>
-                      <th className="py-2 text-right font-medium">Lãi</th>
-                      <th className="py-2 text-right font-medium">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {data.recentSessions.map((session) => (
-                      <tr key={session.id}>
-                        <td className="py-3">
-                          <div className="font-medium text-foreground">{session.name}</div>
-                          <div className="text-xs text-muted-foreground">{session.playDate} · {session.startTime}-{session.endTime}</div>
-                        </td>
-                        <td className="py-3 text-muted-foreground">{getSessionStatusLabel(session.status)}</td>
-                        <td className="py-3 text-right text-muted-foreground">{session.playerCount}</td>
-                        <td className="py-3 text-right font-mono text-success">{formatCurrency(session.paidAmount)}đ</td>
-                        <td className="py-3 text-right text-muted-foreground">{session.courtCount}</td>
-                        <td className="py-3 text-right font-mono text-foreground">{formatCurrency(session.courtCost)}đ</td>
-                        <td className="py-3 text-right text-muted-foreground">{session.shuttlecockPiecesUsed}</td>
-                        <td className="py-3 text-right font-mono text-inventory">{formatCurrency(session.shuttlecockExpense)}đ</td>
-                        <td className="py-3 text-right font-mono text-danger">{formatCurrency(session.totalExpense)}đ</td>
-                        <td className={`py-3 text-right font-mono ${session.totalProfit >= 0 ? 'text-info' : 'text-danger'}`}>{formatCurrency(session.totalProfit)}đ</td>
-                        <td className="py-3 text-right">
-                          <Link href={`/sessions/${session.id}`}>
-                            <Button size="sm" variant="secondary" className="h-9">Chi tiết</Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                aria-label="Ca chơi gần đây"
+                className="mt-3 flex-1"
+                columns={recentSessionColumns}
+                density="compact"
+                getRowKey={(session) => session.id}
+                minWidth="1180px"
+                rows={data.recentSessions}
+              />
           </SectionCard>
         </>
       ) : null}
