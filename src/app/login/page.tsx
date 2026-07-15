@@ -4,7 +4,7 @@ import { LoginPageClient } from '@/components/auth/login-page-client';
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <LoginPageClient />
     </Suspense>
   );

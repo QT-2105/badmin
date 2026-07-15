@@ -8,6 +8,9 @@ import { PlayerFeeInput } from '@/components/player/player-fee-input';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { NoticeCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useShuttlecockProductOptions } from '@/hooks/use-inventory';
@@ -257,9 +260,9 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 md:px-6">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <Link href={session ? `/schedule/${session.playDateId}` : '/schedule'} className="text-xs text-cyan-200 hover:text-cyan-100">← Quay lại lịch</Link>
-          <h1 className="mt-1 text-2xl font-semibold text-white">{session?.name || 'Ca chơi'}</h1>
-          <p className="mt-1 text-sm text-slate-400">{session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân · ${getSessionStatusLabel(session.status)}` : 'Đang tải'}</p>
+          <Link href={session ? `/schedule/${session.playDateId}` : '/schedule'} className="text-xs font-medium text-info outline-none hover:text-info/80 focus-visible:ring-2 focus-visible:ring-focus/25">← Quay lại lịch</Link>
+          <h1 className="mt-1 text-2xl font-semibold text-foreground">{session?.name || 'Ca chơi'}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân · ${getSessionStatusLabel(session.status)}` : 'Đang tải'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {normalizedStatus === 'PENDING' && canOperateSession ? (
@@ -280,13 +283,13 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </div>
       </header>
 
-      {isLoading ? <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Đang tải ca chơi...</div> : null}
-      {error ? <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error.message}</div> : null}
+      {isLoading ? <NoticeCard>Đang tải ca chơi...</NoticeCard> : null}
+      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
       {!canStartSession && normalizedStatus === 'PENDING' && session ? (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <NoticeCard tone="warning" className="flex items-start gap-2">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>Cần ít nhất {requiredPlayers} người chơi cho {session.courtCount} sân trước khi bắt đầu ca. Hiện có {players.length} người.</span>
-        </div>
+        </NoticeCard>
       ) : null}
 
       {session ? (
@@ -297,14 +300,14 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
+      <section className="rounded-xl border border-border bg-surface p-3 shadow-soft">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-white">Thông tin hoàn tất ca</h2>
-            <p className="text-sm text-slate-400">Lưu chi phí sân, cầu hao và xem lợi nhuận tạm tính trước khi hoàn tất.</p>
+            <h2 className="text-sm font-semibold text-foreground">Thông tin hoàn tất ca</h2>
+            <p className="text-sm text-muted-foreground">Lưu chi phí sân, cầu hao và xem lợi nhuận tạm tính trước khi hoàn tất.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-lg bg-cyan-400/10 px-3 py-2 text-sm font-semibold text-cyan-200">{completionProfitLabel}: {formatCurrency(visibleCompletionProfit)}đ</span>
+            <span className="rounded-lg border border-info/25 bg-info-soft px-3 py-2 text-sm font-semibold text-info">{completionProfitLabel}: {formatCurrency(visibleCompletionProfit)}đ</span>
             <Button type="button" variant="secondary" size="sm" onClick={() => setCompletionExpanded((open) => !open)}>
               <ChevronDown className={`h-4 w-4 transition-transform ${completionExpanded ? 'rotate-180' : ''}`} />
               {completionExpanded ? 'Thu gọn' : 'Mở rộng'}
@@ -312,7 +315,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </div>
         {completionError ? (
-          <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm font-medium text-warning">
             {completionError}
           </div>
         ) : null}
@@ -320,12 +323,12 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         {completionExpanded ? (
         <div className="mt-3 grid gap-3 md:grid-cols-[150px_1fr_130px_auto] md:items-end">
           <label className="block">
-            <span className="text-xs text-slate-400">Chi phí sân</span>
-            <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
+            <span className={formLabelClass}>Chi phí sân</span>
+            <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Loại cầu hao</span>
-            <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500">
+            <span className={formLabelClass}>Loại cầu hao</span>
+            <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`}>
               <option value="">Chọn cầu</option>
               {shuttlecockProducts.map((product) => (
                 <option key={product.id} value={product.id}>{product.brand ? `${product.name} · ${product.brand}` : product.name}</option>
@@ -333,73 +336,73 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Cầu hao</span>
-            <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className="mt-1 h-11 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500" />
+            <span className={formLabelClass}>Cầu hao</span>
+            <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
           </label>
           <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11">
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 md:col-span-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Ghi chú ca</div>
-            <p className="mt-1 text-sm text-slate-300">{session?.note || 'Chưa có ghi chú.'}</p>
-            <p className="mt-2 text-xs text-slate-500">Loại cầu hao đã lưu: {selectedShuttlecockLabel}</p>
+          <div className="rounded-lg border border-border bg-surface-subtle p-3 md:col-span-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ghi chú ca</div>
+            <p className="mt-1 text-sm text-foreground">{session?.note || 'Chưa có ghi chú.'}</p>
+            <p className="mt-2 text-xs text-muted-foreground">Loại cầu hao đã lưu: {selectedShuttlecockLabel}</p>
           </div>
         </div>
         ) : null}
       </section>
 
-      <section className="rounded-xl border border-white/10 bg-slate-900/70 p-3">
+      <section className="rounded-xl border border-border bg-surface p-3 shadow-soft">
         <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-white">Người chơi trong ca</h2>
-            <p className="text-sm text-slate-400">
+            <h2 className="text-sm font-semibold text-foreground">Người chơi trong ca</h2>
+            <p className="text-sm text-muted-foreground">
               Thu tiền mặt: {formatCurrency(playerFinance.cash)}đ · Thu chuyển khoản: {formatCurrency(playerFinance.bank)}đ · Chưa thu: {formatCurrency(playerFinance.unpaid)}đ
             </p>
           </div>
         </div>
 
         {canOperateSession ? (
-        <form onSubmit={submitPlayer} className="mt-3 grid gap-3 rounded-lg bg-white/[0.03] p-3 md:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] md:items-end">
+        <form onSubmit={submitPlayer} className="mt-3 grid gap-3 rounded-lg border border-border bg-surface-subtle p-3 md:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] md:items-end">
           <label className="block min-w-0">
-            <span className="text-xs text-slate-400">Tên người chơi</span>
+            <span className={formLabelClass}>Tên người chơi</span>
             <input
               value={form.fullName}
               onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-              className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+              className={formInputClass}
               required
             />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Giới tính</span>
-            <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+            <span className={formLabelClass}>Giới tính</span>
+            <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={formInputClass}>
               <option value="Nam">Nam</option>
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Trình độ</span>
-            <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+            <span className={formLabelClass}>Trình độ</span>
+            <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className={formInputClass}>
               {LEVEL_OPTIONS.slice(0, 6).map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="text-xs text-slate-400">Phí</span>
+            <span className={formLabelClass}>Phí</span>
             <PlayerFeeInput
               value={form.paymentAmount}
               onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
             />
           </label>
           <label className="block w-12">
-            <span className="text-xs text-slate-400">Ảnh</span>
+            <span className={formLabelClass}>Ảnh</span>
             <span
-              className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-slate-950 text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-300/10"
+              className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
               title="Chọn hoặc chụp ảnh người chơi"
             >
-              <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-cyan-300' : ''}`} />
+              <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
             </span>
             <input
               type="file"
@@ -417,9 +420,9 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </form>
         ) : null}
 
-        {playersLoading ? <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-400">Đang tải người chơi...</div> : null}
-        {playersError ? <div className="mt-4 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{playersError.message}</div> : null}
-        {playerActionError ? <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-100">{playerActionError}</div> : null}
+        {playersLoading ? <NoticeCard className="mt-4">Đang tải người chơi...</NoticeCard> : null}
+        {playersError ? <NoticeCard tone="danger" className="mt-4">{playersError.message}</NoticeCard> : null}
+        {playerActionError ? <NoticeCard tone="warning" className="mt-4">{playerActionError}</NoticeCard> : null}
 
         <div className="mt-4 space-y-2">
           {players.map((player) => {
@@ -427,10 +430,10 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             const isEditing = editingId === player.id;
             if (isEditing) {
               return (
-                <article key={player.id} className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.06] p-3 text-sm">
+                <article key={player.id} className="rounded-xl border border-info/25 bg-info-soft/60 p-3 text-sm">
                   <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] lg:items-end">
                     <div className="flex items-center gap-2">
-                      <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-white/10 transition hover:ring-cyan-300/50" title="Đổi ảnh người chơi">
+                      <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-border transition hover:ring-info/40 focus-within:ring-2 focus-within:ring-focus/25" title="Đổi ảnh người chơi">
                         <PlayerAvatar name={editForm.fullName || player.fullName} gender={editForm.gender} avatarUrl={editAvatarPreview ?? player.avatarUrl} size="lg" />
                         <input
                           type="file"
@@ -441,37 +444,37 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                       </label>
                     </div>
                     <label className="block min-w-0 sm:col-span-2 lg:col-span-2">
-                      <span className="text-xs text-slate-400">Tên người chơi</span>
+                      <span className={formLabelClass}>Tên người chơi</span>
                       <input
                         value={editForm.fullName}
                         onChange={(event) => setEditForm((current) => ({ ...current, fullName: event.target.value }))}
-                        className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none"
+                        className={formInputClass}
                       />
                     </label>
                     <label className="block min-w-0">
-                      <span className="text-xs text-slate-400">Giới tính</span>
-                      <select value={editForm.gender} onChange={(event) => setEditForm((current) => ({ ...current, gender: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+                      <span className={formLabelClass}>Giới tính</span>
+                      <select value={editForm.gender} onChange={(event) => setEditForm((current) => ({ ...current, gender: event.target.value }))} className={formInputClass}>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                         <option value="Khác">Khác</option>
                       </select>
                     </label>
                     <label className="block min-w-0">
-                      <span className="text-xs text-slate-400">Trình độ</span>
-                      <select value={editForm.level} onChange={(event) => setEditForm((current) => ({ ...current, level: event.target.value }))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+                      <span className={formLabelClass}>Trình độ</span>
+                      <select value={editForm.level} onChange={(event) => setEditForm((current) => ({ ...current, level: event.target.value }))} className={formInputClass}>
                         {LEVEL_OPTIONS.slice(0, 6).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                     </label>
                     <label className="block min-w-0">
-                      <span className="text-xs text-slate-400">Phí</span>
+                      <span className={formLabelClass}>Phí</span>
                       <PlayerFeeInput
                         value={editForm.paymentAmount}
                         onChange={(value) => setEditForm((current) => ({ ...current, paymentAmount: value }))}
                       />
                     </label>
                     <label className="block min-w-0">
-                      <span className="text-xs text-slate-400">Thanh toán</span>
-                      <select value={getPaymentEditValue(editForm)} onChange={(event) => setEditForm((current) => withPaymentEditValue(current, event.target.value as PaymentEditValue))} className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white outline-none">
+                      <span className={formLabelClass}>Thanh toán</span>
+                      <select value={getPaymentEditValue(editForm)} onChange={(event) => setEditForm((current) => withPaymentEditValue(current, event.target.value as PaymentEditValue))} className={formInputClass}>
                         <option value="UNPAID">Chưa thu</option>
                         <option value="CASH">Tiền mặt</option>
                         <option value="BANK">Chuyển khoản</option>
@@ -505,17 +508,17 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') setQuickViewPlayer(toQuickViewPlayer(player));
                 }}
-                className="grid cursor-pointer gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm transition-colors hover:bg-white/[0.07] md:grid-cols-[1.5fr_90px_120px_140px_auto] md:items-center"
+                className="grid cursor-pointer gap-3 rounded-xl border border-border bg-surface-subtle p-3 text-sm outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 md:grid-cols-[1.5fr_90px_120px_140px_auto] md:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <PlayerAvatar name={player.fullName} gender={player.gender} avatarUrl={player.avatarUrl} size="md" />
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-white">{player.fullName}</div>
-                    <div className="text-xs text-slate-400">{player.gender || 'Không rõ'} · {getLevelLabel(player.level)}</div>
+                    <div className="truncate font-medium text-foreground">{player.fullName}</div>
+                    <div className="text-xs text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level)}</div>
                   </div>
                 </div>
-                <div className="text-slate-300">{player.totalMatches} trận</div>
-                <div className="font-mono text-slate-200">{formatCurrency(payable)}đ</div>
+                <div className="text-text-secondary">{player.totalMatches} trận</div>
+                <div className="font-mono text-foreground">{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
                 <div className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
                   {canOperateSession ? (
@@ -533,24 +536,24 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             );
           })}
           {!playersLoading && players.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-slate-400">Chưa có người chơi. Thêm người chơi trước khi vào Điều phối để runtime hydrate từ database.</div>
+            <EmptyState title="Chưa có người chơi" description="Thêm người chơi trước khi vào Điều phối để runtime hydrate từ database." />
           ) : null}
         </div>
       </section>
 
       {showCompleteConfirm ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-white/10 bg-slate-900 p-5 shadow-2xl">
-            <h2 className="text-lg font-semibold text-white">Hoàn tất ca chơi?</h2>
-            <p className="mt-2 text-sm text-slate-300">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-overlay px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-border bg-surface-elevated p-5 shadow-md">
+            <h2 className="text-lg font-semibold text-foreground">Hoàn tất ca chơi?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
               Hệ thống sẽ tự tạo phiếu thu tiền slot, chi tiền sân, chi tiền cầu và trừ kho cầu theo số lượng đã nhập.
             </p>
             {unpaidPlayers.length > 0 ? (
-              <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+              <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm font-medium text-warning">
                 Còn {unpaidPlayers.length} người chưa thanh toán. Sau khi hoàn tất ca, thông tin ca sẽ bị khóa và doanh số được chốt theo người đã thu.
               </div>
             ) : null}
-            <div className="mt-4 space-y-1 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-300">
+            <div className="mt-4 space-y-1 rounded-lg border border-border bg-surface-subtle p-3 text-sm text-text-secondary">
               <div>Thu slot: {formatCurrency(paymentTotals.paid)}đ</div>
               <div>Chi sân: {formatCurrency(Number(courtCost || 0))}đ{settings.autoCreateCourtFeeTransaction ? '' : ' · không tạo phiếu'}</div>
               <div>Chi cầu: {shuttlecockPiecesUsed || 0} quả · {formatCurrency(shuttlecockExpense)}đ{settings.autoCreateShuttlecockUsageTransaction ? '' : ' · không tạo phiếu chi'}</div>
@@ -574,17 +577,17 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className={`rounded-xl border px-3 py-2.5 ${getInfoCardTone(label)}`}>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
     </div>
   );
 }
 
 function getInfoCardTone(label: string): string {
-  if (label.includes('Thời gian')) return 'border-cyan-300/20 bg-cyan-400/[0.07]';
-  if (label.includes('Người chơi')) return 'border-violet-300/20 bg-violet-400/[0.07]';
-  if (label.includes('Thu')) return 'border-emerald-300/20 bg-emerald-400/[0.07]';
-  return 'border-white/10 bg-white/[0.04]';
+  if (label.includes('Thời gian')) return 'border-info/20 bg-info-soft';
+  if (label.includes('Người chơi')) return 'border-primary/20 bg-primary-soft';
+  if (label.includes('Thu')) return 'border-success/25 bg-success-soft';
+  return 'border-border bg-surface-subtle';
 }
 
 type PlayerFormState = {
@@ -674,13 +677,13 @@ function PaymentBadge({ status, method }: { status: string; method: string | nul
   const label = status === 'PAID' ? getPaymentMethodLabel(method) : status === 'WAIVED' ? 'Free' : 'Chưa thu';
   const tone = status === 'PAID'
     ? method === 'BANK'
-      ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200'
-      : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+      ? 'info'
+      : 'success'
     : status === 'WAIVED'
-      ? 'border-violet-400/20 bg-violet-500/10 text-violet-200'
-      : 'border-amber-400/20 bg-amber-500/10 text-amber-200';
+      ? 'neutral'
+      : 'warning';
 
-  return <div className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${tone}`}>{label}</div>;
+  return <StatusBadge tone={tone} className="w-fit">{label}</StatusBadge>;
 }
 
 function getPaymentMethodLabel(value: string | null): string {

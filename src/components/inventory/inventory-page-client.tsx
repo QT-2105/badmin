@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Input, Select } from '@/components/ui/form';
 import { MetricCard, NoticeCard, PageHeader, PageShell, SectionCard, ToolbarCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useInventoryMovements, useInventoryMutations, useInventoryProducts } from '@/hooks/use-inventory';
 import { hasPermission } from '@/lib/auth/permissions';
@@ -239,14 +242,14 @@ export function InventoryPageClient() {
         description="Áp dụng cho tiền bán cầu và chi cầu hao ca."
         actions={(
           <>
-            <select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
+            <Select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
               <option value="MONTH">Theo tháng</option>
               <option value="YEAR">Theo năm</option>
-            </select>
+            </Select>
             {reportPeriod === 'MONTH' ? (
-              <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className={compactFormInputClass} />
+              <Input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className={compactFormInputClass} />
             ) : (
-              <input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
+              <Input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
             )}
           </>
         )}
@@ -300,10 +303,10 @@ export function InventoryPageClient() {
             <NumberField label="Quả/ống" value={productForm.ballsPerTube} min={1} onChange={(value) => setProductForm((current) => ({ ...current, ballsPerTube: value }))} />
             <label className="block">
               <span className={formLabelClass}>Trạng thái</span>
-              <select value={productForm.status} onChange={(event) => setProductForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}>
+              <Select value={productForm.status} onChange={(event) => setProductForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}>
                 <option value="ACTIVE">Đang dùng</option>
                 <option value="INACTIVE">Ngưng dùng</option>
-              </select>
+              </Select>
             </label>
             <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending} className="h-11">
               {createProduct.isPending || updateProduct.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editingProductId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -349,7 +352,7 @@ export function InventoryPageClient() {
                   </td>
                 </tr>
               ))}
-              {!isLoading && products.length === 0 ? <tr><td colSpan={8} className="p-5 text-center text-sm text-muted-foreground">Chưa có loại cầu.</td></tr> : null}
+              {!isLoading && products.length === 0 ? <tr><td colSpan={8} className="p-3"><EmptyState title="Chưa có loại cầu" description="Thêm loại cầu trước khi tạo phiếu nhập hoặc xuất kho." /></td></tr> : null}
             </tbody>
           </table>
         </div>
@@ -358,8 +361,8 @@ export function InventoryPageClient() {
       {canManageInventory ? (
       <SectionCard>
         <div className="grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={() => setStockFormTab((tab) => tab === 'IMPORT' ? null : 'IMPORT')} className={stockFormTab === 'IMPORT' ? activeTabClass : inactiveTabClass}>Phiếu nhập kho</button>
-          <button type="button" onClick={() => setStockFormTab((tab) => tab === 'OUTBOUND' ? null : 'OUTBOUND')} className={stockFormTab === 'OUTBOUND' ? activeTabClass : inactiveTabClass}>Phiếu xuất kho</button>
+          <Button type="button" variant={stockFormTab === 'IMPORT' ? 'primary' : 'outline'} onClick={() => setStockFormTab((tab) => tab === 'IMPORT' ? null : 'IMPORT')} className="h-12">Phiếu nhập kho</Button>
+          <Button type="button" variant={stockFormTab === 'OUTBOUND' ? 'primary' : 'outline'} onClick={() => setStockFormTab((tab) => tab === 'OUTBOUND' ? null : 'OUTBOUND')} className="h-12">Phiếu xuất kho</Button>
         </div>
 
         {stockFormTab === 'IMPORT' ? (
@@ -391,12 +394,12 @@ export function InventoryPageClient() {
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className={formLabelClass}>Loại xuất kho</span>
-              <select value={outboundType} onChange={(event) => setOutboundType(event.target.value as OutboundType)} className={inputClass}>
+              <Select value={outboundType} onChange={(event) => setOutboundType(event.target.value as OutboundType)} className={inputClass}>
                 <option value="SALE">Bán cầu</option>
                 <option value="PLAY_USAGE">Chi cầu hao ca</option>
                 <option value="ADJUSTMENT">Điều chỉnh tồn</option>
                 <option value="OTHER">Ngoại lệ</option>
-              </select>
+              </Select>
             </label>
             <ProductSelect label="Loại cầu" value={outboundProductId} products={products} onChange={setOutboundProductId} />
             <Field label="Tiêu đề" value={outboundTitle} onChange={setOutboundTitle} required />
@@ -431,9 +434,9 @@ export function InventoryPageClient() {
         title="Lịch sử nhập xuất"
         description="Mỗi phát sinh nhập, bán, cầu hao hoặc điều chỉnh đều được ghi lại để kiểm tra tồn kho."
         actions={(
-          <select value={movementPageSize} onChange={(event) => setMovementPageSize(Number(event.target.value) as PageSize)} className={`${compactFormInputClass} sm:w-32`}>
+          <Select value={movementPageSize} onChange={(event) => setMovementPageSize(Number(event.target.value) as PageSize)} className={`${compactFormInputClass} sm:w-32`}>
             {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
-          </select>
+          </Select>
         )}
       >
         <div className="operational-x-scroll max-h-[360px] overflow-auto rounded-lg border border-border">
@@ -463,7 +466,7 @@ export function InventoryPageClient() {
                 </div>
               </article>
             ))}
-            {!movementsLoading && visibleMovements.length === 0 ? <div className="p-5 text-center text-sm text-muted-foreground">Chưa có giao dịch kho.</div> : null}
+            {!movementsLoading && visibleMovements.length === 0 ? <EmptyState title="Chưa có giao dịch kho" description="Các phiếu nhập, bán, cầu hao hoặc điều chỉnh sẽ hiển thị tại đây." className="m-3" /> : null}
           </div>
         </div>
         <PaginationControls
@@ -479,25 +482,23 @@ export function InventoryPageClient() {
 }
 
 const inputClass = formInputClass;
-const activeTabClass = 'h-12 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground';
-const inactiveTabClass = 'h-12 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground hover:bg-muted';
 
 function Field({ label, value, required, onChange }: { label: string; value: string; required?: boolean; onChange: (value: string) => void }) {
-  return <label className="block"><span className={formLabelClass}>{label}</span><input required={required} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass} /></label>;
+  return <label className="block"><span className={formLabelClass}>{label}</span><Input required={required} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass} /></label>;
 }
 
 function NumberField({ label, value, min, step, disabled, onChange }: { label: string; value: number; min?: number; step?: number; disabled?: boolean; onChange: (value: number) => void }) {
-  return <label className="block"><span className={formLabelClass}>{label}</span><input type="number" min={min} step={step} disabled={disabled} value={Number.isFinite(value) ? value : 0} onChange={(event) => onChange(Number(event.target.value))} className={inputClass} /></label>;
+  return <label className="block"><span className={formLabelClass}>{label}</span><Input type="number" min={min} step={step} disabled={disabled} value={Number.isFinite(value) ? value : 0} onChange={(event) => onChange(Number(event.target.value))} className={inputClass} /></label>;
 }
 
 function ProductSelect({ label, value, products, onChange }: { label: string; value: string; products: ShuttlecockProductSummary[]; onChange: (value: string) => void }) {
   return (
     <label className="block">
       <span className={formLabelClass}>{label}</span>
-      <select required value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
+      <Select required value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
         <option value="">Chọn loại cầu</option>
         {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-      </select>
+      </Select>
     </label>
   );
 }
@@ -540,13 +541,13 @@ function getTime(value: string | null): number {
 
 function MovementBadge({ type }: { type: string }) {
   const config = type === 'IMPORT'
-    ? { label: 'Nhập kho', className: 'border-success/45 bg-surface text-success' }
+    ? { label: 'Nhập kho', tone: 'success' as const }
     : type === 'SALE'
-      ? { label: 'Bán cầu', className: 'border-info/45 bg-surface text-info' }
+      ? { label: 'Bán cầu', tone: 'info' as const }
       : type === 'ADJUSTMENT'
-        ? { label: 'Điều chỉnh', className: 'border-warning/55 bg-surface text-warning' }
+        ? { label: 'Điều chỉnh', tone: 'warning' as const }
         : type === 'OTHER'
-          ? { label: 'Ngoại lệ', className: 'border-violet-500/45 bg-surface text-violet-700 dark:text-violet-200' }
-          : { label: 'Chi cầu hao ca', className: 'border-danger/45 bg-surface text-danger' };
-  return <span className={`inline-flex w-fit rounded-lg border px-2 py-1 text-xs font-semibold ${config.className}`}>{config.label}</span>;
+          ? { label: 'Ngoại lệ', tone: 'neutral' as const }
+          : { label: 'Chi cầu hao ca', tone: 'danger' as const };
+  return <StatusBadge tone={config.tone} className="w-fit rounded-lg">{config.label}</StatusBadge>;
 }

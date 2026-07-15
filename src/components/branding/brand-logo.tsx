@@ -22,7 +22,7 @@ export function BrandLogo({ clubName, logoUrl, className, textClassName }: Brand
   return (
     <span
       className={cn(
-        'grid shrink-0 place-items-center overflow-hidden rounded-xl bg-cyan-400 font-black text-slate-950',
+        'grid shrink-0 place-items-center overflow-hidden rounded-xl bg-primary font-black text-primary-foreground',
         className
       )}
     >

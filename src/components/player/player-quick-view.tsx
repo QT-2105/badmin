@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PlayerAvatar } from '@/components/player/player-avatar';
+import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/surface';
 import { formatCurrency } from '@/lib/date-format';
 import { getLevelLabel } from '@/lib/player-labels';
 
@@ -51,23 +53,25 @@ export function PlayerQuickView({
   const payable = Math.max(0, Number(player.paymentAmount ?? 0) - Number(player.discount ?? 0));
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] bg-slate-950/70 px-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] bg-overlay px-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center py-4">
-        <div
-          className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl"
+        <Surface
+          variant="elevated"
+          padding="lg"
+          className="max-h-[92vh] w-full max-w-md overflow-y-auto shadow-md"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
               <PlayerAvatar name={player.name} gender={player.gender} avatarUrl={player.avatarUrl} size="lg" className="h-24 w-24 text-2xl" />
               <div className="min-w-0">
-                <h2 className="break-words text-2xl font-semibold leading-tight text-white">{player.name}</h2>
-                <p className="text-sm text-slate-400">{player.gender || 'Không rõ'} · {getLevelLabel(player.level ?? undefined)}</p>
+                <h2 className="break-words text-2xl font-semibold leading-tight text-foreground">{player.name}</h2>
+                <p className="text-sm text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level ?? undefined)}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-white">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 shrink-0 px-0" aria-label="Đóng thông tin người chơi">
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
@@ -79,12 +83,12 @@ export function PlayerQuickView({
           </div>
 
           {player.note ? (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-xs text-slate-500">Ghi chú</div>
-              <div className="mt-1 text-sm text-slate-200">{player.note}</div>
-            </div>
+            <Surface variant="subtle" padding="sm" className="mt-3">
+              <div className="text-xs text-muted-foreground">Ghi chú</div>
+              <div className="mt-1 text-sm text-foreground">{player.note}</div>
+            </Surface>
           ) : null}
-        </div>
+        </Surface>
       </div>
     </div>,
     document.body
@@ -93,10 +97,10 @@ export function PlayerQuickView({
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="mt-1 truncate font-medium text-slate-100">{value}</div>
-    </div>
+    <Surface variant="subtle" padding="sm">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate font-medium text-foreground">{value}</div>
+    </Surface>
   );
 }
 

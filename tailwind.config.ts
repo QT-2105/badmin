@@ -7,12 +7,25 @@ const config: Config = {
     extend: {
       colors: {
         border: 'hsl(var(--border))',
+        borderStrong: 'hsl(var(--border-strong))',
         input: 'hsl(var(--input))',
+        inputHover: 'hsl(var(--input-hover))',
         ring: 'hsl(var(--ring))',
+        focus: 'hsl(var(--focus-ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        overlay: 'hsl(var(--overlay))',
+        text: {
+          primary: 'hsl(var(--text-primary))',
+          secondary: 'hsl(var(--text-secondary))',
+          muted: 'hsl(var(--text-muted))',
+          disabled: 'hsl(var(--text-disabled))',
+          inverse: 'hsl(var(--text-inverse))'
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
+          hover: 'hsl(var(--primary-hover))',
+          soft: 'hsl(var(--primary-soft))',
           foreground: 'hsl(var(--primary-foreground))'
         },
         secondary: {
@@ -41,38 +54,56 @@ const config: Config = {
         },
         surface: {
           DEFAULT: 'hsl(var(--surface))',
+          subtle: 'hsl(var(--surface-subtle))',
           muted: 'hsl(var(--surface-muted))',
-          elevated: 'hsl(var(--surface-elevated))'
+          elevated: 'hsl(var(--surface-elevated))',
+          hover: 'hsl(var(--surface-hover))'
         },
         success: {
           DEFAULT: 'hsl(var(--success))',
-          soft: 'hsl(var(--success-soft))'
+          soft: 'hsl(var(--success-soft))',
+          foreground: 'hsl(var(--success-foreground))'
         },
         danger: {
           DEFAULT: 'hsl(var(--danger))',
-          soft: 'hsl(var(--danger-soft))'
+          soft: 'hsl(var(--danger-soft))',
+          foreground: 'hsl(var(--danger-foreground))'
         },
         warning: {
           DEFAULT: 'hsl(var(--warning))',
-          soft: 'hsl(var(--warning-soft))'
+          soft: 'hsl(var(--warning-soft))',
+          foreground: 'hsl(var(--warning-foreground))'
         },
         info: {
           DEFAULT: 'hsl(var(--info))',
-          soft: 'hsl(var(--info-soft))'
+          soft: 'hsl(var(--info-soft))',
+          foreground: 'hsl(var(--info-foreground))'
         },
         inventory: {
           DEFAULT: 'hsl(var(--inventory))',
-          soft: 'hsl(var(--inventory-soft))'
+          soft: 'hsl(var(--inventory-soft))',
+          foreground: 'hsl(var(--inventory-foreground))'
         }
       },
       borderRadius: {
-        xl: '0.875rem',
-        lg: '0.625rem',
-        md: '0.5rem',
-        sm: '0.375rem'
+        full: 'var(--radius-full)',
+        xl: 'var(--radius-xl)',
+        lg: 'var(--radius-lg)',
+        md: 'var(--radius-md)',
+        sm: 'var(--radius-sm)'
       },
       boxShadow: {
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
         soft: 'var(--shadow-soft)'
+      },
+      zIndex: {
+        sticky: 'var(--z-sticky)',
+        dropdown: 'var(--z-dropdown)',
+        overlay: 'var(--z-overlay)',
+        modal: 'var(--z-modal)',
+        toast: 'var(--z-toast)'
       }
     }
   },

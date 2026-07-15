@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Input, Select } from '@/components/ui/form';
 import { MetricCard, NoticeCard, PageHeader, PageShell, SectionCard, ToolbarCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useTransactions, useFinanceMutations } from '@/hooks/use-finance';
 import { hasPermission } from '@/lib/auth/permissions';
@@ -95,14 +98,14 @@ export function FinancePageClient() {
         description="Mặc định tính theo tháng hiện tại."
         actions={(
           <>
-            <select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
+            <Select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
               <option value="MONTH">Theo tháng</option>
               <option value="YEAR">Theo năm</option>
-            </select>
+            </Select>
             {reportPeriod === 'MONTH' ? (
-              <input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className={compactFormInputClass} />
+              <Input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} className={compactFormInputClass} />
             ) : (
-              <input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
+              <Input type="number" min={2000} max={2100} value={reportYear} onChange={(event) => setReportYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
             )}
           </>
         )}
@@ -130,39 +133,39 @@ export function FinancePageClient() {
           <form onSubmit={submit} className="grid gap-3 rounded-lg bg-surface-muted p-3 md:grid-cols-[1.5fr_110px_150px_120px_90px_130px_auto] md:items-end">
             <label className="block md:col-span-1">
               <span className={formLabelClass}>Tiêu đề</span>
-              <input required value={title} onChange={(event) => setTitle(event.target.value)} className={formInputClass} />
+              <Input required value={title} onChange={(event) => setTitle(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
               <span className={formLabelClass}>Loại</span>
-              <select value={transactionType} onChange={(event) => setTransactionType(event.target.value)} className={formInputClass}>
+              <Select value={transactionType} onChange={(event) => setTransactionType(event.target.value)} className={formInputClass}>
                 <option value="INCOME">Thu</option>
                 <option value="EXPENSE">Chi</option>
-              </select>
+              </Select>
             </label>
             <label className="block">
               <span className={formLabelClass}>Kiểu ghi nhận</span>
-              <select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value)} className={formInputClass}>
+              <Select value={adjustmentType} onChange={(event) => setAdjustmentType(event.target.value)} className={formInputClass}>
                 <option value="NORMAL">Ghi nhận thường</option>
                 <option value="DEDUCTION">{transactionType === 'INCOME' ? 'Điều chỉnh giảm thu' : 'Điều chỉnh giảm chi'}</option>
-              </select>
+              </Select>
             </label>
             <label className="block">
               <span className={formLabelClass}>Phân Loại</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value)} className={formInputClass}>
+              <Select value={category} onChange={(event) => setCategory(event.target.value)} className={formInputClass}>
                 {manualCategories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
+              </Select>
             </label>
             <label className="block">
               <span className={formLabelClass}>SL</span>
-              <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className={formInputClass} />
+              <Input type="number" min={1} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} className={formInputClass} />
             </label>
             <label className="block">
               <span className={formLabelClass}>Đơn giá</span>
-              <input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={formInputClass} />
+              <Input type="number" min={0} step={1} value={unitPrice} onChange={(event) => setUnitPrice(Number(event.target.value))} className={formInputClass} />
             </label>
             <label className="block md:col-span-6">
               <span className={formLabelClass}>Ghi chú</span>
-              <input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
+              <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
             </label>
             <Button type="submit" disabled={createTransaction.isPending} className="h-11">
               {createTransaction.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -182,13 +185,13 @@ export function FinancePageClient() {
         description="Danh sách đang hiển thị theo kỳ báo cáo đã chọn; dùng sắp xếp mới nhất hoặc cũ nhất để đối soát nhanh."
         actions={(
           <>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as TransactionSort)} className={compactFormInputClass}>
+            <Select value={sortBy} onChange={(event) => setSortBy(event.target.value as TransactionSort)} className={compactFormInputClass}>
               <option value="NEWEST">Mới nhất</option>
               <option value="OLDEST">Cũ nhất</option>
-            </select>
-            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value) as PageSize)} className={`${compactFormInputClass} sm:w-32`}>
+            </Select>
+            <Select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value) as PageSize)} className={`${compactFormInputClass} sm:w-32`}>
               {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
-            </select>
+            </Select>
           </>
         )}
       >
@@ -216,7 +219,7 @@ export function FinancePageClient() {
               </article>
             ))}
             {!isLoading && visibleTransactions.length === 0 ? (
-              <div className="p-5 text-center text-sm text-muted-foreground">Chưa có giao dịch trong kỳ báo cáo đang chọn.</div>
+              <EmptyState title="Chưa có giao dịch" description="Kỳ báo cáo đang chọn chưa có phiếu thu chi." className="m-3" />
             ) : null}
           </div>
         </div>
@@ -236,12 +239,12 @@ function TransactionBadge({ type, adjustmentType }: { type: string; adjustmentTy
   const isDeduction = normalizeAdjustmentType(adjustmentType) === 'DEDUCTION';
   const config = type === 'INCOME'
     ? isDeduction
-      ? { label: 'Giảm thu', className: 'border-warning/55 bg-surface text-warning' }
-      : { label: 'Thu', className: 'border-success/45 bg-surface text-success' }
+      ? { label: 'Giảm thu', tone: 'warning' as const }
+      : { label: 'Thu', tone: 'success' as const }
     : isDeduction
-      ? { label: 'Giảm chi', className: 'border-info/45 bg-surface text-info' }
-      : { label: 'Chi', className: 'border-danger/45 bg-surface text-danger' };
-  return <span className={`inline-flex w-fit rounded-lg border px-2 py-1 text-xs font-semibold ${config.className}`}>{config.label}</span>;
+      ? { label: 'Giảm chi', tone: 'info' as const }
+      : { label: 'Chi', tone: 'danger' as const };
+  return <StatusBadge tone={config.tone} className="w-fit rounded-lg">{config.label}</StatusBadge>;
 }
 
 function getTime(value: string | null): number {

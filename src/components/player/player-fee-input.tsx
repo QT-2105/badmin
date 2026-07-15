@@ -50,10 +50,10 @@ export function PlayerFeeInput({
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full rounded-lg border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none disabled:text-slate-500"
+        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition hover:border-inputHover focus:border-focus focus:ring-2 focus:ring-focus/15 disabled:bg-surface-subtle disabled:text-text-disabled"
       />
       {open && !disabled ? (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-30 grid w-full min-w-[150px] grid-cols-1 gap-1 rounded-lg border border-white/10 bg-slate-950 p-1 shadow-xl shadow-black/30">
+        <div className="absolute left-0 top-[calc(100%+6px)] z-dropdown grid w-full min-w-[150px] grid-cols-1 gap-1 rounded-lg border border-border bg-popover p-1 shadow-md">
           {PLAYER_FEE_OPTIONS.map((fee) => {
             const active = String(fee) === String(value);
             return (
@@ -71,8 +71,8 @@ export function PlayerFeeInput({
                 className={cn(
                   'flex h-9 items-center justify-between rounded-md px-3 text-sm font-semibold transition',
                   active
-                    ? 'bg-cyan-300 text-slate-950'
-                    : 'bg-white/[0.03] text-slate-200 hover:bg-cyan-300/10 hover:text-cyan-100'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-surface-subtle text-foreground hover:bg-primary-soft hover:text-primary'
                 )}
               >
                 <span>{fee.toLocaleString('vi-VN')}đ</span>

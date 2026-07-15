@@ -4,8 +4,11 @@ import { ChevronDown, ChevronUp, Loader2, Save, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Checkbox, Input, Select } from '@/components/ui/form';
 import { SectionCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuthUserMutations, useAuthUsers, useCurrentUser, useRolePermissionMutations, useRolePermissions } from '@/hooks/use-auth';
 import { getRoleLabel, PERMISSION_DEFINITIONS, USER_ROLES, type PermissionKey, type UserRole, type UserStatus } from '@/lib/auth/permissions';
 import { cn } from '@/lib/utils';
@@ -106,7 +109,7 @@ export function AuthUsersPanel() {
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr_0.8fr_0.8fr_auto] lg:items-end">
           <label className="block">
             <span className={formLabelClass}>Tên đăng nhập</span>
-            <input
+            <Input
               type="text"
               autoComplete="username"
               value={newUser.email}
@@ -117,7 +120,7 @@ export function AuthUsersPanel() {
           </label>
           <label className="block">
             <span className={formLabelClass}>Tên hiển thị</span>
-            <input
+            <Input
               value={newUser.displayName}
               onChange={(event) => setNewUser((current) => ({ ...current, displayName: event.target.value }))}
               className={formInputClass}
@@ -126,7 +129,7 @@ export function AuthUsersPanel() {
           </label>
           <label className="block">
             <span className={formLabelClass}>Mật khẩu</span>
-            <input
+            <Input
               type="password"
               value={newUser.password}
               onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))}
@@ -136,7 +139,7 @@ export function AuthUsersPanel() {
           </label>
           <label className="block">
             <span className={formLabelClass}>Role</span>
-            <select
+            <Select
               value={newUser.role}
               onChange={(event) => setNewUser((current) => ({ ...current, role: event.target.value as UserRole }))}
               className={formInputClass}
@@ -144,7 +147,7 @@ export function AuthUsersPanel() {
               {USER_ROLES.map((role) => (
                 <option key={role} value={role}>{getRoleLabel(role)}</option>
               ))}
-            </select>
+            </Select>
           </label>
           <Button
             type="button"
@@ -165,7 +168,7 @@ export function AuthUsersPanel() {
         title="Danh sách người dùng"
         description="Chỉnh tên đăng nhập, tên hiển thị, vai trò, trạng thái và mật khẩu mới cho từng tài khoản nội bộ."
         actions={(
-          <select
+          <Select
             value={usersPageSize}
             onChange={(event) => {
               setUsersPageSize(Number(event.target.value) as PageSize);
@@ -174,7 +177,7 @@ export function AuthUsersPanel() {
             className={`${compactFormInputClass} sm:w-32`}
           >
             {PAGE_SIZE_OPTIONS.map((value) => <option key={value} value={value}>{value} dòng</option>)}
-          </select>
+          </Select>
         )}
       >
         <div className="operational-x-scroll max-h-[460px] overflow-auto rounded-lg border border-border">
@@ -190,7 +193,7 @@ export function AuthUsersPanel() {
             </div>
             {visibleUsers.map((user) => (
               <article key={user.id} className="grid grid-cols-[1.1fr_1.1fr_1fr_140px_120px_1fr_auto] items-center gap-3 border-b border-border px-3 py-3 text-sm">
-                <input
+                <Input
                   defaultValue={user.email}
                   onBlur={(event) => {
                     if (event.target.value !== user.email) void handleUpdateUser(user.id, { email: event.target.value });
@@ -198,7 +201,7 @@ export function AuthUsersPanel() {
                   className={`${formInputClass} h-10 font-semibold`}
                   aria-label="Tên đăng nhập"
                 />
-                <input
+                <Input
                   defaultValue={user.displayName}
                   onBlur={(event) => {
                     if (event.target.value !== user.displayName) void handleUpdateUser(user.id, { displayName: event.target.value });
@@ -209,7 +212,7 @@ export function AuthUsersPanel() {
                 <div className="min-w-0 text-xs text-muted-foreground">
                   {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('vi-VN') : 'Chưa đăng nhập'}
                 </div>
-                <select
+                <Select
                   value={user.role}
                   onChange={(event) => void handleUpdateUser(user.id, { role: event.target.value as UserRole })}
                   className={`${formInputClass} h-10`}
@@ -217,34 +220,36 @@ export function AuthUsersPanel() {
                   {USER_ROLES.map((role) => (
                     <option key={role} value={role}>{getRoleLabel(role)}</option>
                   ))}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={user.status}
                   onChange={(event) => void handleUpdateUser(user.id, { status: event.target.value as UserStatus })}
                   className={`${formInputClass} h-10`}
                 >
                   <option value="ACTIVE">Đang dùng</option>
                   <option value="DISABLED">Tạm khóa</option>
-                </select>
-                <input
+                </Select>
+                <Input
                   type="password"
                   value={userPasswords[user.id] ?? ''}
                   onChange={(event) => setUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
                   className={`${formInputClass} h-10`}
                   placeholder="Mật khẩu mới"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={() => void handleUpdateUser(user.id, { password: userPasswords[user.id] ?? '' })}
                   disabled={!userPasswords[user.id] || authMutations.updateUser.isPending}
-                  className="h-10 rounded-lg border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="secondary"
+                  size="sm"
+                  className="h-10 px-3 text-xs"
                 >
                   Lưu
-                </button>
+                </Button>
               </article>
             ))}
             {authUsers.length === 0 ? (
-              <div className="p-5 text-center text-sm text-muted-foreground">Chưa có tài khoản đăng nhập.</div>
+              <EmptyState title="Chưa có tài khoản" description="Tạo tài khoản nội bộ để phân quyền thao tác hệ thống." className="m-3" />
             ) : null}
           </div>
         </div>
@@ -275,7 +280,7 @@ export function AuthUsersPanel() {
             <div className="flex flex-col gap-3 rounded-lg bg-surface-muted p-3 md:flex-row md:items-end md:justify-between">
               <label className="block md:w-72">
                 <span className={formLabelClass}>Vai trò cấu hình</span>
-                <select
+                <Select
                   value={selectedRole}
                   onChange={(event) => setSelectedRole(event.target.value as UserRole)}
                   className={`${formInputClass} h-10`}
@@ -283,22 +288,24 @@ export function AuthUsersPanel() {
                   {USER_ROLES.map((role) => (
                     <option key={role} value={role}>{getRoleLabel(role)}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+                <StatusBadge tone={selectedRole === 'OWNER' ? 'success' : 'info'} className="rounded-lg px-3 py-2">
                   {selectedRole === 'OWNER' ? 'Chủ CLB luôn full quyền' : `${selectedPermissions.length} quyền đang bật`}
-                </span>
+                </StatusBadge>
                 {selectedRole !== 'OWNER' ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => void saveRolePermissions(selectedRole)}
                     disabled={currentUser?.role !== 'OWNER' || roleMutations.updateRolePermissions.isPending}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-info/30 bg-info-soft px-3 text-xs font-semibold text-info transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                    variant="outline"
+                    size="sm"
+                    className="h-10 px-3 text-xs"
                   >
                     {roleMutations.updateRolePermissions.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                     Lưu quyền
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>
@@ -320,12 +327,10 @@ export function AuthUsersPanel() {
                             checked ? 'border-info/45 bg-surface text-info' : 'bg-background'
                           )}
                         >
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={checked}
                             disabled={selectedRoleLocked}
                             onChange={() => togglePermission(selectedRole, item.key)}
-                            className="h-4 w-4 accent-cyan-300"
                           />
                           <span>{item.label}</span>
                         </label>

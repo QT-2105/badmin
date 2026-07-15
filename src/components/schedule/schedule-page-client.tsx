@@ -5,7 +5,10 @@ import { useMemo, useState } from 'react';
 import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Input } from '@/components/ui/form';
 import { NoticeCard, PageHeader, PageShell, SectionCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDates, useScheduleMutations } from '@/hooks/use-play-dates';
 import { hasPermission } from '@/lib/auth/permissions';
@@ -86,15 +89,15 @@ export function SchedulePageClient() {
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto] md:items-end">
           <label className="block">
             <span className={formLabelClass}>Ngày chơi</span>
-            <input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
+            <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
           </label>
           <label className="block">
             <span className={formLabelClass}>Tiêu đề</span>
-            <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
           </label>
           <label className="block">
             <span className={formLabelClass}>Ghi chú</span>
-            <input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
+            <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
           </label>
           <Button type="submit" disabled={createPlayDate.isPending} className="h-11">
             {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
@@ -130,26 +133,28 @@ export function SchedulePageClient() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-sm font-semibold text-foreground">{item.title || item.playDate}</div>
-                  {isToday ? <span className="rounded-full border border-info/30 bg-info-soft px-2 py-0.5 text-[11px] font-semibold text-info">Hôm nay</span> : null}
+                  {isToday ? <StatusBadge tone="info">Hôm nay</StatusBadge> : null}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span>{item.playDate} · {item.sessionCount} ca</span>
                   {item.sessions.length > 0 ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => togglePlayDateSessions(item.id)}
-                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-border bg-surface-muted px-2 text-[11px] font-semibold text-foreground transition hover:bg-muted"
+                      variant="secondary"
+                      size="sm"
+                      className="h-7 gap-1 px-2 text-[11px]"
                       aria-label={expanded ? 'Thu gọn danh sách ca' : 'Mở danh sách ca'}
                     >
                       {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       {expanded ? 'Thu gọn' : 'Danh sách ca'}
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
                 {(hasIncompleteSession || isPast) ? (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {hasIncompleteSession ? <span className="rounded-full border border-warning/30 bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">Có ca chưa hoàn tất</span> : null}
-                    {isPast ? <span className="rounded-full border border-border bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Chỉ xem lại</span> : null}
+                    {hasIncompleteSession ? <StatusBadge tone="warning">Có ca chưa hoàn tất</StatusBadge> : null}
+                    {isPast ? <StatusBadge tone="neutral">Chỉ xem lại</StatusBadge> : null}
                   </div>
                 ) : null}
                 {item.note ? <div className="mt-2 text-sm text-muted-foreground">{item.note}</div> : null}
@@ -184,7 +189,7 @@ export function SchedulePageClient() {
       </section>
 
       {!isLoading && playDates.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface-muted p-5 text-sm text-muted-foreground">Chưa có ngày chơi nào. Tạo ngày chơi đầu tiên ở trên.</div>
+        <EmptyState title="Chưa có ngày chơi" description="Tạo ngày chơi đầu tiên ở trên." />
       ) : null}
     </PageShell>
   );

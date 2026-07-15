@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { NoticeCard, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { EmptyState } from '@/components/ui/feedback';
+import { Input } from '@/components/ui/form';
+import { NoticeCard, PageHeader, PageShell, SectionCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDate, useScheduleMutations } from '@/hooks/use-play-dates';
@@ -118,48 +120,46 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
 
   return (
     <PageShell>
-      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <Link href="/schedule" className="text-xs font-medium text-info hover:text-info/80">← Lịch chơi</Link>
-          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{playDate?.title || playDate?.playDate || 'Ngày chơi'}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{playDate?.playDate || 'Đang tải'} · {playDate?.sessionCount ?? 0} ca</p>
-        </div>
-      </header>
+      <PageHeader
+        title={playDate?.title || playDate?.playDate || 'Ngày chơi'}
+        description={`${playDate?.playDate || 'Đang tải'} · ${playDate?.sessionCount ?? 0} ca`}
+        backAction={<Link href="/schedule" className="text-xs font-medium text-info hover:text-info/80">← Lịch chơi</Link>}
+      />
 
       {isLoading ? <NoticeCard>Đang tải ngày chơi...</NoticeCard> : null}
       {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
       {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
 
       {!isPastPlayDate && canManageSessions ? (
-      <section className="rounded-xl border border-border bg-surface p-4 shadow-soft">
+      <SectionCard>
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-[1fr_130px_130px_100px] md:items-end">
           <label className="block">
             <span className={formLabelClass}>Tên ca</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} className={formInputClass} />
+            <Input value={name} onChange={(event) => setName(event.target.value)} className={formInputClass} />
           </label>
           <label className="block">
             <span className={formLabelClass}>Bắt đầu</span>
-            <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className={formInputClass} />
+            <Input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className={formInputClass} />
           </label>
           <label className="block">
             <span className={formLabelClass}>Kết thúc</span>
-            <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className={formInputClass} />
+            <Input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className={formInputClass} />
           </label>
           <label className="block">
             <span className={formLabelClass}>Sân</span>
-            <input type="number" min={1} max={maxCourtCount} value={courtCount} onChange={(event) => setCourtCount(Number(event.target.value))} className={formInputClass} />
+            <Input type="number" min={1} max={maxCourtCount} value={courtCount} onChange={(event) => setCourtCount(Number(event.target.value))} className={formInputClass} />
             <span className="mt-1 block text-[11px] text-muted-foreground">Tối đa {maxCourtCount} sân</span>
           </label>
           <label className="block md:col-span-3">
             <span className={formLabelClass}>Ghi chú</span>
-            <input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
+            <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
           </label>
           <Button type="submit" disabled={createPlaySession.isPending} className="h-11">
             {createPlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Tạo ca
           </Button>
         </form>
-      </section>
+      </SectionCard>
       ) : null}
 
       <section className="space-y-3">
@@ -173,24 +173,24 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
                 <div className="grid gap-3 md:grid-cols-[1fr_130px_130px_100px] md:items-end">
                   <label className="block">
                     <span className={formLabelClass}>Tên ca</span>
-                    <input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} className={formInputClass} />
+                    <Input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
                     <span className={formLabelClass}>Bắt đầu</span>
-                    <input type="time" value={editForm.startTime} onChange={(event) => setEditForm((current) => ({ ...current, startTime: event.target.value }))} className={formInputClass} />
+                    <Input type="time" value={editForm.startTime} onChange={(event) => setEditForm((current) => ({ ...current, startTime: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
                     <span className={formLabelClass}>Kết thúc</span>
-                    <input type="time" value={editForm.endTime} onChange={(event) => setEditForm((current) => ({ ...current, endTime: event.target.value }))} className={formInputClass} />
+                    <Input type="time" value={editForm.endTime} onChange={(event) => setEditForm((current) => ({ ...current, endTime: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
                     <span className={formLabelClass}>Sân</span>
-                    <input type="number" min={1} max={maxCourtCount} value={editForm.courtCount} onChange={(event) => setEditForm((current) => ({ ...current, courtCount: Number(event.target.value) }))} className={formInputClass} />
+                    <Input type="number" min={1} max={maxCourtCount} value={editForm.courtCount} onChange={(event) => setEditForm((current) => ({ ...current, courtCount: Number(event.target.value) }))} className={formInputClass} />
                     <span className="mt-1 block text-[11px] text-muted-foreground">Tối đa {maxCourtCount} sân</span>
                   </label>
                   <label className="block md:col-span-3">
                     <span className={formLabelClass}>Ghi chú</span>
-                    <input value={editForm.note} onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))} className={formInputClass} />
+                    <Input value={editForm.note} onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))} className={formInputClass} />
                   </label>
                   <div className="flex gap-2">
                     <Button size="sm" variant="secondary" disabled={updatePlaySession.isPending} onClick={() => void saveEditSession()}>
@@ -231,7 +231,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
       </section>
 
       {!isLoading && playDate && playDate.sessions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface-muted p-5 text-sm text-muted-foreground">Ngày này chưa có ca chơi.</div>
+        <EmptyState title="Chưa có ca chơi" description="Ngày này chưa có ca nào được tạo." />
       ) : null}
     </PageShell>
   );

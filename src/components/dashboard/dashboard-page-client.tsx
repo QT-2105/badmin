@@ -6,6 +6,8 @@ import { AlertTriangle, CircleDollarSign, Package, TrendingDown, TrendingUp } fr
 import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/feedback';
+import { Input, Select } from '@/components/ui/form';
 import { MetricCard, NoticeCard, PageHeader, PageShell, SectionCard, ToolbarCard, compactFormInputClass } from '@/components/ui/page-layout';
 import { useDashboardSummary } from '@/hooks/use-dashboard-summary';
 import { formatCurrency } from '@/lib/date-format';
@@ -46,14 +48,14 @@ export function DashboardPageClient() {
         description={data?.periodLabel ?? 'Mặc định tháng hiện tại'}
         actions={(
           <>
-            <select value={period} onChange={(event) => setPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
+            <Select value={period} onChange={(event) => setPeriod(event.target.value as ReportPeriod)} className={compactFormInputClass}>
               <option value="MONTH">Theo tháng</option>
               <option value="YEAR">Theo năm</option>
-            </select>
+            </Select>
             {period === 'MONTH' ? (
-              <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className={compactFormInputClass} />
+              <Input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className={compactFormInputClass} />
             ) : (
-              <input type="number" min={2000} max={2100} value={year} onChange={(event) => setYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
+              <Input type="number" min={2000} max={2100} value={year} onChange={(event) => setYear(event.target.value)} className={`${compactFormInputClass} sm:w-28`} />
             )}
           </>
         )}
@@ -95,9 +97,9 @@ export function DashboardPageClient() {
             contentClassName="flex min-h-0 flex-1 flex-col"
             actions={(
                 <div className="hidden gap-3 text-xs text-muted-foreground sm:flex">
-                  <Legend color="bg-emerald-400" label="Thu" />
-                  <Legend color="bg-rose-400" label="Chi" />
-                  <Legend color="bg-cyan-300" label="Lãi" />
+                  <Legend tone="income" label="Thu" />
+                  <Legend tone="expense" label="Chi" />
+                  <Legend tone="profit" label="Lãi" />
                 </div>
             )}
           >
@@ -105,9 +107,9 @@ export function DashboardPageClient() {
                 {data.dailyFinance.map((item) => (
                   <div key={item.date} className="flex min-w-[28px] flex-1 flex-col items-center gap-1">
                     <div className="flex h-40 w-full items-end justify-center gap-0.5">
-                      <Bar value={item.income} max={chartMax} className="bg-emerald-400/80" />
-                      <Bar value={item.expense} max={chartMax} className="bg-rose-400/80" />
-                      <Bar value={Math.abs(item.profit)} max={chartMax} className={item.profit >= 0 ? 'bg-cyan-300/80' : 'bg-amber-300/80'} />
+                      <Bar value={item.income} max={chartMax} tone="income" />
+                      <Bar value={item.expense} max={chartMax} tone="expense" />
+                      <Bar value={Math.abs(item.profit)} max={chartMax} tone={item.profit >= 0 ? 'profit' : 'loss'} />
                     </div>
                     <div className="text-[10px] text-muted-foreground">{item.label}</div>
                   </div>
@@ -120,7 +122,7 @@ export function DashboardPageClient() {
               <div className="space-y-3">
                 {data.costBreakdown.length > 0 ? data.costBreakdown.map((item) => (
                   <BreakdownRow key={item.category} label={item.label} amount={item.amount} total={data.totalExpense} />
-                )) : <div className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-muted-foreground">Chưa có chi phí trong kỳ.</div>}
+                )) : <EmptyState title="Chưa có chi phí" description="Kỳ báo cáo hiện tại chưa có khoản chi." />}
               </div>
             </DashboardInfoCard>
 
@@ -136,7 +138,7 @@ export function DashboardPageClient() {
                       </div>
                     </div>
                   </Link>
-                )) : <div className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-muted-foreground">Không có cảnh báo vận hành.</div>}
+                )) : <EmptyState title="Không có cảnh báo" description="Không có cảnh báo vận hành trong kỳ này." />}
               </div>
             </DashboardInfoCard>
 
@@ -152,7 +154,7 @@ export function DashboardPageClient() {
                       <div className="shrink-0 text-right text-xs font-semibold text-inventory">{formatCurrency(product.stockValue)}đ</div>
                     </div>
                   </div>
-                )) : <div className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-muted-foreground">Tồn kho chưa có loại cầu dưới ngưỡng thấp.</div>}
+                )) : <EmptyState title="Tồn kho ổn định" description="Chưa có loại cầu nào dưới ngưỡng thấp." />}
               </div>
             </DashboardInfoCard>
           </section>
@@ -216,13 +218,22 @@ function DashboardInfoCard({ title, children }: { title: string; children: React
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return <span className="inline-flex items-center gap-1.5"><span className={`h-2 w-2 rounded-full ${color}`} />{label}</span>;
+type ChartTone = 'income' | 'expense' | 'profit' | 'loss';
+
+const chartToneClass: Record<ChartTone, string> = {
+  income: 'bg-success',
+  expense: 'bg-danger',
+  profit: 'bg-info',
+  loss: 'bg-warning'
+};
+
+function Legend({ tone, label }: { tone: ChartTone; label: string }) {
+  return <span className="inline-flex items-center gap-1.5"><span className={`h-2 w-2 rounded-full ${chartToneClass[tone]}`} />{label}</span>;
 }
 
-function Bar({ value, max, className }: { value: number; max: number; className: string }) {
+function Bar({ value, max, tone }: { value: number; max: number; tone: ChartTone }) {
   const height = Math.max(2, Math.round((value / max) * 100));
-  return <div className={`w-2 rounded-t ${className}`} style={{ height: `${height}%` }} />;
+  return <div className={`w-2 rounded-t opacity-80 ${chartToneClass[tone]}`} style={{ height: `${height}%` }} />;
 }
 
 function BreakdownRow({ label, amount, total }: { label: string; amount: number; total: number }) {

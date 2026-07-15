@@ -8,7 +8,8 @@ import { Loader2, LogIn } from 'lucide-react';
 import { consumeSessionExpiredNotice } from '@/components/auth/auth-session-boundary';
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
-import { formInputClass } from '@/components/ui/page-layout';
+import { Input } from '@/components/ui/form';
+import { formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { useBranding } from '@/hooks/use-branding';
 import { useBootstrapOwnerMutation, useBootstrapStatus, useLoginMutation } from '@/hooks/use-auth';
 
@@ -39,7 +40,7 @@ export function LoginPageClient() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-background px-4 py-8 text-foreground">
-      <form onSubmit={(event) => void submit(event)} className="w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+      <form onSubmit={(event) => void submit(event)} className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-md">
         <div className="flex items-center gap-3">
           <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-14 w-14 text-lg" textClassName="text-sm" />
           <div>
@@ -52,8 +53,8 @@ export function LoginPageClient() {
         <div className="mt-6 space-y-3">
           {isBootstrap ? (
             <label className="block">
-              <span className="text-sm text-muted-foreground">Tên hiển thị</span>
-              <input
+              <span className={formLabelClass}>Tên hiển thị</span>
+              <Input
                 type="text"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -64,8 +65,8 @@ export function LoginPageClient() {
             </label>
           ) : null}
           <label className="block">
-            <span className="text-sm text-muted-foreground">Tên đăng nhập</span>
-            <input
+            <span className={formLabelClass}>Tên đăng nhập</span>
+            <Input
               type="text"
               value={loginName}
               onChange={(event) => setLoginName(event.target.value)}
@@ -75,8 +76,8 @@ export function LoginPageClient() {
             />
           </label>
           <label className="block">
-            <span className="text-sm text-muted-foreground">Mật khẩu</span>
-            <input
+            <span className={formLabelClass}>Mật khẩu</span>
+            <Input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}

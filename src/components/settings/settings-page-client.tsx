@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
+import { Input, Switch } from '@/components/ui/form';
 import { PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useBranding, useBrandingMutations } from '@/hooks/use-branding';
@@ -101,7 +102,7 @@ export function SettingsPageClient() {
           <div className="rounded-2xl border border-border bg-surface-muted p-3">
             <label className="block min-w-0">
               <span className={formLabelClass}>Tên hiển thị</span>
-              <input
+              <Input
                 value={clubName}
                 onChange={(event) => setClubName(event.target.value)}
                 className={formInputClass}
@@ -167,7 +168,7 @@ export function SettingsPageClient() {
           <label className="rounded-lg border border-border bg-surface-muted p-3">
             <span className="block text-sm font-medium text-foreground">Số sân tối đa cho một ca</span>
             <span className="mt-0.5 block text-xs text-muted-foreground">Màn tạo/sửa ca sẽ không cho nhập vượt giới hạn này.</span>
-            <input
+            <Input
               type="number"
               min={1}
               max={12}
@@ -189,20 +190,21 @@ export function SettingsPageClient() {
       >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="text-sm text-rose-100/80">Thao tác này không ảnh hưởng người chơi, ca chơi, thu chi hoặc kho cầu.</p>
+              <p className="text-sm text-danger">Thao tác này không ảnh hưởng người chơi, ca chơi, thu chi hoặc kho cầu.</p>
               {resetMessage ? (
-                <p className={`mt-2 text-sm ${resetState === 'error' ? 'text-rose-100' : 'text-emerald-200'}`}>{resetMessage}</p>
+                <p className={`mt-2 text-sm ${resetState === 'error' ? 'text-danger' : 'text-success'}`}>{resetMessage}</p>
               ) : null}
             </div>
-          <button
+          <Button
             type="button"
             onClick={() => void handleResetMatchHistory()}
             disabled={resetState === 'loading'}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-rose-300/30 bg-rose-500/20 px-4 text-sm font-semibold text-rose-100 transition-colors hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="danger"
+            className="h-11 shrink-0"
           >
             {resetState === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Reset lịch sử
-          </button>
+          </Button>
         </div>
       </SettingsCard>
 
@@ -216,20 +218,21 @@ export function SettingsPageClient() {
       >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="text-sm text-rose-100/80">Người chơi vẫn được giữ lại và dùng avatar mặc định theo giới tính.</p>
+              <p className="text-sm text-danger">Người chơi vẫn được giữ lại và dùng avatar mặc định theo giới tính.</p>
               {imageResetMessage ? (
-                <p className={`mt-2 text-sm ${imageResetState === 'error' ? 'text-rose-100' : 'text-emerald-200'}`}>{imageResetMessage}</p>
+                <p className={`mt-2 text-sm ${imageResetState === 'error' ? 'text-danger' : 'text-success'}`}>{imageResetMessage}</p>
               ) : null}
             </div>
-          <button
+          <Button
             type="button"
             onClick={() => void handleDeleteAllPlayerImages()}
             disabled={imageResetState === 'loading'}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-rose-300/30 bg-rose-500/20 px-4 text-sm font-semibold text-rose-100 transition-colors hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="danger"
+            className="h-11 shrink-0"
           >
             {imageResetState === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Xóa ảnh người chơi
-          </button>
+          </Button>
         </div>
       </SettingsCard>
     </PageShell>
@@ -265,14 +268,16 @@ function SettingsCard({
             <p className={`mt-1 text-sm ${danger ? 'text-danger' : 'text-muted-foreground'}`}>{description}</p>
           </div>
         </div>
-        <button
+        <Button
           type="button"
           onClick={onToggle}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-surface-muted text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          variant="secondary"
+          size="sm"
+          className="h-9 w-9 shrink-0 px-0"
           aria-label={expanded ? 'Thu gọn' : 'Mở rộng'}
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        </Button>
       </div>
       {expanded ? <div className="mt-3">{children}</div> : null}
     </section>
@@ -286,15 +291,7 @@ function SettingToggle({ checked, title, description, onChange }: { checked: boo
         <span className="block text-sm font-medium text-foreground">{title}</span>
         <span className="mt-0.5 block text-xs text-muted-foreground">{description}</span>
       </span>
-      <span className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${checked ? 'border-primary/40 bg-primary' : 'border-border bg-background'}`}>
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="sr-only"
-        />
-        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
-      </span>
+      <Switch checked={checked} onChange={(event) => onChange(event.target.checked)} className="shrink-0" />
     </label>
   );
 }

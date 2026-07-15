@@ -100,7 +100,7 @@ export function PageShell({
 }) {
   return (
     <div className={cn('operational-x-scroll w-full')}>
-      <div className={cn('mx-auto flex w-full flex-col gap-5 px-4 py-5 md:px-6 md:py-6 xl:px-8', maxWidth, minWidth, className)}>
+      <div className={cn('mx-auto flex w-full flex-col gap-5 px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6 xl:px-8', maxWidth, minWidth, className)}>
         {children}
       </div>
     </div>
@@ -111,22 +111,54 @@ export function PageHeader({
   eyebrow,
   title,
   description,
-  actions
+  actions,
+  backAction,
+  filters
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   actions?: ReactNode;
+  backAction?: ReactNode;
+  filters?: ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+    <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
       <div className="min-w-0">
+        {backAction ? <div className="mb-2">{backAction}</div> : null}
         {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.18em] text-info">{eyebrow}</p> : null}
-        <h1 className="mt-1 font-display text-[30px] font-bold leading-tight tracking-tight text-foreground md:text-[32px]">{title}</h1>
+        <h1 className="mt-1 text-page-title">{title}</h1>
         {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {(actions || filters) ? (
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {filters}
+          {actions}
+        </div>
+      ) : null}
     </header>
+  );
+}
+
+export function SectionHeader({
+  title,
+  description,
+  actions,
+  className
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('flex flex-col gap-2 md:flex-row md:items-start md:justify-between', className)}>
+      <div className="min-w-0">
+        <h2 className="text-section-title">{title}</h2>
+        {description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">{actions}</div> : null}
+    </div>
   );
 }
 
@@ -148,7 +180,7 @@ export function ToolbarCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {(title || description) ? (
           <div className="min-w-0">
-            {title ? <div className="text-base font-semibold text-foreground">{title}</div> : null}
+            {title ? <div className="text-card-title">{title}</div> : null}
             {description ? <div className="text-xs leading-5 text-muted-foreground">{description}</div> : null}
           </div>
         ) : null}
@@ -179,7 +211,7 @@ export function SectionCard({
       {(title || description || actions) ? (
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            {title ? <h2 className="text-lg font-semibold leading-snug text-foreground">{title}</h2> : null}
+            {title ? <h2 className="text-section-title">{title}</h2> : null}
             {description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p> : null}
           </div>
           {actions ? <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">{actions}</div> : null}
@@ -241,9 +273,9 @@ export function NoticeCard({
 }
 
 export const formInputClass =
-  'mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:text-muted-foreground';
+  'mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition hover:border-inputHover focus:border-focus focus:ring-2 focus:ring-focus/15 disabled:bg-surface-subtle disabled:text-text-disabled';
 
 export const compactFormInputClass =
-  'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/15 disabled:text-muted-foreground sm:w-40';
+  'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition hover:border-inputHover focus:border-focus focus:ring-2 focus:ring-focus/15 disabled:bg-surface-subtle disabled:text-text-disabled sm:w-40';
 
-export const formLabelClass = 'text-xs font-medium text-muted-foreground';
+export const formLabelClass = 'text-xs font-medium text-text-secondary';

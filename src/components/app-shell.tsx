@@ -8,6 +8,7 @@ import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, L
 import { useEffect, useState } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
+import { Button } from '@/components/ui/button';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCurrentUser, useLogoutMutation } from '@/hooks/use-auth';
@@ -88,14 +89,16 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </span>
               ) : null}
             </Link>
-            <button
+            <Button
               type="button"
               onClick={() => setCollapsed((value) => !value)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 shrink-0 px-0 text-muted-foreground hover:text-foreground"
               aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             >
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
+            </Button>
           </div>
 
           <nav className="flex-1 space-y-4 px-2 py-4">
@@ -114,12 +117,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={item.href}
                       href={item.href as Route}
                       className={cn(
-                        'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
+                        'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                         active
-                          ? 'bg-primary/10 text-primary ring-1 ring-primary/10 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                          ? 'bg-primary/10 text-primary ring-1 ring-primary/15 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
+                          : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground',
                         collapsed && 'justify-center px-0'
                       )}
+                      aria-current={active ? 'page' : undefined}
                       title={collapsed ? `${group.label} · ${item.label}` : undefined}
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -145,26 +149,25 @@ export function AppShell({ children }: { children: ReactNode }) {
             ) : null}
             <FullscreenToggle compact={collapsed} className="w-full justify-center" />
             <ThemeToggle compact={collapsed} className="mt-2 w-full justify-center" />
-            <button
+            <Button
               type="button"
               onClick={() => void logout.mutateAsync()}
               disabled={logout.isPending}
-              className={cn(
-                'mt-2 flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-60',
-                collapsed && 'justify-center px-0'
-              )}
+              variant="secondary"
+              size="sm"
+              className={cn('mt-2 h-10 w-full justify-start text-xs text-muted-foreground hover:text-foreground', collapsed && 'justify-center px-0')}
               title={collapsed ? 'Đăng xuất' : undefined}
             >
               <LogOut className="h-4 w-4 shrink-0" />
               {!collapsed ? <span>Đăng xuất</span> : null}
-            </button>
+            </Button>
           </div>
 
         </aside>
 
         <main
           className={cn(
-            'min-w-0 transition-[margin-left] duration-200',
+            'min-h-screen min-w-0 bg-background transition-[margin-left] duration-200',
             collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'
           )}
         >
@@ -181,9 +184,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href as Route}
                     className={cn(
-                      'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold',
-                      active ? 'bg-primary/10 text-primary ring-1 ring-primary/10' : 'text-muted-foreground'
+                      'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                      active ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
                     )}
+                    aria-current={active ? 'page' : undefined}
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {item.label}
@@ -192,14 +196,17 @@ export function AppShell({ children }: { children: ReactNode }) {
               })}
               <FullscreenToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
               <ThemeToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
-              <button
+              <Button
                 type="button"
                 onClick={() => void logout.mutateAsync()}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-muted text-muted-foreground"
+                disabled={logout.isPending}
+                variant="secondary"
+                size="sm"
+                className="h-9 w-9 shrink-0 px-0 text-muted-foreground"
                 aria-label="Đăng xuất"
               >
                 <LogOut className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </div>
           </header>
           {children}

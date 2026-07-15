@@ -35,8 +35,8 @@ export function PlayerAvatar({ name, gender, avatarUrl, size = 'sm', className }
   return (
     <span
       className={cn(
-        'relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 font-bold text-slate-950 shadow-sm',
-        female ? 'bg-pink-300' : 'bg-cyan-300',
+        'relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-border font-bold shadow-xs',
+        female ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info',
         sizeClass[size],
         className
       )}
