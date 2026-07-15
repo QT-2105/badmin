@@ -4,16 +4,19 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 
+import { ActionMenu } from '@/components/ui/action-menu';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/feedback';
+import { EmptyState, ErrorState, LoadingState, WarningState } from '@/components/ui/feedback';
+import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/form';
-import { NoticeCard, PageHeader, PageShell, SectionCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Card } from '@/components/ui/surface';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { usePlayDates, useScheduleMutations } from '@/hooks/use-play-dates';
 import { hasPermission } from '@/lib/auth/permissions';
 import { isPastDateInput, todayDateInput } from '@/lib/date-format';
-import { normalizeSessionStatus } from '@/lib/session-status';
+import { getSessionStatusLabel, normalizeSessionStatus } from '@/lib/session-status';
 
 export function SchedulePageClient() {
   const { data: playDates = [], isLoading, error } = usePlayDates();
@@ -61,6 +64,14 @@ export function SchedulePageClient() {
     });
   }
 
+  function getSessionStatusTone(status?: string | null) {
+    const normalized = normalizeSessionStatus(status);
+    if (normalized === 'ACTIVE') return 'info';
+    if (normalized === 'COMPLETED') return 'success';
+    if (normalized === 'CANCELLED') return 'danger';
+    return 'warning';
+  }
+
   async function removePlayDate(id: string) {
     const item = playDates.find((playDateItem) => playDateItem.id === id);
     if (item && isPastDateInput(item.playDate, today)) {
@@ -77,39 +88,42 @@ export function SchedulePageClient() {
   }
 
   return (
-    <PageShell>
+    <PageShell maxWidth="max-w-7xl">
       <PageHeader
-        eyebrow="Lịch vận hành"
         title="Lịch chơi"
-        description="Tạo ngày chơi trước, mở chi tiết ngày để tạo ca, sau đó vào chi tiết ca để thêm người chơi, bắt đầu ca và điều phối sân."
+        description="Tạo ngày chơi, mở ngày để tạo ca, rồi vào chi tiết ca để thêm người chơi và điều phối sân."
       />
 
       {canManageSchedule ? (
-      <SectionCard>
-        <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_1fr_1fr_auto] md:items-end">
-          <label className="block">
-            <span className={formLabelClass}>Ngày chơi</span>
-            <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Tiêu đề</span>
-            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Ghi chú</span>
-            <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
-          </label>
-          <Button type="submit" disabled={createPlayDate.isPending} className="h-11">
-            {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
-            Tạo ngày
-          </Button>
-        </form>
-      </SectionCard>
+        <FormSection
+          title="Tạo ngày chơi"
+          description="Chọn ngày, thêm tiêu đề nếu cần rồi mở ngày để tạo các ca chơi."
+          contentClassName="pt-1"
+        >
+          <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_minmax(220px,1fr)_minmax(220px,1fr)_auto] md:items-end">
+            <label className="block">
+              <span className={formLabelClass}>Ngày chơi</span>
+              <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
+            </label>
+            <label className="block">
+              <span className={formLabelClass}>Tiêu đề</span>
+              <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
+            </label>
+            <label className="block">
+              <span className={formLabelClass}>Ghi chú</span>
+              <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
+            </label>
+            <Button type="submit" disabled={createPlayDate.isPending} className="h-11 whitespace-nowrap">
+              {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
+              Tạo ngày
+            </Button>
+          </form>
+        </FormSection>
       ) : null}
 
-      {isLoading ? <NoticeCard>Đang tải lịch chơi...</NoticeCard> : null}
-      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
-      {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
+      {isLoading ? <LoadingState title="Đang tải lịch chơi..." size="sm" /> : null}
+      {error ? <ErrorState title={error.message} size="sm" /> : null}
+      {actionError ? <WarningState title={actionError} size="sm" /> : null}
 
       <section className="grid gap-3 lg:grid-cols-2">
         {sortedPlayDates.map((item) => {
@@ -119,23 +133,23 @@ export function SchedulePageClient() {
           const hasIncompleteSession = hasIncompleteSessions(item.sessions);
           const sortedSessions = [...item.sessions].sort((left, right) => left.startTime.localeCompare(right.startTime));
           return (
-          <article
+          <Card
             key={item.id}
-            className={`rounded-xl border p-4 shadow-soft transition-colors ${
+            className={`transition-colors ${
               isToday
-                ? 'border-info/45 bg-surface ring-1 ring-info/15'
+                ? 'border-info/35 ring-1 ring-info/15'
                 : hasIncompleteSession
-                  ? 'border-warning/45 bg-surface ring-1 ring-warning/15'
-                  : 'border-border bg-surface'
+                  ? 'border-warning/35 ring-1 ring-warning/15'
+                  : ''
             }`}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-semibold text-foreground">{item.title || item.playDate}</div>
+                  <div className="min-w-0 text-lg font-semibold leading-tight text-foreground">{item.title || item.playDate}</div>
                   {isToday ? <StatusBadge tone="info">Hôm nay</StatusBadge> : null}
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <span>{item.playDate} · {item.sessionCount} ca</span>
                   {item.sessions.length > 0 ? (
                     <Button
@@ -143,7 +157,7 @@ export function SchedulePageClient() {
                       onClick={() => togglePlayDateSessions(item.id)}
                       variant="secondary"
                       size="sm"
-                      className="h-7 gap-1 px-2 text-[11px]"
+                      className="h-8 gap-1 px-2.5 text-xs"
                       aria-label={expanded ? 'Thu gọn danh sách ca' : 'Mở danh sách ca'}
                     >
                       {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -157,33 +171,49 @@ export function SchedulePageClient() {
                     {isPast ? <StatusBadge tone="neutral">Chỉ xem lại</StatusBadge> : null}
                   </div>
                 ) : null}
-                {item.note ? <div className="mt-2 text-sm text-muted-foreground">{item.note}</div> : null}
+                {item.note ? <div className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.note}</div> : null}
               </div>
-              <div className="flex shrink-0 gap-2">
-                <Link href={`/schedule/${item.id}`}>
-                  <Button size="sm" variant="secondary">Chi tiết ngày</Button>
+              <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
+                <Link href={`/schedule/${item.id}`} className="w-full sm:w-auto" aria-label={`Mở chi tiết ngày chơi ${item.title || item.playDate}`}>
+                  <Button size="sm" variant="secondary" className="w-full sm:w-auto">Chi tiết ngày</Button>
                 </Link>
                 {!isPast && canManageSchedule ? (
-                  <Button size="sm" variant="danger" disabled={deletePlayDate.isPending} onClick={() => void removePlayDate(item.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <ActionMenu
+                    label={`Mở thao tác ngày chơi ${item.title || item.playDate}`}
+                    items={[
+                      {
+                        key: 'delete',
+                        label: 'Xóa ngày',
+                        icon: Trash2,
+                        danger: true,
+                        disabled: deletePlayDate.isPending,
+                        onSelect: () => void removePlayDate(item.id)
+                      }
+                    ]}
+                  />
                 ) : null}
               </div>
             </div>
             {item.sessions.length > 0 && expanded ? (
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2 border-t border-border pt-3">
                 {sortedSessions.map((session) => (
                   <Link
                     key={session.id}
                     href={`/sessions/${session.id}`}
-                    className="block rounded-lg border border-info/25 bg-info-soft px-3 py-2 text-sm font-semibold text-info transition hover:border-info/50 hover:bg-info-soft/80"
+                    aria-label={`Mở chi tiết ca ${session.name}, ${session.startTime}-${session.endTime}`}
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-surface-subtle px-3 py-2.5 text-sm outline-none transition hover:border-info/35 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    {session.name} · {session.startTime}-{session.endTime} · {session.courtCount} sân
+                    <span className="min-w-0 font-semibold text-foreground">
+                      {session.startTime}-{session.endTime} · {session.name} · {session.courtCount} sân
+                    </span>
+                    <StatusBadge tone={getSessionStatusTone(session.status)} className="shrink-0">
+                      {getSessionStatusLabel(session.status)}
+                    </StatusBadge>
                   </Link>
                 ))}
               </div>
             ) : null}
-          </article>
+          </Card>
           );
         })}
       </section>
