@@ -1,0 +1,28 @@
+# Acceptance Checklist
+
+- [x] Suggestion order unchanged.
+- [x] Lock/unlock unchanged.
+- [x] Apply unchanged.
+- [x] Replace draft/save unchanged.
+- [x] Replacement candidate list unchanged.
+- [x] Auto pairing unchanged.
+- [x] Manual pairing unchanged.
+- [x] Pair generation unchanged.
+- [x] Gender criteria unchanged.
+- [x] Level criteria unchanged.
+- [x] Selected player IDs unchanged.
+- [x] Selected court unchanged.
+- [x] Court assignment unchanged.
+- [x] Handler signatures and arguments unchanged.
+- [x] Runtime status transitions unchanged.
+- [x] Store actions unchanged.
+- [x] API and repository unchanged.
+- [x] Section layout presentation improved.
+- [x] Team/player slot presentation improved.
+- [x] Empty and disabled states improved.
+- [x] Replacement panel readability improved.
+- [x] Focus and touch targets improved.
+- [x] `npm run lint` passed.
+- [x] `npm run typecheck` passed.
+- [x] `npm run build` passed.
+- [x] `npm run guard:no-db-schema-automation` passed.

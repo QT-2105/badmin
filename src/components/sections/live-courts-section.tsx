@@ -28,35 +28,49 @@ export function LiveCourtsSection({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="min-h-0 flex flex-col gap-1.5"
+      className="flex min-h-0 flex-col gap-2"
+      aria-label="Danh sách sân trong ca"
     >
       {showHeader ? (
-        <div className="flex items-center gap-2 px-1">
-          <h2 className="text-sm font-bold text-slate-100 tracking-wider">QUẢN LÝ SÂN</h2>
-          <div className="text-xs text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="text-sm font-bold tracking-wider text-slate-100">QUẢN LÝ SÂN</h2>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold text-slate-300">
+              {allCourts.length} sân
+            </span>
+          </div>
+          <div className="rounded-full border border-emerald-300/15 bg-emerald-400/[0.08] px-2 py-0.5 text-[11px] font-medium text-emerald-100">
             {activeCourts.length}/{allCourts.length} sân
           </div>
         </div>
       ) : null}
 
-      {/* COURTS GRID - Responsive: 3 cols on tablet, 1 col on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1 min-h-0">
-        {allCourts.map((court, idx) => (
-          <motion.div
-            key={court.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: idx * 0.05 }}
-          >
-            <CourtCard
-              court={court}
-              schedulingDisabled={schedulingDisabled}
-              disabledReason={disabledReason}
-              onCommitRuntime={onCommitRuntime}
-              onRecordMatch={onRecordMatch}
-            />
-          </motion.div>
-        ))}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <div className="grid content-start items-stretch gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))] md:gap-2.5 2xl:[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]" role="list" aria-label="Các sân của ca chơi">
+          {allCourts.map((court, idx) => (
+            <motion.div
+              key={court.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              className="min-w-0"
+              role="listitem"
+            >
+              <CourtCard
+                court={court}
+                schedulingDisabled={schedulingDisabled}
+                disabledReason={disabledReason}
+                onCommitRuntime={onCommitRuntime}
+                onRecordMatch={onRecordMatch}
+              />
+            </motion.div>
+          ))}
+          {allCourts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-5 text-center text-xs font-medium text-slate-400">
+              Chưa có sân trong ca.
+            </div>
+          ) : null}
+        </div>
       </div>
     </motion.div>
   );

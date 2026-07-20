@@ -10,10 +10,11 @@ import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCurrentUser, useLogoutMutation } from '@/hooks/use-auth';
 import { useBranding } from '@/hooks/use-branding';
-import { getRoleLabel, hasPermission, type PermissionKey } from '@/lib/auth/permissions';
+import { getRoleLabel, hasPermission, type AuthUser, type PermissionKey } from '@/lib/auth/permissions';
 import { cn } from '@/lib/utils';
 
 const navGroups = [
@@ -136,17 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="border-t border-border p-2">
-            {!collapsed && currentUser ? (
-              <div className="mb-2 flex items-center gap-2 px-1 py-1.5">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                  {currentUser.displayName.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate text-xs font-semibold text-foreground">{currentUser.displayName}</div>
-                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{getRoleLabel(currentUser.role)}</div>
-                </div>
-              </div>
-            ) : null}
+            {currentUser ? <CurrentUserSummary user={currentUser} collapsed={collapsed} /> : null}
             <FullscreenToggle compact={collapsed} className="w-full justify-center" />
             <ThemeToggle compact={collapsed} className="mt-2 w-full justify-center" />
             <Button
@@ -214,4 +205,59 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+}
+
+function CurrentUserSummary({ user, collapsed }: { user: AuthUser; collapsed: boolean }) {
+  if (collapsed) {
+    return (
+      <div className="mb-2 flex justify-center" title={`${user.displayName} · ${getRoleLabel(user.role)}`}>
+        <UserInitialsAvatar user={user} className="h-10 w-10" />
+      </div>
+    );
+  }
+
+  return (
+    <section
+      aria-label="Tài khoản hiện tại"
+      className="mb-2 rounded-xl border border-border bg-surface-muted px-2.5 py-2 shadow-subtle"
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <UserInitialsAvatar user={user} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold text-foreground">{user.displayName}</div>
+          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{user.email}</div>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <StatusBadge tone={user.role === 'OWNER' ? 'success' : 'info'} className="min-h-6 px-2 text-[10px]">
+          {getRoleLabel(user.role)}
+        </StatusBadge>
+        <StatusBadge tone={user.status === 'ACTIVE' ? 'success' : 'warning'} className="min-h-6 px-2 text-[10px]">
+          {user.status === 'ACTIVE' ? 'Đang dùng' : 'Tạm khóa'}
+        </StatusBadge>
+      </div>
+    </section>
+  );
+}
+
+function UserInitialsAvatar({ user, className }: { user: AuthUser; className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'grid h-9 w-9 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary-soft text-xs font-bold uppercase text-primary',
+        className
+      )}
+    >
+      {getUserInitials(user.displayName, user.email)}
+    </div>
+  );
+}
+
+function getUserInitials(displayName: string, email: string): string {
+  const source = displayName.trim() || email.trim();
+  if (!source) return 'U';
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
 }

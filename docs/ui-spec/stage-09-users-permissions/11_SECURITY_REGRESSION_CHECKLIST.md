@@ -1,0 +1,33 @@
+# Security Regression Checklist
+
+- [ ] Login page loads.
+- [ ] Bootstrap owner flow remains unchanged.
+- [ ] Active user can login.
+- [ ] Disabled user cannot login.
+- [ ] Password validation remains unchanged.
+- [ ] Password hashing remains backend-only and unchanged.
+- [ ] Session cookie remains `badmin_session`.
+- [ ] Session max age remains 24 hours.
+- [ ] Logout clears session.
+- [ ] Expired session redirects to login with notice.
+- [ ] Middleware protected prefixes remain unchanged.
+- [ ] Page guard still redirects unauthorized users.
+- [ ] `/users` requires `users.manage`.
+- [ ] GET `/api/auth/users` requires `users.manage`.
+- [ ] POST `/api/auth/users` requires `users.manage`.
+- [ ] PATCH `/api/auth/users/[userId]` requires `users.manage`.
+- [ ] Only Owner can create Owner.
+- [ ] Only Owner can edit Owner.
+- [ ] User cannot self-disable.
+- [ ] User cannot self-demote away from Owner.
+- [ ] Last active Owner cannot be disabled or demoted.
+- [ ] Role permission PATCH requires Owner.
+- [ ] Owner permissions remain full and locked.
+- [ ] Permission keys are unchanged.
+- [ ] Role values are unchanged.
+- [ ] Status values are unchanged.
+- [ ] Query keys are unchanged.
+- [ ] Mutations are unchanged.
+- [ ] API payloads are unchanged.
+- [ ] Prisma schema is unchanged.
+- [ ] Repositories and services are unchanged.

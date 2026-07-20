@@ -32,7 +32,7 @@ Giai đoạn này **không redesign sâu từng màn hình nghiệp vụ**. Dash
 11. `11_IMPLEMENTATION_TASKS.md`
 12. `12_QUALITY_AND_ACCEPTANCE.md`
 13. `13_AI_EXECUTION_INSTRUCTIONS.md`
-14. `14_STAGE_COMPLETION_REPORT_TEMPLATE.md`
+14. `15_COMPLETION_REPORT.md`
 
 Không được chỉ đọc `11_IMPLEMENTATION_TASKS.md` rồi code ngay.
 

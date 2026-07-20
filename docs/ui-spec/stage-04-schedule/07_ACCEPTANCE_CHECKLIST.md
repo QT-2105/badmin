@@ -1,6 +1,9 @@
 # Acceptance Checklist
 
-Status: Draft for implementation QA
+Status: Complete - PASS WITH NOTES
+
+This checklist has been reconciled against `08_COMPLETION_REPORT.md`.
+Items verified by source review and validation are accepted. Browser-rendered screenshot QA remains deferred and is documented in the completion report.
 
 ## Scope
 

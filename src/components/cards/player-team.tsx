@@ -16,21 +16,22 @@ export function PlayerTeam({ team, teamLabel }: PlayerTeamProps) {
   const [quickViewPlayer, setQuickViewPlayer] = useState<QuickViewPlayer | null>(null);
 
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="text-[10px] font-semibold text-slate-400">{teamLabel}</div>
-      <div className="space-y-0.5">
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">{teamLabel}</div>
+      <div className="space-y-1">
         {team.map((player, idx) => (
           <button
             type="button"
             key={idx}
-            className="grid w-full grid-cols-[auto_1fr] items-start gap-1.5 rounded-md p-0.5 text-left transition-colors hover:bg-white/[0.04]"
+            className="grid min-h-10 w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-2 rounded-lg p-1 text-left transition-colors hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
             onClick={() => player && setQuickViewPlayer(toQuickViewPlayer(player))}
+            aria-label={player ? `Xem nhanh ${player.name}` : 'Vị trí người chơi trống'}
           >
             <PlayerAvatar name={player?.name ?? 'Người chơi'} gender={player?.gender} avatarUrl={player?.avatarUrl} size="xs" />
-            <div className="min-w-0 flex-1">
-              <p className="overflow-hidden break-words text-[11px] font-medium leading-4 text-slate-200 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{getDisplayPlayerName(player?.name)}</p>
-              <div className="flex flex-wrap items-center gap-1 text-[10px] leading-3 text-slate-400">
-                <span>{getLevelLabel(player?.level)}</span>
+            <div className="min-w-0">
+              <p className="overflow-hidden break-words text-xs font-semibold leading-4 text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{getDisplayPlayerName(player?.name)}</p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-medium leading-3 text-slate-400">
+                <span className="text-slate-300">{getLevelLabel(player?.level)}</span>
                 <span>{player?.gender === 'Nam' ? '♂' : '♀'}</span>
               </div>
             </div>

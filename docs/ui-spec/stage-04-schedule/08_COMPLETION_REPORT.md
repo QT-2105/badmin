@@ -15,6 +15,14 @@ Implementation files changed:
 
 Documentation files changed:
 
+- `docs/ui-spec/stage-04-schedule/00_README.md`
+- `docs/ui-spec/stage-04-schedule/01_CURRENT_UI_AUDIT.md`
+- `docs/ui-spec/stage-04-schedule/02_INFORMATION_ARCHITECTURE.md`
+- `docs/ui-spec/stage-04-schedule/03_VISUAL_SPECIFICATION.md`
+- `docs/ui-spec/stage-04-schedule/04_COMPONENT_MAPPING.md`
+- `docs/ui-spec/stage-04-schedule/05_IMPLEMENTATION_PLAN.md`
+- `docs/ui-spec/stage-04-schedule/06_IMPLEMENTATION_TASKS.md`
+- `docs/ui-spec/stage-04-schedule/07_ACCEPTANCE_CHECKLIST.md`
 - `docs/ui-spec/stage-04-schedule/08_COMPLETION_REPORT.md`
 - `docs/ui-spec/PROJECT_PROGRESS.md`
 
@@ -45,6 +53,14 @@ Source:
 
 Docs:
 
+- `docs/ui-spec/stage-04-schedule/00_README.md`
+- `docs/ui-spec/stage-04-schedule/01_CURRENT_UI_AUDIT.md`
+- `docs/ui-spec/stage-04-schedule/02_INFORMATION_ARCHITECTURE.md`
+- `docs/ui-spec/stage-04-schedule/03_VISUAL_SPECIFICATION.md`
+- `docs/ui-spec/stage-04-schedule/04_COMPONENT_MAPPING.md`
+- `docs/ui-spec/stage-04-schedule/05_IMPLEMENTATION_PLAN.md`
+- `docs/ui-spec/stage-04-schedule/06_IMPLEMENTATION_TASKS.md`
+- `docs/ui-spec/stage-04-schedule/07_ACCEPTANCE_CHECKLIST.md`
 - `docs/ui-spec/stage-04-schedule/08_COMPLETION_REPORT.md`
 - `docs/ui-spec/PROJECT_PROGRESS.md`
 

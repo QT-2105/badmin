@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { CalendarDays, ChevronDown, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
@@ -40,6 +40,7 @@ export function RealtimeDashboard() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [autoMatchNotice, setAutoMatchNotice] = useState<string | null>(null);
   const [selectedSuggestionMode, setSelectedSuggestionMode] = useState<SuggestionMode>(suggestionMode);
+  const prefersReducedMotion = useReducedMotion();
 
   const { data: sessionRecord } = usePlaySession(runtimeSessionId || '');
   const { createHistory } = useMatchHistoryMutations(runtimeSessionId || '');
@@ -148,7 +149,7 @@ export function RealtimeDashboard() {
 
 
   return (
-    <div className="w-full h-screen bg-slate-950 text-slate-100 overflow-hidden flex flex-col">
+    <div className="flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-slate-950 text-slate-100">
       <RuntimeTopBar
         sessionId={runtimeSessionId}
         title={sessionRecord?.name ?? session.title}
@@ -161,7 +162,7 @@ export function RealtimeDashboard() {
       {hydration.isLoading && runtimeSessionId ? (
         <div className="grid flex-1 place-items-center px-4 text-center">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <Loader2 className="mx-auto h-5 w-5 animate-spin text-cyan-200" />
+            <Loader2 className="mx-auto h-5 w-5 animate-spin text-cyan-200 motion-reduce:animate-none" />
             <p className="mt-3 text-sm font-semibold text-white">Đang khôi phục điều phối...</p>
             <p className="mt-1 text-sm text-slate-400">Runtime đang tải trạng thái hiện tại từ database.</p>
           </div>
@@ -169,22 +170,24 @@ export function RealtimeDashboard() {
       ) : (
         <>
       {/* DESKTOP/TABLET HEADER */}
-      <header className="hidden md:flex flex-col gap-1.5 px-4 py-1.5">
-        <div className="flex items-center gap-2">
-          <div className="grid flex-1 grid-cols-4 gap-1.5">
+      <header className="hidden shrink-0 flex-col gap-2 border-b border-white/[0.06] bg-slate-950/60 px-3 py-2 md:flex lg:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="grid min-w-0 flex-1 grid-cols-4 gap-1.5" aria-label="Thống kê nhanh điều phối">
             <StatPill label="Tổng" value={stats.total} tone="text-white" compact />
             <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Vừa xong" value={stats.finished} tone="text-violet-200" compact />
             <StatPill label="Đang chơi" value={stats.playing} tone="text-emerald-200" compact />
           </div>
-          <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-9 shrink-0 px-3 text-xs">
-            <History className="h-4 w-4" />
-            Lịch sử
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-9 shrink-0 px-3 text-xs">
-            <Users className="h-4 w-4" />
-            Người chơi
-          </Button>
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.035] p-1">
+            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-10 shrink-0 px-3 text-xs focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở lịch sử trận đấu">
+              <History className="h-4 w-4" />
+              Lịch sử
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-10 shrink-0 px-3 text-xs focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở danh sách người chơi toàn màn hình">
+              <Users className="h-4 w-4" />
+              Người chơi
+            </Button>
+          </div>
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} /> : null}
         {historyError ? <RuntimeNotice message={historyError} /> : null}
@@ -192,22 +195,23 @@ export function RealtimeDashboard() {
       </header>
 
       {/* DESKTOP/TABLET LAYOUT */}
-      <div className="hidden md:flex flex-1 min-h-0 flex-col">
-        <div className="flex-1 min-h-0 px-4 pb-2 overflow-hidden">
-          <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-1.5">
+      <div className="hidden min-h-0 flex-1 flex-col md:flex">
+        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-3 lg:px-4">
+          <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/75 shadow-[0_18px_48px_rgba(2,6,23,0.28)] backdrop-blur-xl" aria-label="Quản lý sân và trận tiếp theo">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-white/[0.025] px-3 py-2">
               <div className="flex min-w-0 items-center gap-2">
                 <h2 className="text-xs font-bold tracking-wider text-slate-100">QUẢN LÝ SÂN</h2>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-slate-400">{session.courtCount} sân</span>
               </div>
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span className="rounded-lg bg-cyan-400/15 px-3 py-1.5 text-xs font-semibold text-cyan-200">Trận tiếp theo</span>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5">
+                <span className="rounded-lg border border-cyan-300/15 bg-cyan-400/15 px-3 py-1.5 text-xs font-semibold text-cyan-100">Trận tiếp theo</span>
                 <SuggestionModePicker value={selectedSuggestionMode} onChange={setSelectedSuggestionMode} disabled={schedulingDisabled} />
                 <button
                   onClick={refreshSuggestions}
                   disabled={schedulingDisabled}
                   title={autoMatchBlockReason ?? undefined}
-                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 text-xs font-semibold text-cyan-100 transition-colors hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Auto xếp cặp trận tiếp theo"
+                  className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-cyan-300/30 bg-cyan-400/[0.12] px-3 text-xs font-semibold text-cyan-100 transition-colors hover:border-cyan-200/45 hover:bg-cyan-400/[0.18] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
                 >
                   <Zap className="h-3 w-3" />
                   Auto xếp cặp
@@ -215,9 +219,9 @@ export function RealtimeDashboard() {
               </div>
             </div>
 
-            <div className="grid flex-1 min-h-0 grid-cols-2 gap-2 p-2">
-              <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 overflow-y-auto overscroll-contain p-2.5 min-[1100px]:grid-cols-[minmax(380px,1fr)_minmax(420px,1fr)] min-[1100px]:overflow-hidden xl:grid-cols-[minmax(420px,1fr)_minmax(460px,1fr)]">
+              <div className="flex min-h-[min(52vh,560px)] flex-col gap-2 overflow-hidden min-[1100px]:min-h-0">
+                <div className="min-h-0 flex-1 overflow-hidden pr-1">
                 <LiveCourtsSection
                   showHeader={false}
                   schedulingDisabled={schedulingDisabled}
@@ -228,7 +232,7 @@ export function RealtimeDashboard() {
                 </div>
                 <PlayerStatusOverview players={players} />
               </div>
-              <div className="min-h-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-2">
+              <div className="min-h-[min(42vh,520px)] overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-2 shadow-inner shadow-slate-950/30 min-[1100px]:min-h-0">
                 <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
               </div>
             </div>
@@ -237,19 +241,19 @@ export function RealtimeDashboard() {
       </div>
 
       {/* MOBILE LAYOUT */}
-      <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
         <div className="px-3 py-1.5">
           <div className="mb-1.5 flex justify-end gap-1.5">
-            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-8 px-2.5 text-[11px]">
+            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-8 px-2.5 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở lịch sử trận đấu">
               <History className="h-3.5 w-3.5" />
               Lịch sử
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-8 px-2.5 text-[11px]">
+            <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-8 px-2.5 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở danh sách người chơi toàn màn hình">
               <Users className="h-3.5 w-3.5" />
               Người chơi
             </Button>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-1" aria-label="Thống kê nhanh điều phối">
             <StatPill label="Tổng" value={stats.total} tone="text-white" compact />
             <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Xong" value={stats.finished} tone="text-violet-200" compact />
@@ -260,7 +264,7 @@ export function RealtimeDashboard() {
         {historyError ? <RuntimeNotice message={historyError} compact /> : null}
         {autoMatchNotice ? <RuntimeNotice message={autoMatchNotice} compact /> : null}
 
-        <div className="flex-1 overflow-y-auto px-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3">
           <LiveCourtsSection
             schedulingDisabled={schedulingDisabled}
             disabledReason={schedulingDisabledReason}
@@ -273,9 +277,9 @@ export function RealtimeDashboard() {
         </div>
 
         <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          className="border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm px-3 py-3"
+          initial={prefersReducedMotion ? false : { y: '100%' }}
+          animate={prefersReducedMotion ? undefined : { y: 0 }}
+          className="shrink-0 border-t border-slate-800/50 bg-slate-900/50 px-3 py-3 backdrop-blur-sm"
         >
           <div className="rounded-2xl border border-slate-800/60 bg-slate-950/60 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 px-3 py-2">
@@ -286,7 +290,8 @@ export function RealtimeDashboard() {
                 onClick={refreshSuggestions}
                 disabled={schedulingDisabled}
                 title={autoMatchBlockReason ?? undefined}
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 text-[11px] font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Auto xếp cặp trận tiếp theo"
+                className="inline-flex h-10 items-center gap-1 rounded-lg border border-cyan-300/30 bg-cyan-400/[0.12] px-2.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-400/[0.18] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
               >
                 <Zap className="h-3 w-3" />
                 Auto xếp cặp
@@ -317,17 +322,20 @@ export function RealtimeDashboard() {
       <AnimatePresence>
         {isPlayerFullscreenOpen ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0 }}
             className="fixed inset-0 z-50 flex flex-col bg-slate-950/98 p-3 text-slate-100 backdrop-blur"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="runtime-player-list-title"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-base font-semibold text-white">Danh sách người chơi</div>
+                <div id="runtime-player-list-title" className="text-base font-semibold text-white">Danh sách người chơi</div>
                 <div className="text-xs text-slate-400">Kiểm tra thanh toán cuối ca</div>
               </div>
-              <Button type="button" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(false)} className="h-10">
+              <Button type="button" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(false)} className="h-10" aria-label="Đóng danh sách người chơi">
                 <X className="h-4 w-4" />
                 Đóng
               </Button>
@@ -367,23 +375,28 @@ function RuntimeTopBar({
   const sessionHref = (sessionId ? `/sessions/${sessionId}` : '/schedule') as Route;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/95 px-3 py-2 backdrop-blur">
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
-        <div className="flex items-center gap-1">
-          <Link href="/dashboard" onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-200 hover:bg-white/[0.08]">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/95 px-3 py-2 shadow-[0_8px_28px_rgba(2,6,23,0.24)] backdrop-blur">
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 md:gap-3">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Link href="/dashboard" onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-xs font-semibold text-slate-200 transition hover:border-white/15 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70">
             <Home className="h-4 w-4" />
-            Dashboard
+            <span className="hidden sm:inline">Dashboard</span>
           </Link>
           <FullscreenToggle compact className="shrink-0" />
         </div>
 
         <div className="min-w-0 text-center">
-          <div className="truncate text-sm font-semibold text-white">{title}</div>
-          <div className="truncate text-xs text-slate-400">{timeRange} · {getSessionStatusLabel(status)} · {syncLabel}</div>
+          <div className="truncate text-sm font-bold leading-5 text-white md:text-base">{title}</div>
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-center justify-center gap-1.5 text-[11px] text-slate-400 md:text-xs">
+            <span className="truncate">{timeRange}</span>
+            <span className="hidden text-slate-600 sm:inline">·</span>
+            <span className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-2 py-0.5 font-semibold text-cyan-100">{getSessionStatusLabel(status)}</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-slate-300">{syncLabel}</span>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <Link href={sessionHref} onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl bg-cyan-400 px-3 text-xs font-bold text-slate-950" aria-label="Về chi tiết ca">
+          <Link href={sessionHref} onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl bg-cyan-400 px-3 text-xs font-bold text-slate-950 shadow-[0_10px_24px_rgba(34,211,238,0.18)] transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100" aria-label="Về chi tiết ca">
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">Chi tiết ca</span>
           </Link>
@@ -395,7 +408,7 @@ function RuntimeTopBar({
 
 function RuntimeNotice({ message, compact = false }: { message: string; compact?: boolean }) {
   return (
-    <div className={`${compact ? 'mx-3 mb-2' : ''} rounded-xl border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-100`}>
+    <div role="status" className={`${compact ? 'mx-3 mb-2' : ''} rounded-xl border border-amber-300/25 bg-amber-400/[0.12] px-3 py-2 text-sm font-medium text-amber-100 shadow-inner shadow-amber-950/20`}>
       {message}
     </div>
   );
@@ -404,14 +417,15 @@ function RuntimeNotice({ message, compact = false }: { message: string; compact?
 function StatPill({ label, value, tone, compact = false }: { label: string; value: number; tone: string; compact?: boolean }) {
   return (
     <div
+      aria-label={`${label}: ${value}`}
       className={
         compact
-          ? `min-w-[78px] rounded-lg border px-2 py-1 ${getStatPillSurfaceTone(label)}`
-          : `rounded-xl border px-2.5 py-1.5 ${getStatPillSurfaceTone(label)}`
+          ? `min-w-[78px] rounded-lg border px-2.5 py-1.5 shadow-inner shadow-slate-950/20 ${getStatPillSurfaceTone(label)}`
+          : `rounded-xl border px-3 py-2 shadow-inner shadow-slate-950/20 ${getStatPillSurfaceTone(label)}`
       }
     >
-      <p className={`${compact ? 'text-sm' : 'text-base'} font-semibold ${tone}`}>{value}</p>
-      <p className="text-[9px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
+      <p className={`${compact ? 'text-sm' : 'text-base'} font-bold leading-5 ${tone}`}>{value}</p>
+      <p className="text-[9px] uppercase tracking-[0.16em] text-slate-400/90">{label}</p>
     </div>
   );
 }
@@ -435,17 +449,18 @@ function SuggestionModePicker({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-white/10 bg-slate-950/50 p-1">
+    <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-white/10 bg-slate-950/60 p-1 shadow-inner shadow-slate-950/30" role="group" aria-label="Chế độ gợi ý xếp cặp">
       {SUGGESTION_MODES.map((mode) => (
         <button
           key={mode.value}
           type="button"
           disabled={disabled}
           onClick={() => onChange(mode.value)}
-          className={`h-6 shrink-0 rounded-md px-2 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          aria-pressed={value === mode.value}
+          className={`h-7 shrink-0 rounded-md px-2.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed ${
             value === mode.value
               ? 'bg-cyan-400 text-slate-950'
-              : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+              : 'text-slate-300 hover:bg-white/[0.06] hover:text-white disabled:bg-transparent disabled:text-slate-600'
           }`}
         >
           {mode.label}
@@ -457,6 +472,7 @@ function SuggestionModePicker({
 
 function PlayerStatusOverview({ players }: { players: Player[] }) {
   const [expanded, setExpanded] = useState(false);
+  const listId = useId();
   const tagStats = useMemo(
     () =>
       PLAYER_TAG_OPTIONS.map((tag) => ({
@@ -486,15 +502,20 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
   const visiblePlayers = expanded ? sortedPlayers : [];
 
   return (
-    <div className="shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-2">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Hàng chờ</div>
-          <div className="mt-1 flex flex-wrap gap-1">
+    <div className="shrink-0 rounded-xl border border-white/10 bg-white/[0.035] p-2.5 shadow-inner shadow-slate-950/20">
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">Hàng chờ</div>
+            <span className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold text-cyan-100">
+              {sortedPlayers.length} người
+            </span>
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-1">
             {tagStats.map((tag) => (
               <span
                 key={tag.value}
-                className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold ${tag.count > 0 ? tag.activeClassName : tag.className}`}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-bold leading-4 ${tag.count > 0 ? tag.activeClassName : tag.className}`}
               >
                 {tag.label} {tag.count}
               </span>
@@ -504,35 +525,39 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-slate-300 transition hover:border-cyan-300/30 hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
           aria-label={expanded ? 'Thu gọn hàng chờ' : 'Mở rộng hàng chờ'}
+          aria-expanded={expanded}
+          aria-controls={listId}
         >
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       </div>
-      {expanded ? <div className="max-h-48 overflow-y-auto pr-1">
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+      {expanded ? <div id={listId} className="max-h-56 overflow-y-auto overscroll-contain pr-1">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list" aria-label="Danh sách hàng chờ">
           {visiblePlayers.map((player) => (
-            <div key={player.id} className="grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-lg bg-slate-950/45 px-2 py-1.5 text-[11px]">
+            <div key={player.id} role="listitem" className="grid min-h-[82px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-xl border border-white/[0.06] bg-slate-950/50 px-2.5 py-2 text-[11px] transition-colors hover:border-cyan-300/20 hover:bg-slate-900/70">
               <div className="min-w-0">
-                <div className="truncate font-semibold text-slate-100" title={player.name}>{getDisplayPlayerName(player.name)}</div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px]">
-                  <span className={player.gender === 'Nữ' ? 'text-pink-300' : 'text-cyan-300'}>{player.gender}</span>
+                <div className="truncate text-sm font-bold leading-5 text-slate-100" title={player.name}>{getDisplayPlayerName(player.name)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-semibold">
+                  <span className={player.gender === 'Nữ' ? 'text-pink-200' : 'text-cyan-200'}>{player.gender}</span>
                   <span className="text-slate-500">·</span>
                   <span className="font-semibold text-cyan-200">{getLevelLabel(player.level)}</span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-slate-400">{getPlayerStatusAge(player)}</span>
                 </div>
                 <PlayerTagBadges tags={player.playerTags} compact className="mt-1" />
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <div className="font-mono text-slate-300">{player.matchesPlayed} trận</div>
-                <span className={`rounded-full px-2 py-0.5 font-medium ${getPlayerStatusTone(player.status)}`}>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono font-semibold text-slate-200">{player.matchesPlayed} trận</div>
+                <span className={`rounded-full border px-2 py-0.5 font-bold ${getPlayerStatusTone(player.status)}`}>
                   {getPlayerStatusLabel(player.status)}
                 </span>
               </div>
             </div>
           ))}
           {visiblePlayers.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-center text-xs text-slate-500">
+            <div className="rounded-xl border border-dashed border-white/10 bg-slate-950/30 px-3 py-5 text-center text-xs font-medium text-slate-500 sm:col-span-2">
               Chưa có người chơi đang chờ.
             </div>
           ) : null}
@@ -550,10 +575,19 @@ function getPlayerStatusLabel(status: Player['status']): string {
 }
 
 function getPlayerStatusTone(status: Player['status']): string {
-  if (status === 'PLAYING') return 'bg-emerald-400/15 text-emerald-200';
-  if (status === 'JUST_FINISHED') return 'bg-violet-400/15 text-violet-200';
-  if (status === 'PRIORITY') return 'bg-amber-400/15 text-amber-200';
-  return 'bg-cyan-400/15 text-cyan-200';
+  if (status === 'PLAYING') return 'border-emerald-300/20 bg-emerald-400/15 text-emerald-100';
+  if (status === 'JUST_FINISHED') return 'border-violet-300/20 bg-violet-400/15 text-violet-100';
+  if (status === 'PRIORITY') return 'border-amber-300/20 bg-amber-400/15 text-amber-100';
+  if (status === 'RESTING') return 'border-slate-500/30 bg-slate-500/15 text-slate-200';
+  return 'border-cyan-300/20 bg-cyan-400/15 text-cyan-100';
+}
+
+function getPlayerStatusAge(player: Player): string {
+  const elapsedMs = Math.max(0, Date.now() - player.statusUpdatedAt);
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+  if (elapsedMinutes < 1) return 'vừa cập nhật';
+  if (elapsedMinutes < 60) return `${elapsedMinutes}p`;
+  return `${Math.floor(elapsedMinutes / 60)}h`;
 }
 
 function getAutoMatchBlockReason(players: Player[], mode: SuggestionMode, schedulingDisabledReason: string | null): string | null {

@@ -1,0 +1,63 @@
+# Inventory Regression Checklist
+
+- [ ] Inventory page loads.
+- [ ] Product list loads.
+- [ ] Movement list loads.
+- [ ] Report period defaults to current month.
+- [ ] Month/year report controls preserve current behavior.
+- [ ] Product count metric unchanged.
+- [ ] Current stock metric unchanged.
+- [ ] Average cost metric/field unchanged.
+- [ ] Tube quantity unchanged.
+- [ ] Piece quantity unchanged.
+- [ ] Default sale price unchanged.
+- [ ] Stock value metric unchanged.
+- [ ] Sale total metric unchanged.
+- [ ] Play usage total metric unchanged.
+- [ ] Total outbound amount metric unchanged.
+- [ ] Product create payload unchanged.
+- [ ] Product update payload unchanged.
+- [ ] Product delete behavior unchanged.
+- [ ] Movement creation payload unchanged.
+- [ ] Import movement payload unchanged.
+- [ ] Sale movement payload unchanged.
+- [ ] Consumption/play usage movement payload unchanged.
+- [ ] Adjustment movement payload unchanged.
+- [ ] Other movement payload unchanged.
+- [ ] Unit cost unchanged.
+- [ ] Unit price unchanged.
+- [ ] Total amount unchanged.
+- [ ] Session relation unchanged.
+- [ ] Created time unchanged.
+- [ ] Product relation unchanged.
+- [ ] Stock update formula unchanged.
+- [ ] Weighted average cost formula unchanged.
+- [ ] Tube-to-piece conversion unchanged.
+- [ ] Piece-to-tube display conversion unchanged.
+- [ ] Movement order unchanged.
+- [ ] Movement type labels remain readable.
+- [ ] Pagination unchanged.
+- [ ] Permission gate unchanged.
+- [ ] Query keys unchanged.
+- [ ] Mutations unchanged.
+- [ ] Cache invalidation unchanged.
+- [ ] Routes unchanged.
+- [ ] API unchanged.
+- [ ] Repository unchanged.
+- [ ] Service unchanged.
+- [ ] Database unchanged.
+- [ ] Prisma unchanged.
+- [ ] No calculation moved into shared UI components.
+- [ ] No new rounding behavior introduced.
+- [ ] Database storage unit remains pieces/balls.
+- [ ] Empty product state works.
+- [ ] Empty movement state works.
+- [ ] Error state works.
+- [ ] Light mode readable.
+- [ ] Dark mode readable.
+- [ ] Desktop usable.
+- [ ] Tablet landscape usable.
+- [ ] Tablet portrait usable.
+- [ ] Mobile smoke usable.
+- [ ] Keyboard focus visible.
+- [ ] Table/list semantics accessible.

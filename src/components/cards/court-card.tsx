@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils';
 import { PlayerTeam } from './player-team';
 
 const courtStatusConfig = {
-  EMPTY: { label: 'TRỐNG', bgClass: 'bg-slate-800/40', textClass: 'text-slate-300', glowClass: '', icon: null },
-  READY: { label: 'CHỜ XẾP', bgClass: 'bg-amber-500/15', textClass: 'text-amber-200', glowClass: 'ring-1 ring-amber-400/30', icon: '◆' },
-  PLAYING: { label: 'ĐANG CHƠI', bgClass: 'bg-emerald-500/15', textClass: 'text-emerald-200', glowClass: 'ring-1 ring-emerald-400/30 shadow-lg shadow-emerald-500/10', icon: '●' }
+  EMPTY: { label: 'TRỐNG', bgClass: 'border-slate-700/50 bg-slate-900/45', badgeClass: 'border-slate-600/45 bg-slate-800/80 text-slate-200', glowClass: '', icon: null },
+  READY: { label: 'CHỜ XẾP', bgClass: 'border-amber-300/25 bg-amber-950/20', badgeClass: 'border-amber-300/25 bg-amber-400/15 text-amber-100', glowClass: 'ring-1 ring-amber-300/20', icon: '◆' },
+  PLAYING: { label: 'ĐANG CHƠI', bgClass: 'border-emerald-300/25 bg-emerald-950/18', badgeClass: 'border-emerald-300/25 bg-emerald-400/15 text-emerald-100', glowClass: 'ring-1 ring-emerald-300/25 shadow-lg shadow-emerald-500/10', icon: '●' }
 };
 
 export function CourtCard({
@@ -85,30 +85,31 @@ export function CourtCard({
   return (
     <motion.div
       className={cn(
-        'rounded-xl p-2.5 backdrop-blur-sm border border-slate-700/40 transition-all hover:border-slate-600/60',
+        'group flex min-h-[12rem] min-w-0 flex-col rounded-xl border p-3 shadow-sm shadow-slate-950/20 backdrop-blur-sm transition-colors hover:border-cyan-300/25 dark:shadow-slate-950/25',
         status.bgClass,
         status.glowClass
       )}
       layout
+      aria-label={`${court.name}, trạng thái ${status.label}`}
     >
       {/* HEADER: Court name + Status + Timer */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <h3 className="font-bold text-sm text-slate-100">{court.name}</h3>
-          {status.icon && <span className={cn('text-lg', status.textClass)}>{status.icon}</span>}
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="truncate text-base font-bold leading-6 text-slate-50" title={court.name}>{court.name}</h3>
+          {status.icon && <span className="text-base leading-none text-current opacity-80" aria-hidden="true">{status.icon}</span>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
           {court.status === 'PLAYING' && court.startedAt && (
             <motion.div
               animate={{ opacity: [0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
-              className="flex items-center gap-1 text-xs font-mono text-emerald-300"
+              className="flex h-7 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 text-[11px] font-mono font-semibold text-emerald-100"
             >
-              <Clock className="w-3 h-3" />
+              <Clock className="h-3 w-3" />
               {formatTime(elapsedTime)}
             </motion.div>
           )}
-          <span className={cn('text-xs font-semibold px-2 py-1 rounded-lg', status.bgClass, status.textClass)}>
+          <span role="status" className={cn('rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em]', status.badgeClass)}>
             {status.label}
           </span>
         </div>
@@ -116,17 +117,19 @@ export function CourtCard({
 
       {/* PLAYERS DISPLAY */}
       {court.status === 'EMPTY' ? (
-        <div className="h-16 flex items-center justify-center text-slate-400 text-xs">Chờ xếp người chơi</div>
+        <div className="flex min-h-[6.75rem] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700/60 bg-slate-950/25 px-3 text-center text-xs font-medium text-slate-400">
+          Chờ xếp người chơi
+        </div>
       ) : (
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="mb-3 grid min-h-[7rem] flex-1 grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)]">
           {/* Đội A */}
-          <div className="flex-1">
+          <div className="min-w-0 rounded-lg border border-white/[0.06] bg-slate-950/18 p-2">
             <PlayerTeam team={teamA} teamLabel="Đội A" />
           </div>
 
           {/* VS Divider */}
-          <div className="flex flex-col items-center justify-center gap-2 min-w-[44px]">
-            <div className="text-[10px] font-bold text-slate-400">VS</div>
+          <div className="flex min-w-0 flex-col items-center justify-center gap-2">
+            <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">VS</div>
             {court.status === 'READY' && court.slots.every((s) => s !== null) && !schedulingDisabled && (
               <motion.button
                 onClick={() => {
@@ -135,23 +138,24 @@ export function CourtCard({
                 }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="h-7 w-7 rounded-full border border-slate-600/40 bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 hover:text-slate-100 shadow-[0_6px_16px_rgba(0,0,0,0.25)] transition-colors flex items-center justify-center"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-600/50 bg-slate-800/70 text-slate-100 shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition-colors hover:border-cyan-300/35 hover:bg-slate-700/80 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
                 title="Đảo cặp"
+                aria-label={`Đảo cặp ${court.name}`}
               >
-                <ArrowRightLeft className="w-3 h-3" />
+                <ArrowRightLeft className="h-4 w-4" />
               </motion.button>
             )}
           </div>
 
           {/* Đội B */}
-          <div className="flex-1">
+          <div className="min-w-0 rounded-lg border border-white/[0.06] bg-slate-950/18 p-2">
             <PlayerTeam team={teamB} teamLabel="Đội B" />
           </div>
         </div>
       )}
 
       {/* ACTIONS */}
-      <div className="flex gap-2">
+      <div className="mt-auto flex gap-2">
         {court.status === 'EMPTY' && (
           <motion.button
             onClick={() => {
@@ -163,9 +167,10 @@ export function CourtCard({
             whileTap={{ scale: 0.98 }}
             disabled={!canAutoAssign}
             title={disabledReason || undefined}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 hover:text-cyan-100 font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={`Xếp gợi ý tiếp theo vào ${court.name}`}
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-cyan-300/20 bg-cyan-400/15 px-3 py-2 text-xs font-bold text-cyan-100 transition-colors hover:border-cyan-200/35 hover:bg-cyan-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
           >
-            <Users className="w-4 h-4" />
+            <Users className="h-4 w-4" />
             Xếp vào
           </motion.button>
         )}
@@ -181,9 +186,10 @@ export function CourtCard({
               whileTap={{ scale: 0.98 }}
               disabled={schedulingDisabled}
               title={disabledReason || undefined}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 text-slate-200 hover:text-white font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={`Hủy cặp đang chờ trên ${court.name}`}
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-600/45 bg-slate-800/60 px-3 py-2 text-xs font-bold text-slate-100 transition-colors hover:border-slate-500/70 hover:bg-slate-700/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/35 disabled:text-slate-500"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
               Hủy
             </motion.button>
             <motion.button
@@ -195,9 +201,10 @@ export function CourtCard({
               whileTap={{ scale: 0.98 }}
               disabled={!canStart}
               title={disabledReason || undefined}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={`Bắt đầu trận trên ${court.name}`}
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-300/20 bg-emerald-400/15 px-3 py-2 text-xs font-bold text-emerald-100 transition-colors hover:border-emerald-200/35 hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/35 disabled:text-slate-500"
             >
-              <Play className="w-4 h-4" />
+              <Play className="h-4 w-4" />
               Bắt đầu
             </motion.button>
           </>
@@ -220,9 +227,10 @@ export function CourtCard({
             whileTap={{ scale: 0.98 }}
             disabled={schedulingDisabled}
             title={disabledReason || undefined}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={`Kết thúc trận trên ${court.name}`}
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-rose-300/20 bg-rose-400/15 px-3 py-2 text-xs font-bold text-rose-100 transition-colors hover:border-rose-200/35 hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/35 disabled:text-slate-500"
           >
-            <Square className="w-4 h-4" />
+            <Square className="h-4 w-4" />
             Kết thúc
           </motion.button>
         )}

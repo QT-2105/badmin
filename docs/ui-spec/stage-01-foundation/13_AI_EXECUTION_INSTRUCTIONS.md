@@ -77,7 +77,7 @@ Không tự đoán.
 
 ## Bước 6 — Kết thúc Stage 1
 
-Xuất report theo `14_STAGE_COMPLETION_REPORT_TEMPLATE.md`.
+Xuất report theo `15_COMPLETION_REPORT.md` sau khi stage hoàn tất.
 
 Sau đó dừng.
 

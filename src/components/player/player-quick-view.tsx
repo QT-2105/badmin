@@ -53,7 +53,7 @@ export function PlayerQuickView({
   const payable = Math.max(0, Number(player.paymentAmount ?? 0) - Number(player.discount ?? 0));
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] bg-overlay px-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] bg-overlay px-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby={`player-quick-view-${player.id}`}>
       <div className="flex min-h-full items-center justify-center py-4">
         <Surface
           variant="elevated"
@@ -65,7 +65,7 @@ export function PlayerQuickView({
             <div className="flex min-w-0 items-center gap-4">
               <PlayerAvatar name={player.name} gender={player.gender} avatarUrl={player.avatarUrl} size="lg" className="h-24 w-24 text-2xl" />
               <div className="min-w-0">
-                <h2 className="break-words text-2xl font-semibold leading-tight text-foreground">{player.name}</h2>
+                <h2 id={`player-quick-view-${player.id}`} className="break-words text-2xl font-semibold leading-tight text-foreground">{player.name}</h2>
                 <p className="text-sm text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level ?? undefined)}</p>
               </div>
             </div>

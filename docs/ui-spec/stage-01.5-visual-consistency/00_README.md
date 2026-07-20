@@ -20,7 +20,7 @@ Read these files in order before doing any Stage 01.5 work:
 6. `05_MIGRATION_PLAN.md`
 7. `06_IMPLEMENTATION_TASKS.md`
 8. `07_ACCEPTANCE_CHECKLIST.md`
-9. `08_COMPLETION_REPORT_TEMPLATE.md`
+9. `10_COMPLETION_REPORT.md`
 10. `09_DETAILED_IMPLEMENTATION_PLAN.md`
 
 Also read Stage 01 foundation documents before using this stage:
@@ -75,7 +75,7 @@ Current high-risk findings:
 
 Next valid step:
 
-1. Review `08_COMPLETION_REPORT_TEMPLATE.md` current audit report.
+1. Review `10_COMPLETION_REPORT.md` current audit report.
 2. Review `09_DETAILED_IMPLEMENTATION_PLAN.md`.
 3. If implementation is approved later, start with non-runtime safe migrations from `06_IMPLEMENTATION_TASKS.md`.
 4. Do not touch protected runtime UI until the owner explicitly approves the runtime migration scope.

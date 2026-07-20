@@ -1,0 +1,25 @@
+# Acceptance Checklist
+
+- [x] Filter behavior unchanged.
+- [x] Close behavior unchanged.
+- [x] History source unchanged.
+- [x] Match order unchanged.
+- [x] Match status unchanged.
+- [x] `started_at` / `ended_at` data unchanged.
+- [x] Team JSON data unchanged.
+- [x] Court number data unchanged.
+- [x] Query unchanged.
+- [x] Filtering semantics unchanged.
+- [x] Runtime synchronization unchanged.
+- [x] Match lifecycle unchanged.
+- [x] History row data unchanged.
+- [x] Empty/loading/error conditions unchanged.
+- [x] Header/filter presentation improved.
+- [x] Match row/card presentation improved.
+- [x] Team display and court badge presentation improved.
+- [x] Time and finished status presentation improved.
+- [x] Responsive scroll presentation improved.
+- [x] `npm run lint` passed.
+- [x] `npm run typecheck` passed.
+- [x] `npm run build` passed.
+- [x] `npm run guard:no-db-schema-automation` passed.

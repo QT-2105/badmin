@@ -1,0 +1,23 @@
+# Acceptance Checklist
+
+- [x] Player order source unchanged.
+- [x] Queue sorting implementation unchanged.
+- [x] Priority mapping unchanged.
+- [x] `runtime_status` values unchanged.
+- [x] Player selection behavior unchanged.
+- [x] Multi-select/manual pairing callbacks unchanged.
+- [x] Zustand actions unchanged.
+- [x] API calls unchanged.
+- [x] Status updates unchanged.
+- [x] Edits remain optimistic.
+- [x] DB save remains explicit.
+- [x] Payment mapping unchanged.
+- [x] Tags unchanged.
+- [x] Queue section presentation improved.
+- [x] Player row/card presentation improved.
+- [x] Badge, hover, focus and empty state presentation improved.
+- [x] Scroll area density improved.
+- [x] `npm run lint` passed.
+- [x] `npm run typecheck` passed.
+- [x] `npm run build` passed.
+- [x] `npm run guard:no-db-schema-automation` passed.

@@ -34,7 +34,7 @@ export type DataTableProps<Row> = {
   actions?: (row: Row, rowIndex: number) => ReactNode;
   loading?: boolean;
   error?: boolean;
-  loadingState?: ReactNode;
+  loadingState?: ReactNode | DataTableState;
   emptyState?: ReactNode | DataTableState;
   errorState?: ReactNode | DataTableState;
   pagination?: ReactNode;

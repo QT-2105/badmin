@@ -1,0 +1,21 @@
+# Acceptance Checklist
+
+- [x] Scope documented.
+- [x] Current Finance source audited.
+- [x] Finance route audited.
+- [x] Finance page audited.
+- [x] Page header audited.
+- [x] Report period filters audited.
+- [x] KPI cards and finance summary audited.
+- [x] Entry form, selectors, quantity, unit price, and submit payload audited.
+- [x] Payment/session relation constraints audited.
+- [x] Transaction list/actions audited.
+- [x] Empty/loading/error states audited.
+- [x] Light/dark and responsive risks audited.
+- [x] Accessibility and hard-coded style risks audited.
+- [x] Allowed files documented.
+- [x] Protected files documented.
+- [x] Implementation plan documented.
+- [x] Component dependency graph created.
+- [x] Sprint plan created.
+- [x] No source code modified.

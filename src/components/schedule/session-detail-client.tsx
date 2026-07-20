@@ -9,8 +9,10 @@ import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/feedback';
-import { NoticeCard, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { NoticeCard, PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Surface } from '@/components/ui/surface';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { useShuttlecockProductOptions } from '@/hooks/use-inventory';
@@ -257,31 +259,42 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 md:px-6">
-      <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <Link href={session ? `/schedule/${session.playDateId}` : '/schedule'} className="text-xs font-medium text-info outline-none hover:text-info/80 focus-visible:ring-2 focus-visible:ring-focus/25">← Quay lại lịch</Link>
-          <h1 className="mt-1 text-2xl font-semibold text-foreground">{session?.name || 'Ca chơi'}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân · ${getSessionStatusLabel(session.status)}` : 'Đang tải'}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <PageShell maxWidth="max-w-6xl">
+      <PageHeader
+        backAction={
+          <Link href={session ? `/schedule/${session.playDateId}` : '/schedule'} className="text-sm font-medium text-info outline-none hover:text-info/80 focus-visible:ring-2 focus-visible:ring-focus/25">
+            ← Quay lại lịch
+          </Link>
+        }
+        title={session?.name || 'Ca chơi'}
+        description={session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân` : 'Đang tải'}
+        actions={
+          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+            {session ? (
+              <StatusBadge
+                tone={normalizedStatus === 'COMPLETED' ? 'success' : normalizedStatus === 'ACTIVE' ? 'info' : normalizedStatus === 'CANCELLED' ? 'danger' : 'warning'}
+              >
+                {getSessionStatusLabel(session.status)}
+              </StatusBadge>
+            ) : null}
           {normalizedStatus === 'PENDING' && canOperateSession ? (
-            <Button onClick={() => setStatus('ACTIVE')} disabled={updatePlaySession.isPending || !canStartSession}>
+            <Button size="sm" onClick={() => setStatus('ACTIVE')} disabled={updatePlaySession.isPending || !canStartSession}>
               {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Bắt đầu ca
             </Button>
           ) : null}
           {normalizedStatus === 'ACTIVE' && canCompleteSession ? (
-            <Button variant="secondary" onClick={requestCompleteSession} disabled={completePlaySession.isPending}>
+            <Button size="sm" variant="secondary" onClick={requestCompleteSession} disabled={completePlaySession.isPending}>
               {completePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
               Hoàn tất ca
             </Button>
           ) : null}
           <Link href={`/sessions/${sessionId}/runtime`}>
-            <Button variant={normalizedStatus === 'ACTIVE' ? 'primary' : 'secondary'}>Điều phối</Button>
+            <Button size="sm" variant={normalizedStatus === 'ACTIVE' ? 'primary' : 'secondary'}>Điều phối</Button>
           </Link>
-        </div>
-      </header>
+          </div>
+        }
+      />
 
       {isLoading ? <NoticeCard>Đang tải ca chơi...</NoticeCard> : null}
       {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
@@ -294,16 +307,16 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
 
       {session ? (
         <section className="grid gap-3 md:grid-cols-3">
-          <InfoCard label="Thời gian" value={`${session.startTime}-${session.endTime}`} />
-          <InfoCard label="Người chơi" value={`${players.length}`} />
-          <InfoCard label="Thu dự kiến" value={`${formatCurrency(paymentTotals.expected)}đ`} />
+          <StatCard density="compact" label="Thời gian" value={`${session.startTime}-${session.endTime}`} tone="info" />
+          <StatCard density="compact" label="Người chơi" value={`${players.length}`} tone="neutral" />
+          <StatCard density="compact" label="Thu dự kiến" value={`${formatCurrency(paymentTotals.expected)}đ`} tone="income" />
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-border bg-surface p-3 shadow-soft">
+      <Surface padding="md" className="space-y-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Thông tin hoàn tất ca</h2>
+            <h2 className="text-section-title">Thông tin hoàn tất ca</h2>
             <p className="text-sm text-muted-foreground">Lưu chi phí sân, cầu hao và xem lợi nhuận tạm tính trước khi hoàn tất.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -315,122 +328,153 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </div>
         </div>
         {completionError ? (
-          <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm font-medium text-warning">
+          <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm font-medium text-warning">
             {completionError}
           </div>
         ) : null}
 
         {completionExpanded ? (
-        <div className="mt-3 grid gap-3 md:grid-cols-[150px_1fr_130px_auto] md:items-end">
-          <label className="block">
-            <span className={formLabelClass}>Chi phí sân</span>
-            <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Loại cầu hao</span>
-            <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`}>
-              <option value="">Chọn cầu</option>
-              {shuttlecockProducts.map((product) => (
-                <option key={product.id} value={product.id}>{product.brand ? `${product.name} · ${product.brand}` : product.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Cầu hao</span>
-            <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
-          </label>
-          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11">
+        <div className="grid gap-3 lg:grid-cols-[minmax(150px,180px)_minmax(260px,1fr)_130px_auto] lg:items-end">
+          <Surface variant="subtle" padding="sm" className="border-info/20 bg-info-soft/40 md:p-3">
+            <label className="block">
+              <span className={formLabelClass}>Chi phí sân</span>
+              <input type="number" min={0} step={10000} value={courtCost} onChange={(event) => { setCourtCost(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
+            </label>
+          </Surface>
+          <Surface variant="subtle" padding="sm" className="border-warning/20 bg-warning-soft/30 md:p-3">
+            <label className="block">
+              <span className={formLabelClass}>Loại cầu hao</span>
+              <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`}>
+                <option value="">Chọn cầu</option>
+                {shuttlecockProducts.map((product) => (
+                  <option key={product.id} value={product.id}>{product.brand ? `${product.name} · ${product.brand}` : product.name}</option>
+                ))}
+              </select>
+            </label>
+          </Surface>
+          <Surface variant="subtle" padding="sm" className="border-warning/20 bg-warning-soft/30 md:p-3">
+            <label className="block">
+              <span className={formLabelClass}>Cầu hao</span>
+              <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
+            </label>
+          </Surface>
+          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full lg:w-auto">
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
-          <div className="rounded-lg border border-border bg-surface-subtle p-3 md:col-span-4">
+          <Surface variant="subtle" padding="sm" className="lg:col-span-4">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ghi chú ca</div>
             <p className="mt-1 text-sm text-foreground">{session?.note || 'Chưa có ghi chú.'}</p>
             <p className="mt-2 text-xs text-muted-foreground">Loại cầu hao đã lưu: {selectedShuttlecockLabel}</p>
-          </div>
+          </Surface>
         </div>
         ) : null}
-      </section>
+      </Surface>
 
-      <section className="rounded-xl border border-border bg-surface p-3 shadow-soft">
+      <Surface padding="md" className="space-y-3">
         <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Người chơi trong ca</h2>
-            <p className="text-sm text-muted-foreground">
-              Thu tiền mặt: {formatCurrency(playerFinance.cash)}đ · Thu chuyển khoản: {formatCurrency(playerFinance.bank)}đ · Chưa thu: {formatCurrency(playerFinance.unpaid)}đ
-            </p>
+            <h2 className="text-section-title">Người chơi trong ca</h2>
+            <p className="text-sm text-muted-foreground">Theo dõi thanh toán của người chơi trong ca.</p>
           </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Surface variant="subtle" padding="sm" className="border-success/20 bg-success-soft/50">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Tiền mặt</span>
+              <StatusBadge tone="success">TM</StatusBadge>
+            </div>
+            <div className="mt-1 font-mono text-lg font-semibold text-foreground">{formatCurrency(playerFinance.cash)}đ</div>
+          </Surface>
+          <Surface variant="subtle" padding="sm" className="border-info/20 bg-info-soft/50">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Chuyển khoản</span>
+              <StatusBadge tone="info">CK</StatusBadge>
+            </div>
+            <div className="mt-1 font-mono text-lg font-semibold text-foreground">{formatCurrency(playerFinance.bank)}đ</div>
+          </Surface>
+          <Surface variant="subtle" padding="sm" className="border-warning/25 bg-warning-soft/50">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Chưa thu</span>
+              <StatusBadge tone="warning">Chưa TT</StatusBadge>
+            </div>
+            <div className="mt-1 font-mono text-lg font-semibold text-foreground">{formatCurrency(playerFinance.unpaid)}đ</div>
+          </Surface>
         </div>
 
         {canOperateSession ? (
-        <form onSubmit={submitPlayer} className="mt-3 grid gap-3 rounded-lg border border-border bg-surface-subtle p-3 md:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] md:items-end">
-          <label className="block min-w-0">
-            <span className={formLabelClass}>Tên người chơi</span>
-            <input
-              value={form.fullName}
-              onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-              className={formInputClass}
-              required
-            />
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Giới tính</span>
-            <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={formInputClass}>
-              <option value="Nam">Nam</option>
-              <option value="Nữ">Nữ</option>
-              <option value="Khác">Khác</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Trình độ</span>
-            <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className={formInputClass}>
-              {LEVEL_OPTIONS.slice(0, 6).map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className={formLabelClass}>Phí</span>
-            <PlayerFeeInput
-              value={form.paymentAmount}
-              onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
-            />
-          </label>
-          <label className="block w-12">
-            <span className={formLabelClass}>Ảnh</span>
-            <span
-              className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
-              title="Chọn hoặc chụp ảnh người chơi"
-            >
-              <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
-            </span>
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="sr-only"
-              onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
-            />
-          </label>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-10 flex-1 rounded-xl md:flex-none">
-              {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Thêm
-            </Button>
-          </div>
-        </form>
+        <Surface variant="subtle" padding="sm">
+          <form onSubmit={submitPlayer} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] lg:items-end">
+            <label className="block min-w-0 sm:col-span-2 lg:col-span-1">
+              <span className={formLabelClass}>Tên người chơi</span>
+              <input
+                value={form.fullName}
+                onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+                className={formInputClass}
+                required
+              />
+            </label>
+            <label className="block min-w-0">
+              <span className={formLabelClass}>Giới tính</span>
+              <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={formInputClass}>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </label>
+            <label className="block min-w-0">
+              <span className={formLabelClass}>Trình độ</span>
+              <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className={formInputClass}>
+                {LEVEL_OPTIONS.slice(0, 6).map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block min-w-0">
+              <span className={formLabelClass}>Phí</span>
+              <PlayerFeeInput
+                value={form.paymentAmount}
+                onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
+              />
+            </label>
+            <label className="block w-12">
+              <span className={formLabelClass}>Ảnh</span>
+              <span
+                className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
+                title="Chọn hoặc chụp ảnh người chơi"
+              >
+                <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
+              </span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                aria-label="Chọn hoặc chụp ảnh người chơi mới"
+                className="sr-only"
+                onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
+              <Button type="submit" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-10 flex-1 rounded-xl lg:flex-none">
+                {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Thêm
+              </Button>
+            </div>
+          </form>
+        </Surface>
         ) : null}
 
-        {playersLoading ? <NoticeCard className="mt-4">Đang tải người chơi...</NoticeCard> : null}
-        {playersError ? <NoticeCard tone="danger" className="mt-4">{playersError.message}</NoticeCard> : null}
-        {playerActionError ? <NoticeCard tone="warning" className="mt-4">{playerActionError}</NoticeCard> : null}
+        {playersLoading ? <NoticeCard>Đang tải người chơi...</NoticeCard> : null}
+        {playersError ? <NoticeCard tone="danger">{playersError.message}</NoticeCard> : null}
+        {playerActionError ? <NoticeCard tone="warning">{playerActionError}</NoticeCard> : null}
 
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2">
           {players.map((player) => {
             const payable = Math.max(0, player.paymentAmount - player.discount);
             const isEditing = editingId === player.id;
             if (isEditing) {
               return (
-                <article key={player.id} className="rounded-xl border border-info/25 bg-info-soft/60 p-3 text-sm">
+                <Surface key={player.id} variant="subtle" padding="sm" className="border-info/25 bg-info-soft/60 text-sm">
                   <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] lg:items-end">
                     <div className="flex items-center gap-2">
                       <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-border transition hover:ring-info/40 focus-within:ring-2 focus-within:ring-focus/25" title="Đổi ảnh người chơi">
@@ -438,6 +482,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
+                          aria-label={`Đổi ảnh người chơi ${editForm.fullName || player.fullName}`}
                           className="sr-only"
                           onChange={(event) => setEditAvatarFile(event.target.files?.[0] ?? null)}
                         />
@@ -488,27 +533,33 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                           Xóa ảnh
                         </Button>
                       ) : null}
-                      <Button type="button" variant="secondary" disabled={updatePlayer.isPending} onClick={() => void saveInlineEdit()} className="h-10 px-3">
+                      <Button type="button" variant="secondary" disabled={updatePlayer.isPending} onClick={() => void saveInlineEdit()} className="h-10 px-3" aria-label={`Lưu chỉnh sửa ${editForm.fullName || player.fullName}`}>
                         {updatePlayer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                       </Button>
-                      <Button type="button" variant="ghost" onClick={cancelEdit} className="h-10 px-3">
+                      <Button type="button" variant="ghost" onClick={cancelEdit} className="h-10 px-3" aria-label={`Hủy chỉnh sửa ${editForm.fullName || player.fullName}`}>
                         <X className="h-4 w-4" />
                       </Button>
                   </div>
-                </article>
+                </Surface>
               );
             }
 
             return (
-              <article
+              <Surface
                 key={player.id}
+                variant="interactive"
+                padding="sm"
                 role="button"
                 tabIndex={0}
+                aria-label={`Xem nhanh người chơi ${player.fullName}`}
                 onClick={() => setQuickViewPlayer(toQuickViewPlayer(player))}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') setQuickViewPlayer(toQuickViewPlayer(player));
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setQuickViewPlayer(toQuickViewPlayer(player));
+                  }
                 }}
-                className="grid cursor-pointer gap-3 rounded-xl border border-border bg-surface-subtle p-3 text-sm outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 md:grid-cols-[1.5fr_90px_120px_140px_auto] md:items-center"
+                className="grid cursor-pointer gap-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus/25 lg:grid-cols-[1.5fr_90px_120px_140px_auto] lg:items-center"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <PlayerAvatar name={player.fullName} gender={player.gender} avatarUrl={player.avatarUrl} size="md" />
@@ -520,26 +571,26 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 <div className="text-text-secondary">{player.totalMatches} trận</div>
                 <div className="font-mono text-foreground">{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
-                <div className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
+                <div className="flex flex-wrap gap-2 lg:justify-end" onClick={(event) => event.stopPropagation()}>
                   {canOperateSession ? (
-                  <Button type="button" variant="secondary" disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-10 px-3">
+                  <Button type="button" variant="secondary" disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-10 px-3" aria-label={`Chỉnh sửa ${player.fullName}`}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                   ) : null}
                   {canOperateSession ? (
-                  <Button type="button" variant="danger" disabled={runtimeLocked || deletePlayer.isPending} onClick={() => deletePlayer.mutate(player.id)} className="h-10 px-3">
+                  <Button type="button" variant="danger" disabled={runtimeLocked || deletePlayer.isPending} onClick={() => deletePlayer.mutate(player.id)} className="h-10 px-3" aria-label={`Xóa ${player.fullName}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   ) : null}
                 </div>
-              </article>
+              </Surface>
             );
           })}
           {!playersLoading && players.length === 0 ? (
             <EmptyState title="Chưa có người chơi" description="Thêm người chơi trước khi vào Điều phối để runtime hydrate từ database." />
           ) : null}
         </div>
-      </section>
+      </Surface>
 
       {showCompleteConfirm ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-overlay px-4 backdrop-blur-sm">
@@ -570,24 +621,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </div>
       ) : null}
       <PlayerQuickView player={quickViewPlayer} onClose={() => setQuickViewPlayer(null)} />
-    </div>
+    </PageShell>
   );
-}
-
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={`rounded-xl border px-3 py-2.5 ${getInfoCardTone(label)}`}>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
-    </div>
-  );
-}
-
-function getInfoCardTone(label: string): string {
-  if (label.includes('Thời gian')) return 'border-info/20 bg-info-soft';
-  if (label.includes('Người chơi')) return 'border-primary/20 bg-primary-soft';
-  if (label.includes('Thu')) return 'border-success/25 bg-success-soft';
-  return 'border-border bg-surface-subtle';
 }
 
 type PlayerFormState = {

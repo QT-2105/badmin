@@ -26,7 +26,7 @@ docs/
         ├── 11_IMPLEMENTATION_TASKS.md
         ├── 12_QUALITY_AND_ACCEPTANCE.md
         ├── 13_AI_EXECUTION_INSTRUCTIONS.md
-        └── 14_STAGE_COMPLETION_REPORT_TEMPLATE.md
+        └── 15_COMPLETION_REPORT.md
 ```
 
 Prompt gửi Codex:

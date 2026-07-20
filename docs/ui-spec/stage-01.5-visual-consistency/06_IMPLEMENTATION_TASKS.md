@@ -90,7 +90,7 @@ Run:
 
 ## Task 9 - Completion Report
 
-Use `08_COMPLETION_REPORT_TEMPLATE.md`.
+Use `10_COMPLETION_REPORT.md`.
 
 Final status must be one of:
 

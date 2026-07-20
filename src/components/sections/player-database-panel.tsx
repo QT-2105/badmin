@@ -109,7 +109,7 @@ export function PlayerDatabasePanel({
           <h3 className="text-sm font-bold text-slate-100">DANH SÁCH NGƯỜI CHƠI</h3>
           <div className="flex items-center gap-2">
             {!isCompact ? (
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="h-9 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-slate-200 outline-none">
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} aria-label="Sắp xếp danh sách người chơi" className="h-9 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70">
                 <option value="FEMALE_FIRST">Nữ trước</option>
                 <option value="NAME">Tên A-Z</option>
                 <option value="MATCH_ASC">Ít trận trước</option>
@@ -123,7 +123,8 @@ export function PlayerDatabasePanel({
                 type="button"
                 onClick={() => void saveChanges()}
                 disabled={persistPlayer.isPending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-cyan-400 px-3 text-xs font-semibold text-slate-950 disabled:opacity-50"
+                aria-label={`Lưu ${dirtyPlayerIds.size} thay đổi người chơi`}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-cyan-400 px-3 text-xs font-semibold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:opacity-50"
               >
                 {persistPlayer.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                 Lưu thay đổi ({dirtyPlayerIds.size})
@@ -131,7 +132,7 @@ export function PlayerDatabasePanel({
             ) : null}
             {headerAction}
             {showClose && onClose ? (
-              <motion.button onClick={onClose} whileHover={{ scale: 1.1 }} className="text-slate-400 hover:text-slate-200">
+              <motion.button type="button" onClick={onClose} whileHover={{ scale: 1.1 }} aria-label="Đóng danh sách người chơi" className="text-slate-400 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70">
                 <X className="w-4 h-4" />
               </motion.button>
             ) : null}
