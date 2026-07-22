@@ -22,6 +22,9 @@ export type FormSectionProps = {
   defaultExpanded?: boolean;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  collapseLabel?: string;
+  expandLabel?: string;
+  showCollapseLabel?: boolean;
   disabled?: boolean;
   tone?: FormSectionTone;
   className?: string;
@@ -46,6 +49,9 @@ export function FormSection({
   defaultExpanded = true,
   expanded,
   onExpandedChange,
+  collapseLabel = 'Thu gọn',
+  expandLabel = 'Mở rộng',
+  showCollapseLabel = false,
   disabled = false,
   tone = 'neutral',
   className,
@@ -68,7 +74,7 @@ export function FormSection({
       className={cn(toneStyles[tone], disabled ? 'opacity-70' : '', className)}
       padding="lg"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           {icon ? <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</div> : null}
           <div className="min-w-0">
@@ -76,24 +82,26 @@ export function FormSection({
             {description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p> : null}
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 sm:justify-end">
           {actions}
           {collapsible ? (
             <Button
               aria-expanded={isExpanded}
-              aria-label={isExpanded ? 'Thu gọn' : 'Mở rộng'}
+              aria-label={isExpanded ? collapseLabel : expandLabel}
+              className="h-10 min-w-10"
               disabled={disabled}
               onClick={() => setExpanded(!isExpanded)}
               size="sm"
               variant="secondary"
             >
-              <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded ? 'rotate-180' : '')} />
+              <ChevronDown className={cn('h-4 w-4 transition-transform motion-reduce:transition-none', isExpanded ? 'rotate-180' : '')} />
+              {showCollapseLabel ? <span>{isExpanded ? collapseLabel : expandLabel}</span> : null}
             </Button>
           ) : null}
         </div>
       </div>
       {isExpanded ? (
-        <div className={cn('mt-4', disabled ? 'pointer-events-none' : '', contentClassName)}>
+        <div className={cn('mt-4 min-w-0', disabled ? 'pointer-events-none' : '', contentClassName)}>
           {children}
           {footer ? <div className="mt-4 border-t border-border pt-4">{footer}</div> : null}
         </div>

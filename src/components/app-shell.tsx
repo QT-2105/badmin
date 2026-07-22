@@ -72,15 +72,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [collapsed]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="min-h-screen">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-focus/25"
+      >
+        Bỏ qua điều hướng
+      </a>
+      <div className="min-h-screen min-w-0">
         <aside
           className={cn(
-            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border bg-surface/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200',
+            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border/80 bg-surface-elevated/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200 motion-reduce:transition-none',
             collapsed ? 'w-[72px]' : 'w-[232px]'
           )}
         >
-          <div className="flex h-16 items-center justify-between gap-2 border-b border-border px-3">
+          <div className="flex h-16 items-center justify-between gap-2 border-b border-border/80 px-3">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
               {!collapsed ? (
@@ -95,14 +101,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setCollapsed((value) => !value)}
               variant="ghost"
               size="sm"
-              className="h-9 w-9 shrink-0 px-0 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 shrink-0 bg-surface-muted px-0 text-muted-foreground ring-1 ring-border hover:bg-surface-hover hover:text-foreground"
               aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             >
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
           </div>
 
-          <nav className="flex-1 space-y-4 px-2 py-4">
+          <nav aria-label="Điều hướng chính" className="flex-1 space-y-4 px-2 py-4">
             {visibleNavGroups.map((group) => (
               <div key={group.label} className="space-y-1">
                 {!collapsed ? (
@@ -118,17 +124,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={item.href}
                       href={item.href as Route}
                       className={cn(
-                        'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                        'relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                         active
-                          ? 'bg-primary/10 text-primary ring-1 ring-primary/15 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
-                          : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground',
+                          ? 'border-primary/30 bg-primary-soft font-semibold text-primary ring-1 ring-primary/15 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
+                          : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground',
                         collapsed && 'justify-center px-0'
                       )}
                       aria-current={active ? 'page' : undefined}
+                      aria-label={`${group.label}: ${item.label}${active ? ' đang mở' : ''}`}
                       title={collapsed ? `${group.label} · ${item.label}` : undefined}
                     >
-                      <Icon className="h-[18px] w-[18px] shrink-0" />
-                      {!collapsed ? <span>{item.label}</span> : null}
+                      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                      {!collapsed ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
+                      {active && !collapsed ? (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-primary ring-1 ring-primary/15">
+                          Đang mở
+                        </span>
+                      ) : null}
                     </Link>
                   );
                 })}
@@ -136,7 +148,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          <div className="border-t border-border p-2">
+          <div className="border-t border-border/80 p-2">
             {currentUser ? <CurrentUserSummary user={currentUser} collapsed={collapsed} /> : null}
             <FullscreenToggle compact={collapsed} className="w-full justify-center" />
             <ThemeToggle compact={collapsed} className="mt-2 w-full justify-center" />
@@ -157,16 +169,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main
+          id="main-content"
           className={cn(
-            'min-h-screen min-w-0 bg-background transition-[margin-left] duration-200',
+            'min-h-screen min-w-0 overflow-x-clip bg-background transition-[margin-left] duration-200 motion-reduce:transition-none',
             collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'
           )}
         >
-          <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-surface/90 px-3 backdrop-blur md:hidden">
+          <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-surface-elevated/95 px-3 backdrop-blur md:hidden">
             <Link href="/dashboard">
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
             </Link>
-            <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+            <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain">
               {visibleNavItems.map((item) => {
                 const active = isNavItemActive(pathname, item.href);
                 const Icon = item.icon;
@@ -175,28 +188,31 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href as Route}
                     className={cn(
-                      'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-                      active ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                      'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
+                      active
+                        ? 'border-primary/30 bg-primary-soft text-primary ring-1 ring-primary/15'
+                        : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground'
                     )}
                     aria-current={active ? 'page' : undefined}
+                    aria-label={`${item.label}${active ? ' đang mở' : ''}`}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                     {item.label}
                   </Link>
                 );
               })}
-              <FullscreenToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
-              <ThemeToggle compact className="h-9 w-9 shrink-0 rounded-lg" />
+              <FullscreenToggle compact className="h-10 w-10 shrink-0 rounded-lg" />
+              <ThemeToggle compact className="h-10 w-10 shrink-0 rounded-lg" />
               <Button
                 type="button"
                 onClick={() => void logout.mutateAsync()}
                 disabled={logout.isPending}
                 variant="secondary"
                 size="sm"
-                className="h-9 w-9 shrink-0 px-0 text-muted-foreground"
+                className="h-10 w-10 shrink-0 px-0 text-muted-foreground"
                 aria-label="Đăng xuất"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </div>
           </header>

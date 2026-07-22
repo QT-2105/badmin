@@ -2,11 +2,12 @@
 
 import { X } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent, ReactNode, RefObject } from 'react';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/utils';
 
-import { Button } from './button';
+import { Button, IconButton } from './button';
 
 type DialogTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -21,6 +22,7 @@ export type DialogProps = {
   closeLabel?: string;
   tone?: DialogTone;
   size?: DialogSize;
+  closeDisabled?: boolean;
   closeOnEscape?: boolean;
   closeOnOutsideClick?: boolean;
   initialFocusRef?: RefObject<HTMLElement | null>;
@@ -73,6 +75,7 @@ export function Dialog({
   closeLabel = 'Đóng',
   tone = 'neutral',
   size = 'md',
+  closeDisabled = false,
   closeOnEscape = true,
   closeOnOutsideClick = true,
   initialFocusRef,
@@ -84,9 +87,14 @@ export function Dialog({
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!open) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !mounted) {
       return;
     }
 
@@ -105,13 +113,18 @@ export function Dialog({
       const returnTarget = returnFocusElement ?? previousActiveElementRef.current;
       returnTarget?.focus();
     };
-  }, [initialFocusRef, open, returnFocusRef]);
+  }, [initialFocusRef, mounted, open, returnFocusRef]);
 
-  if (!open) {
+  if (!open || !mounted) {
     return null;
   }
 
-  const closeDialog = () => onOpenChange(false);
+  const closeDialog = () => {
+    if (closeDisabled) {
+      return;
+    }
+    onOpenChange(false);
+  };
 
   const handleBackdropMouseDown = (event: MouseEvent<HTMLDivElement>) => {
     if (closeOnOutsideClick && event.target === event.currentTarget) {
@@ -150,9 +163,9 @@ export function Dialog({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4"
+      className="motion-overlay-in fixed inset-0 z-modal flex items-center justify-center bg-overlay p-3 motion-reduce:animate-none sm:p-4"
       onKeyDown={handleKeyDown}
       onMouseDown={handleBackdropMouseDown}
     >
@@ -162,7 +175,7 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-modal="true"
         className={cn(
-          'max-h-[calc(100vh-2rem)] w-full overflow-hidden rounded-xl border bg-surface shadow-md outline-none',
+          'motion-dialog-in max-h-[calc(100dvh-1.5rem)] w-full max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border bg-surface shadow-md outline-none motion-reduce:animate-none sm:max-h-[calc(100vh-2rem)] sm:max-w-[calc(100vw-2rem)]',
           sizeStyles[size],
           toneStyles[tone],
           className
@@ -170,7 +183,7 @@ export function Dialog({
         role="dialog"
         tabIndex={-1}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
           <div className="min-w-0">
             <h2 id={titleId} className="text-section-title">
               {title}
@@ -181,13 +194,72 @@ export function Dialog({
               </p>
             ) : null}
           </div>
-          <Button aria-label={closeLabel} onClick={closeDialog} size="sm" variant="ghost">
-            <X className="h-4 w-4" />
-          </Button>
+          <IconButton
+            className="h-10 w-10 shrink-0"
+            icon={<X className="h-4 w-4" />}
+            label={closeLabel}
+            onClick={closeDialog}
+            disabled={closeDisabled}
+            size="sm"
+            variant="ghost"
+          />
         </div>
-        {children ? <div className={cn('max-h-[calc(100vh-13rem)] overflow-y-auto px-5 py-4', contentClassName)}>{children}</div> : null}
-        {footer ? <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-5 py-4">{footer}</div> : null}
+        {children ? <div className={cn('max-h-[calc(100dvh-11rem)] min-w-0 overflow-y-auto px-4 py-3 sm:max-h-[calc(100vh-13rem)] sm:px-5 sm:py-4', contentClassName)}>{children}</div> : null}
+        {footer ? <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5 sm:py-4">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
+  );
+}
+
+export type ConfirmationDialogProps = {
+  open: boolean;
+  title: ReactNode;
+  description?: ReactNode;
+  confirmLabel?: ReactNode;
+  cancelLabel?: ReactNode;
+  tone?: DialogTone;
+  isLoading?: boolean;
+  onConfirm: () => void | Promise<void>;
+  onCancel: () => void;
+};
+
+export function ConfirmationDialog({
+  open,
+  title,
+  description,
+  confirmLabel = 'Xác nhận',
+  cancelLabel = 'Hủy',
+  tone = 'danger',
+  isLoading = false,
+  onConfirm,
+  onCancel
+}: ConfirmationDialogProps) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isLoading) {
+          onCancel();
+        }
+      }}
+      title={title}
+      description={description}
+      tone={tone}
+      size="sm"
+      closeDisabled={isLoading}
+      closeOnEscape={!isLoading}
+      closeOnOutsideClick={!isLoading}
+      footer={(
+        <>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+            {cancelLabel}
+          </Button>
+          <Button type="button" variant={tone === 'danger' ? 'danger' : 'primary'} onClick={() => void onConfirm()} loading={isLoading}>
+            {confirmLabel}
+          </Button>
+        </>
+      )}
+    />
   );
 }

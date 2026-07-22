@@ -5,9 +5,11 @@ import type { MouseEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import type { Route } from 'next';
+import { useRouter } from 'next/navigation';
 import { CalendarDays, ChevronDown, ChevronUp, History, Home, Loader2, Users, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/dialog';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { useBadmintonStore, type Player, type SuggestionMode } from '@/lib/badminton-store';
 import { useRuntimeHydration } from '@/hooks/use-runtime-hydration';
@@ -34,8 +36,10 @@ const SUGGESTION_MODES: Array<{ value: SuggestionMode; label: string }> = [
 
 export function RealtimeDashboard() {
   const { updateCooldowns, players, session, suggestionMode, refreshNextMatches, setRuntimeSessionId, runtimeSessionId } = useBadmintonStore();
+  const router = useRouter();
   const [isPlayerFullscreenOpen, setIsPlayerFullscreenOpen] = useState(false);
   const [isMatchHistoryOpen, setIsMatchHistoryOpen] = useState(false);
+  const [pendingLeaveHref, setPendingLeaveHref] = useState<Route | null>(null);
   const [historyPlayerId, setHistoryPlayerId] = useState('');
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [autoMatchNotice, setAutoMatchNotice] = useState<string | null>(null);
@@ -93,13 +97,22 @@ export function RealtimeDashboard() {
     [players, selectedSuggestionMode, schedulingDisabledReason]
   );
 
-  function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
+  function confirmLeave(event: MouseEvent<HTMLAnchorElement>, href: Route) {
     if (syncState === 'pending' || syncState === 'syncing' || syncState === 'error') {
-      const ok = window.confirm('Runtime chưa đồng bộ xong. Bạn vẫn muốn rời màn hình điều phối?');
-      if (!ok) {
-        event.preventDefault();
-      }
+      event.preventDefault();
+      setPendingLeaveHref(href);
     }
+  }
+
+  function cancelLeave() {
+    setPendingLeaveHref(null);
+  }
+
+  function confirmPendingLeave() {
+    if (!pendingLeaveHref) return;
+    const href = pendingLeaveHref;
+    setPendingLeaveHref(null);
+    router.push(href);
   }
 
   function refreshSuggestions() {
@@ -244,11 +257,11 @@ export function RealtimeDashboard() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:hidden">
         <div className="px-3 py-1.5">
           <div className="mb-1.5 flex justify-end gap-1.5">
-            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-8 px-2.5 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở lịch sử trận đấu">
+            <Button size="sm" variant="secondary" onClick={() => setIsMatchHistoryOpen(true)} className="h-10 px-3 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở lịch sử trận đấu">
               <History className="h-3.5 w-3.5" />
               Lịch sử
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-8 px-2.5 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở danh sách người chơi toàn màn hình">
+            <Button size="sm" variant="secondary" onClick={() => setIsPlayerFullscreenOpen(true)} className="h-10 px-3 text-[11px] focus-visible:ring-2 focus-visible:ring-cyan-300/70" aria-label="Mở danh sách người chơi toàn màn hình">
               <Users className="h-3.5 w-3.5" />
               Người chơi
             </Button>
@@ -352,6 +365,16 @@ export function RealtimeDashboard() {
       </AnimatePresence>
         </>
       )}
+      <ConfirmationDialog
+        open={Boolean(pendingLeaveHref)}
+        title="Rời màn điều phối?"
+        description="Runtime chưa đồng bộ xong. Bạn vẫn muốn rời màn hình điều phối?"
+        confirmLabel="Rời màn"
+        cancelLabel="Ở lại"
+        tone="warning"
+        onCancel={cancelLeave}
+        onConfirm={confirmPendingLeave}
+      />
     </div>
   );
 }
@@ -369,7 +392,7 @@ function RuntimeTopBar({
   timeRange: string;
   status: string;
   syncState: string;
-  onLeave: (event: MouseEvent<HTMLAnchorElement>) => void;
+  onLeave: (event: MouseEvent<HTMLAnchorElement>, href: Route) => void;
 }) {
   const syncLabel = syncState === 'pending' ? 'Chờ đồng bộ' : syncState === 'syncing' ? 'Đang đồng bộ' : syncState === 'error' ? 'Lỗi đồng bộ' : 'Đã đồng bộ';
   const sessionHref = (sessionId ? `/sessions/${sessionId}` : '/schedule') as Route;
@@ -378,7 +401,7 @@ function RuntimeTopBar({
     <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/95 px-3 py-2 shadow-[0_8px_28px_rgba(2,6,23,0.24)] backdrop-blur">
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 md:gap-3">
         <div className="flex min-w-0 items-center gap-1.5">
-          <Link href="/dashboard" onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-xs font-semibold text-slate-200 transition hover:border-white/15 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70">
+          <Link href="/dashboard" onClick={(event) => onLeave(event, '/dashboard')} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3 text-xs font-semibold text-slate-200 transition hover:border-white/15 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70">
             <Home className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>
           </Link>
@@ -396,7 +419,7 @@ function RuntimeTopBar({
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <Link href={sessionHref} onClick={onLeave} className="inline-flex h-10 items-center gap-2 rounded-xl bg-cyan-400 px-3 text-xs font-bold text-slate-950 shadow-[0_10px_24px_rgba(34,211,238,0.18)] transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100" aria-label="Về chi tiết ca">
+          <Link href={sessionHref} onClick={(event) => onLeave(event, sessionHref)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-cyan-400 px-3 text-xs font-bold text-slate-950 shadow-[0_10px_24px_rgba(34,211,238,0.18)] transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100" aria-label="Về chi tiết ca">
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">Chi tiết ca</span>
           </Link>
@@ -457,7 +480,7 @@ function SuggestionModePicker({
           disabled={disabled}
           onClick={() => onChange(mode.value)}
           aria-pressed={value === mode.value}
-          className={`h-7 shrink-0 rounded-md px-2.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed ${
+          className={`h-10 shrink-0 rounded-md px-3 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed ${
             value === mode.value
               ? 'bg-cyan-400 text-slate-950'
               : 'text-slate-300 hover:bg-white/[0.06] hover:text-white disabled:bg-transparent disabled:text-slate-600'

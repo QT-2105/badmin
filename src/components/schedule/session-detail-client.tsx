@@ -8,8 +8,9 @@ import { PlayerFeeInput } from '@/components/player/player-fee-input';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/feedback';
-import { NoticeCard, PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { NoticeCard, PageFeedbackStack, PageHeader, PageShell, PageSummaryGrid, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Surface } from '@/components/ui/surface';
@@ -262,14 +263,18 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     <PageShell maxWidth="max-w-6xl">
       <PageHeader
         backAction={
-          <Link href={session ? `/schedule/${session.playDateId}` : '/schedule'} className="text-sm font-medium text-info outline-none hover:text-info/80 focus-visible:ring-2 focus-visible:ring-focus/25">
+          <Link
+            href={session ? `/schedule/${session.playDateId}` : '/schedule'}
+            className="inline-flex min-h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-foreground shadow-subtle outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="Quay lại chi tiết ngày chơi"
+          >
             ← Quay lại lịch
           </Link>
         }
         title={session?.name || 'Ca chơi'}
         description={session ? `${session.startTime}-${session.endTime} · ${session.courtCount} sân` : 'Đang tải'}
         actions={
-          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 md:w-auto md:justify-end">
             {session ? (
               <StatusBadge
                 tone={normalizedStatus === 'COMPLETED' ? 'success' : normalizedStatus === 'ACTIVE' ? 'info' : normalizedStatus === 'CANCELLED' ? 'danger' : 'warning'}
@@ -278,39 +283,43 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               </StatusBadge>
             ) : null}
           {normalizedStatus === 'PENDING' && canOperateSession ? (
-            <Button size="sm" onClick={() => setStatus('ACTIVE')} disabled={updatePlaySession.isPending || !canStartSession}>
+            <Button size="sm" onClick={() => setStatus('ACTIVE')} disabled={updatePlaySession.isPending || !canStartSession} className="h-10 w-full sm:w-auto">
               {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Bắt đầu ca
             </Button>
           ) : null}
           {normalizedStatus === 'ACTIVE' && canCompleteSession ? (
-            <Button size="sm" variant="secondary" onClick={requestCompleteSession} disabled={completePlaySession.isPending}>
+            <Button size="sm" variant="secondary" onClick={requestCompleteSession} disabled={completePlaySession.isPending} className="h-10 w-full sm:w-auto">
               {completePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
               Hoàn tất ca
             </Button>
           ) : null}
-          <Link href={`/sessions/${sessionId}/runtime`}>
-            <Button size="sm" variant={normalizedStatus === 'ACTIVE' ? 'primary' : 'secondary'}>Điều phối</Button>
+          <Link href={`/sessions/${sessionId}/runtime`} className="w-full sm:w-auto">
+            <Button size="sm" variant={normalizedStatus === 'ACTIVE' ? 'primary' : 'secondary'} className="h-10 w-full sm:w-auto">Điều phối</Button>
           </Link>
           </div>
         }
       />
 
-      {isLoading ? <NoticeCard>Đang tải ca chơi...</NoticeCard> : null}
-      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
-      {!canStartSession && normalizedStatus === 'PENDING' && session ? (
-        <NoticeCard tone="warning" className="flex items-start gap-2">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>Cần ít nhất {requiredPlayers} người chơi cho {session.courtCount} sân trước khi bắt đầu ca. Hiện có {players.length} người.</span>
-        </NoticeCard>
+      {(isLoading || error || (!canStartSession && normalizedStatus === 'PENDING' && session)) ? (
+        <PageFeedbackStack>
+          {isLoading ? <NoticeCard>Đang tải ca chơi...</NoticeCard> : null}
+          {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+          {!canStartSession && normalizedStatus === 'PENDING' && session ? (
+            <NoticeCard tone="warning" className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Cần ít nhất {requiredPlayers} người chơi cho {session.courtCount} sân trước khi bắt đầu ca. Hiện có {players.length} người.</span>
+            </NoticeCard>
+          ) : null}
+        </PageFeedbackStack>
       ) : null}
 
       {session ? (
-        <section className="grid gap-3 md:grid-cols-3">
+        <PageSummaryGrid className="md:grid-cols-3">
           <StatCard density="compact" label="Thời gian" value={`${session.startTime}-${session.endTime}`} tone="info" />
           <StatCard density="compact" label="Người chơi" value={`${players.length}`} tone="neutral" />
           <StatCard density="compact" label="Thu dự kiến" value={`${formatCurrency(paymentTotals.expected)}đ`} tone="income" />
-        </section>
+        </PageSummaryGrid>
       ) : null}
 
       <Surface padding="md" className="space-y-3">
@@ -320,7 +329,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             <p className="text-sm text-muted-foreground">Lưu chi phí sân, cầu hao và xem lợi nhuận tạm tính trước khi hoàn tất.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-lg border border-info/25 bg-info-soft px-3 py-2 text-sm font-semibold text-info">{completionProfitLabel}: {formatCurrency(visibleCompletionProfit)}đ</span>
+            <span className={`rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums ${
+              visibleCompletionProfit < 0
+                ? 'border-danger/25 bg-danger-soft text-danger'
+                : 'border-info/25 bg-info-soft text-info'
+            }`}>{completionProfitLabel}: {formatCurrency(visibleCompletionProfit)}đ</span>
             <Button type="button" variant="secondary" size="sm" onClick={() => setCompletionExpanded((open) => !open)}>
               <ChevronDown className={`h-4 w-4 transition-transform ${completionExpanded ? 'rotate-180' : ''}`} />
               {completionExpanded ? 'Thu gọn' : 'Mở rộng'}
@@ -334,7 +347,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {completionExpanded ? (
-        <div className="grid gap-3 lg:grid-cols-[minmax(150px,180px)_minmax(260px,1fr)_130px_auto] lg:items-end">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(150px,180px)_minmax(260px,1fr)_130px_auto] xl:items-end">
           <Surface variant="subtle" padding="sm" className="border-info/20 bg-info-soft/40 md:p-3">
             <label className="block">
               <span className={formLabelClass}>Chi phí sân</span>
@@ -358,11 +371,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               <input type="number" min={0} value={shuttlecockPiecesUsed} onChange={(event) => { setShuttlecockPiecesUsed(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`} />
             </label>
           </Surface>
-          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full lg:w-auto">
+          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full xl:w-auto">
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
-          <Surface variant="subtle" padding="sm" className="lg:col-span-4">
+          <Surface variant="subtle" padding="sm" className="md:col-span-2 xl:col-span-4">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ghi chú ca</div>
             <p className="mt-1 text-sm text-foreground">{session?.note || 'Chưa có ghi chú.'}</p>
             <p className="mt-2 text-xs text-muted-foreground">Loại cầu hao đã lưu: {selectedShuttlecockLabel}</p>
@@ -405,8 +418,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
 
         {canOperateSession ? (
         <Surface variant="subtle" padding="sm">
-          <form onSubmit={submitPlayer} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] lg:items-end">
-            <label className="block min-w-0 sm:col-span-2 lg:col-span-1">
+          <form onSubmit={submitPlayer} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1.7fr)_82px_82px_180px_48px_auto] xl:items-end">
+            <label className="block min-w-0 sm:col-span-2 xl:col-span-1">
               <span className={formLabelClass}>Tên người chơi</span>
               <input
                 value={form.fullName}
@@ -454,8 +467,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
               />
             </label>
-            <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
-              <Button type="submit" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-10 flex-1 rounded-xl lg:flex-none">
+            <div className="flex gap-2 sm:col-span-2 xl:col-span-1">
+              <Button type="submit" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-10 flex-1 rounded-xl xl:flex-none">
                 {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Thêm
               </Button>
@@ -464,18 +477,22 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </Surface>
         ) : null}
 
-        {playersLoading ? <NoticeCard>Đang tải người chơi...</NoticeCard> : null}
-        {playersError ? <NoticeCard tone="danger">{playersError.message}</NoticeCard> : null}
-        {playerActionError ? <NoticeCard tone="warning">{playerActionError}</NoticeCard> : null}
+        {(playersLoading || playersError || playerActionError) ? (
+          <PageFeedbackStack>
+            {playersLoading ? <NoticeCard>Đang tải người chơi...</NoticeCard> : null}
+            {playersError ? <NoticeCard tone="danger">{playersError.message}</NoticeCard> : null}
+            {playerActionError ? <NoticeCard tone="warning">{playerActionError}</NoticeCard> : null}
+          </PageFeedbackStack>
+        ) : null}
 
-        <div className="space-y-2">
+        <div aria-label="Danh sách người chơi trong ca" className="space-y-2">
           {players.map((player) => {
             const payable = Math.max(0, player.paymentAmount - player.discount);
             const isEditing = editingId === player.id;
             if (isEditing) {
               return (
                 <Surface key={player.id} variant="subtle" padding="sm" className="border-info/25 bg-info-soft/60 text-sm">
-                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] lg:items-end">
+                  <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] xl:items-end">
                     <div className="flex items-center gap-2">
                       <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-border transition hover:ring-info/40 focus-within:ring-2 focus-within:ring-focus/25" title="Đổi ảnh người chơi">
                         <PlayerAvatar name={editForm.fullName || player.fullName} gender={editForm.gender} avatarUrl={editAvatarPreview ?? player.avatarUrl} size="lg" />
@@ -488,7 +505,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                         />
                       </label>
                     </div>
-                    <label className="block min-w-0 sm:col-span-2 lg:col-span-2">
+                    <label className="block min-w-0 sm:col-span-2 xl:col-span-2">
                       <span className={formLabelClass}>Tên người chơi</span>
                       <input
                         value={editForm.fullName}
@@ -547,31 +564,25 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             return (
               <Surface
                 key={player.id}
-                variant="interactive"
                 padding="sm"
-                role="button"
-                tabIndex={0}
-                aria-label={`Xem nhanh người chơi ${player.fullName}`}
-                onClick={() => setQuickViewPlayer(toQuickViewPlayer(player))}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setQuickViewPlayer(toQuickViewPlayer(player));
-                  }
-                }}
-                className="grid cursor-pointer gap-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus/25 lg:grid-cols-[1.5fr_90px_120px_140px_auto] lg:items-center"
+                className="grid gap-3 text-sm md:grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[1.5fr_90px_120px_140px_auto] xl:items-center"
               >
-                <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  aria-label={`Xem nhanh người chơi ${player.fullName}`}
+                  onClick={() => setQuickViewPlayer(toQuickViewPlayer(player))}
+                  className="flex min-w-0 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                >
                   <PlayerAvatar name={player.fullName} gender={player.gender} avatarUrl={player.avatarUrl} size="md" />
                   <div className="min-w-0">
                     <div className="truncate font-medium text-foreground">{player.fullName}</div>
                     <div className="text-xs text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level)}</div>
                   </div>
-                </div>
-                <div className="text-text-secondary">{player.totalMatches} trận</div>
-                <div className="font-mono text-foreground">{formatCurrency(payable)}đ</div>
+                </button>
+                <div className="text-text-secondary md:text-right xl:text-left">{player.totalMatches} trận</div>
+                <div className="font-mono tabular-nums text-foreground md:text-right xl:text-left">{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
-                <div className="flex flex-wrap gap-2 lg:justify-end" onClick={(event) => event.stopPropagation()}>
+                <div className="flex flex-wrap gap-2 xl:justify-end">
                   {canOperateSession ? (
                   <Button type="button" variant="secondary" disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-10 px-3" aria-label={`Chỉnh sửa ${player.fullName}`}>
                     <Pencil className="h-4 w-4" />
@@ -587,39 +598,62 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             );
           })}
           {!playersLoading && players.length === 0 ? (
-            <EmptyState title="Chưa có người chơi" description="Thêm người chơi trước khi vào Điều phối để runtime hydrate từ database." />
+            <PageFeedbackStack>
+              <EmptyState title="Chưa có người chơi" description="Thêm người chơi trước khi vào Điều phối để runtime hydrate từ database." />
+            </PageFeedbackStack>
           ) : null}
         </div>
       </Surface>
 
-      {showCompleteConfirm ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-overlay px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-surface-elevated p-5 shadow-md">
-            <h2 className="text-lg font-semibold text-foreground">Hoàn tất ca chơi?</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Hệ thống sẽ tự tạo phiếu thu tiền slot, chi tiền sân, chi tiền cầu và trừ kho cầu theo số lượng đã nhập.
-            </p>
-            {unpaidPlayers.length > 0 ? (
-              <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm font-medium text-warning">
-                Còn {unpaidPlayers.length} người chưa thanh toán. Sau khi hoàn tất ca, thông tin ca sẽ bị khóa và doanh số được chốt theo người đã thu.
-              </div>
-            ) : null}
-            <div className="mt-4 space-y-1 rounded-lg border border-border bg-surface-subtle p-3 text-sm text-text-secondary">
-              <div>Thu slot: {formatCurrency(paymentTotals.paid)}đ</div>
-              <div>Chi sân: {formatCurrency(Number(courtCost || 0))}đ{settings.autoCreateCourtFeeTransaction ? '' : ' · không tạo phiếu'}</div>
-              <div>Chi cầu: {shuttlecockPiecesUsed || 0} quả · {formatCurrency(shuttlecockExpense)}đ{settings.autoCreateShuttlecockUsageTransaction ? '' : ' · không tạo phiếu chi'}</div>
-              <div>Lợi nhuận: {formatCurrency(paymentTotals.paid - Number(courtCost || 0) - shuttlecockExpense)}đ</div>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowCompleteConfirm(false)}>Hủy</Button>
-              <Button onClick={confirmCompleteSession} disabled={completePlaySession.isPending}>
-                {completePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-                Xác nhận hoàn tất
-              </Button>
-            </div>
+      <Dialog
+        open={showCompleteConfirm}
+        onOpenChange={(open) => {
+          if (!open && !completePlaySession.isPending) {
+            setShowCompleteConfirm(false);
+          }
+        }}
+        title="Hoàn tất ca chơi?"
+        description="Hệ thống sẽ tự tạo phiếu thu tiền slot, chi tiền sân, chi tiền cầu và trừ kho cầu theo số lượng đã nhập."
+        closeLabel="Đóng xác nhận hoàn tất ca"
+        closeDisabled={completePlaySession.isPending}
+        closeOnEscape={!completePlaySession.isPending}
+        closeOnOutsideClick={!completePlaySession.isPending}
+        tone="warning"
+        size="sm"
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setShowCompleteConfirm(false)} disabled={completePlaySession.isPending}>Hủy</Button>
+            <Button onClick={confirmCompleteSession} disabled={completePlaySession.isPending}>
+              {completePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+              Xác nhận hoàn tất
+            </Button>
+          </>
+        )}
+      >
+        {unpaidPlayers.length > 0 ? (
+          <div className="rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm font-medium text-warning" role="status">
+            Còn {unpaidPlayers.length} người chưa thanh toán. Sau khi hoàn tất ca, thông tin ca sẽ bị khóa và doanh số được chốt theo người đã thu.
           </div>
-        </div>
-      ) : null}
+        ) : null}
+        <dl className="mt-3 space-y-1 rounded-lg border border-border bg-surface-subtle p-3 text-sm text-text-secondary">
+          <div className="flex items-center justify-between gap-3">
+            <dt>Thu slot</dt>
+            <dd className="font-mono text-foreground">{formatCurrency(paymentTotals.paid)}đ</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt>Chi sân</dt>
+            <dd className="text-right font-mono text-foreground">{formatCurrency(Number(courtCost || 0))}đ{settings.autoCreateCourtFeeTransaction ? '' : ' · không tạo phiếu'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt>Chi cầu</dt>
+            <dd className="text-right font-mono text-foreground">{shuttlecockPiecesUsed || 0} quả · {formatCurrency(shuttlecockExpense)}đ{settings.autoCreateShuttlecockUsageTransaction ? '' : ' · không tạo phiếu chi'}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt>Lợi nhuận</dt>
+            <dd className="font-mono font-semibold text-foreground">{formatCurrency(paymentTotals.paid - Number(courtCost || 0) - shuttlecockExpense)}đ</dd>
+          </div>
+        </dl>
+      </Dialog>
       <PlayerQuickView player={quickViewPlayer} onClose={() => setQuickViewPlayer(null)} />
     </PageShell>
   );

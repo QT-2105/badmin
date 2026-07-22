@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -8,6 +9,9 @@ type ButtonSize = 'sm' | 'md' | 'lg';
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  loading?: boolean;
+  loadingText?: React.ReactNode;
+  iconOnly?: boolean;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -29,21 +33,58 @@ const sizeStyles: Record<ButtonSize, string> = {
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', type = 'button', ...props }, ref) => {
+  (
+    {
+      children,
+      className,
+      disabled,
+      iconOnly = false,
+      loading = false,
+      loadingText,
+      variant = 'primary',
+      size = 'md',
+      type = 'button',
+      'aria-busy': ariaBusy,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <button
         ref={ref}
         type={type}
+        disabled={disabled || loading}
+        aria-busy={ariaBusy ?? (loading || undefined)}
+        data-loading={loading ? 'true' : undefined}
         className={cn(
-          'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors outline-none backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60',
+          'inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium outline-none backdrop-blur-sm transition-[background-color,border-color,color,box-shadow,opacity] duration-150 ease-out active:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60 motion-reduce:transition-none',
           variantStyles[variant],
           sizeStyles[size],
+          iconOnly ? 'aspect-square px-0' : '',
           className
         )}
         {...props}
-      />
+      >
+        {loading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
+        {loading && loadingText ? loadingText : children}
+      </button>
     );
   }
 );
 
 Button.displayName = 'Button';
+
+export type IconButtonProps = Omit<ButtonProps, 'children' | 'iconOnly'> & {
+  icon: React.ReactNode;
+  label: string;
+};
+
+export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ icon, label, 'aria-label': ariaLabel, title, ...props }, ref) => (
+    <Button ref={ref} iconOnly aria-label={ariaLabel ?? label} title={title ?? label} {...props}>
+      {icon}
+    </Button>
+  )
+);
+
+IconButton.displayName = 'IconButton';

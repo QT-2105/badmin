@@ -97,7 +97,7 @@ export function NextMatchQueue({
         }}
         disabled={!canAutoAssign}
         aria-label="Xếp gợi ý đầu tiên vào sân trống"
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-violet-300/25 bg-gradient-to-r from-violet-400/15 to-cyan-400/15 px-3 py-2 text-sm font-bold text-slate-100 transition-colors hover:from-violet-400/25 hover:to-cyan-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:from-slate-800/45 disabled:to-slate-800/45 disabled:text-slate-500"
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/[0.12] px-3 py-2 text-sm font-bold text-cyan-100 transition-colors hover:border-cyan-200/40 hover:bg-cyan-400/[0.18] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
       >
         <Zap className="h-3.5 w-3.5" />
         Xếp vào sân trống

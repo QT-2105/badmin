@@ -37,7 +37,7 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <Surface className={cn(densityStyles[density], className)} padding="none">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         {(title || description || leading) ? (
           <div className="flex min-w-0 items-start gap-3">
             {leading ? <div className="shrink-0">{leading}</div> : null}
@@ -48,7 +48,7 @@ export function FilterBar({
           </div>
         ) : null}
         {(filters || actions || children) ? (
-          <div className={cn('flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end', contentClassName)}>
+          <div className={cn('flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto xl:justify-end', contentClassName)}>
             {filters}
             {children}
             {actions}

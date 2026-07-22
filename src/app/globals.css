@@ -4,13 +4,13 @@
 
 :root {
   color-scheme: light;
-  --background: 214 40% 98%;
-  --surface: 0 0% 100%;
-  --surface-subtle: 210 33% 96%;
+  --background: 214 38% 97%;
+  --surface: 210 35% 99%;
+  --surface-subtle: 210 30% 95%;
   --surface-muted: var(--surface-subtle);
   --surface-elevated: 0 0% 100%;
-  --surface-hover: 210 29% 94%;
-  --overlay: 222 47% 11% / 0.48;
+  --surface-hover: 210 26% 93%;
+  --overlay: 222 47% 11% / 0.52;
   --text-primary: 222 47% 11%;
   --text-secondary: 215 25% 27%;
   --text-muted: 215 16% 47%;
@@ -19,7 +19,7 @@
   --foreground: var(--text-primary);
   --card: var(--surface);
   --card-foreground: var(--text-primary);
-  --popover: 0 0% 100%;
+  --popover: var(--surface-elevated);
   --popover-foreground: var(--text-primary);
   --primary: 190 90% 36%;
   --primary-hover: 191 84% 29%;
@@ -33,10 +33,10 @@
   --accent-foreground: var(--primary);
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 25% 88%;
-  --border-strong: 214 20% 78%;
-  --input: 214 25% 88%;
-  --input-hover: 214 20% 78%;
+  --border: 214 24% 86%;
+  --border-strong: 214 18% 72%;
+  --input: 214 24% 84%;
+  --input-hover: 214 18% 70%;
   --ring: var(--primary);
   --focus-ring: var(--primary);
   --success: 151 60% 34%;
@@ -81,22 +81,22 @@
 
 .dark {
   color-scheme: dark;
-  --background: 222 45% 6%;
-  --surface: 222 35% 9%;
-  --surface-subtle: 220 28% 12%;
+  --background: 222 34% 8%;
+  --surface: 222 28% 11%;
+  --surface-subtle: 222 24% 14%;
   --surface-muted: var(--surface-subtle);
-  --surface-elevated: 220 27% 14%;
-  --surface-hover: 220 25% 17%;
-  --overlay: 222 45% 4% / 0.72;
-  --text-primary: 210 40% 96%;
-  --text-secondary: 214 32% 85%;
-  --text-muted: 215 20% 65%;
-  --text-disabled: 215 15% 45%;
+  --surface-elevated: 222 22% 17%;
+  --surface-hover: 222 20% 20%;
+  --overlay: 222 34% 5% / 0.68;
+  --text-primary: 210 34% 94%;
+  --text-secondary: 214 24% 82%;
+  --text-muted: 215 18% 66%;
+  --text-disabled: 215 14% 48%;
   --text-inverse: 222 47% 7%;
   --foreground: var(--text-primary);
   --card: var(--surface);
   --card-foreground: var(--text-primary);
-  --popover: 222 47% 7%;
+  --popover: var(--surface-elevated);
   --popover-foreground: var(--text-primary);
   --primary: 187 72% 48%;
   --primary-hover: 187 76% 56%;
@@ -108,10 +108,10 @@
   --muted-foreground: var(--text-muted);
   --accent: var(--primary-soft);
   --accent-foreground: 187 76% 74%;
-  --border: 218 22% 18%;
-  --border-strong: 217 20% 27%;
-  --input: 218 22% 18%;
-  --input-hover: 217 20% 27%;
+  --border: 218 19% 22%;
+  --border-strong: 217 18% 32%;
+  --input: 218 19% 25%;
+  --input-hover: 217 18% 35%;
   --ring: var(--primary);
   --focus-ring: var(--primary);
   --success: 153 58% 56%;
@@ -205,6 +205,30 @@ input[type='number']::-webkit-inner-spin-button {
 }
 
 @layer utilities {
+  .motion-feedback-in {
+    animation: badmin-feedback-in var(--duration-normal) var(--ease-standard) both;
+  }
+
+  .motion-overlay-in {
+    animation: badmin-overlay-in var(--duration-fast) var(--ease-standard) both;
+  }
+
+  .motion-dialog-in {
+    animation: badmin-dialog-in var(--duration-normal) var(--ease-standard) both;
+  }
+
+  .motion-drawer-left-in {
+    animation: badmin-drawer-left-in var(--duration-normal) var(--ease-standard) both;
+  }
+
+  .motion-drawer-right-in {
+    animation: badmin-drawer-right-in var(--duration-normal) var(--ease-standard) both;
+  }
+
+  .motion-drawer-bottom-in {
+    animation: badmin-drawer-bottom-in var(--duration-normal) var(--ease-standard) both;
+  }
+
   .text-page-title {
     @apply font-display text-[30px] font-bold leading-tight tracking-tight text-foreground md:text-[32px];
   }
@@ -238,6 +262,70 @@ input[type='number']::-webkit-inner-spin-button {
   }
 }
 
+@keyframes badmin-feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes badmin-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes badmin-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes badmin-drawer-left-in {
+  from {
+    transform: translateX(-0.5rem);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes badmin-drawer-right-in {
+  from {
+    transform: translateX(0.5rem);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes badmin-drawer-bottom-in {
+  from {
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -246,5 +334,14 @@ input[type='number']::-webkit-inner-spin-button {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .motion-feedback-in,
+  .motion-overlay-in,
+  .motion-dialog-in,
+  .motion-drawer-left-in,
+  .motion-drawer-right-in,
+  .motion-drawer-bottom-in {
+    animation: none !important;
   }
 }

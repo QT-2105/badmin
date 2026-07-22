@@ -2,7 +2,7 @@
 
 import { MoreHorizontal } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -69,8 +69,10 @@ export function ActionMenu({
   className,
   menuClassName
 }: ActionMenuProps) {
+  const menuId = useId();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const hasEnabledItems = items.some((item) => !item.disabled);
 
@@ -105,7 +107,12 @@ export function ActionMenu({
     });
   }, [items, open]);
 
-  const closeMenu = () => setOpen(false);
+  const closeMenu = (returnFocus = false) => {
+    setOpen(false);
+    if (returnFocus) {
+      window.requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  };
 
   const handleTriggerClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -117,7 +124,7 @@ export function ActionMenu({
   const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      closeMenu();
+      closeMenu(true);
       return;
     }
 
@@ -136,24 +143,28 @@ export function ActionMenu({
   return (
     <div ref={containerRef} className={cn('relative inline-flex', className)}>
       <Button
+        ref={triggerRef}
+        aria-controls={open ? menuId : undefined}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
         disabled={disabled || !hasEnabledItems}
+        className="h-10 min-w-10 px-3"
         onClick={handleTriggerClick}
         size="sm"
         variant="secondary"
       >
-        {trigger ?? <MoreHorizontal className="h-4 w-4" />}
+        {trigger ?? <MoreHorizontal className="h-4 w-4" aria-hidden="true" />}
       </Button>
       {open ? (
         <div
           className={cn(
-            'absolute z-dropdown min-w-44 overflow-hidden rounded-xl border border-border bg-popover py-1 text-popover-foreground shadow-md',
+            'motion-feedback-in absolute z-dropdown min-w-44 overflow-hidden rounded-xl border border-border bg-popover py-1 text-popover-foreground shadow-sm motion-reduce:animate-none',
             sideStyles[side],
             side === 'top' || side === 'bottom' ? alignStyles[align] : '',
             menuClassName
           )}
+          id={menuId}
           onKeyDown={handleMenuKeyDown}
           role="menu"
         >
@@ -166,18 +177,18 @@ export function ActionMenu({
                   itemRefs.current[index] = element;
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50',
+                  'flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
                   item.danger ? 'text-danger hover:bg-danger-soft' : 'text-foreground hover:bg-surface-hover'
                 )}
                 disabled={item.disabled}
                 onClick={() => {
                   item.onSelect();
-                  closeMenu();
+                  closeMenu(true);
                 }}
                 role="menuitem"
                 type="button"
               >
-                {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+                {Icon ? <Icon className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}
                 <span className="min-w-0 truncate">{item.label}</span>
               </button>
             );

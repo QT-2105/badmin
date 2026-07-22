@@ -6,10 +6,11 @@ import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/feedback';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/form';
-import { NoticeCard, PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { NoticeCard, PageFeedbackStack, PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card } from '@/components/ui/surface';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -33,6 +34,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', startTime: '', endTime: '', courtCount: 1, note: '' });
+  const [pendingDeleteSession, setPendingDeleteSession] = useState<PlaySessionSummary | null>(null);
   const today = useMemo(() => todayDateInput(), []);
   const isPastPlayDate = Boolean(playDate?.playDate && isPastDateInput(playDate.playDate, today));
   const sortedSessions = useMemo(() => {
@@ -116,17 +118,24 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
     }
   }
 
-  async function removeSession(session: PlaySessionSummary) {
+  function requestRemoveSession(session: PlaySessionSummary) {
     if (isPastPlayDate) {
       setActionError('Ngày chơi đã thuộc quá khứ, không thể xóa ca chơi.');
       return;
     }
-    if (!window.confirm(`Xóa ca "${session.name}"?`)) return;
+    setActionError(null);
+    setPendingDeleteSession(session);
+  }
+
+  async function confirmRemoveSession() {
+    if (!pendingDeleteSession) return;
     setActionError(null);
     try {
-      await deletePlaySession.mutateAsync(session.id);
+      await deletePlaySession.mutateAsync(pendingDeleteSession.id);
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'Không thể xóa ca chơi');
+    } finally {
+      setPendingDeleteSession(null);
     }
   }
 
@@ -135,12 +144,24 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
       <PageHeader
         title={playDate?.title || playDate?.playDate || 'Ngày chơi'}
         description={playDate ? `${playDate.playDate} · ${playDate.sessionCount} ca` : 'Đang tải ngày chơi...'}
-        backAction={<Link href="/schedule" className="inline-flex rounded-md text-xs font-medium text-info outline-none hover:text-info/80 focus-visible:ring-2 focus-visible:ring-focus/25">← Quay lại lịch</Link>}
+        backAction={
+          <Link
+            href="/schedule"
+            className="inline-flex min-h-10 items-center rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-foreground shadow-subtle outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="Quay lại danh sách lịch chơi"
+          >
+            ← Quay lại lịch
+          </Link>
+        }
       />
 
-      {isLoading ? <NoticeCard>Đang tải ngày chơi...</NoticeCard> : null}
-      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
-      {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
+      {(isLoading || error || actionError) ? (
+        <PageFeedbackStack>
+          {isLoading ? <NoticeCard>Đang tải ngày chơi...</NoticeCard> : null}
+          {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+          {actionError ? <NoticeCard tone="warning">{actionError}</NoticeCard> : null}
+        </PageFeedbackStack>
+      ) : null}
 
       {!isPastPlayDate && canManageSessions ? (
         <FormSection
@@ -148,29 +169,29 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
           description="Nhập thời gian và số sân cho ca trong ngày này."
           contentClassName="pt-1"
         >
-          <form onSubmit={submit} className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_130px_130px_100px] lg:grid-cols-[minmax(220px,1fr)_130px_130px_100px_auto] lg:items-end">
+          <form onSubmit={submit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_130px_130px_100px_auto] xl:items-end">
             <label className="block">
               <span className={formLabelClass}>Tên ca</span>
               <Input value={name} onChange={(event) => setName(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
-              <span className={formLabelClass}>Bắt đầu</span>
+              <span className={formLabelClass}>Giờ bắt đầu</span>
               <Input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
-              <span className={formLabelClass}>Kết thúc</span>
+              <span className={formLabelClass}>Giờ kết thúc</span>
               <Input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
-              <span className={formLabelClass}>Sân</span>
-              <Input type="number" min={1} max={maxCourtCount} value={courtCount} onChange={(event) => setCourtCount(Number(event.target.value))} className={formInputClass} />
-              <span className="mt-1 block text-[11px] text-muted-foreground">Tối đa {maxCourtCount} sân</span>
+              <span className={formLabelClass}>Số sân</span>
+              <Input type="number" min={1} max={maxCourtCount} inputMode="numeric" value={courtCount} onChange={(event) => setCourtCount(Number(event.target.value))} className={formInputClass} aria-describedby="create-session-court-helper" />
+              <span id="create-session-court-helper" className="mt-1 block text-[11px] text-muted-foreground">Đơn vị: sân. Tối đa {maxCourtCount} sân.</span>
             </label>
-            <Button type="submit" disabled={createPlaySession.isPending} className="h-11 whitespace-nowrap md:col-span-4 lg:col-span-1">
+            <Button type="submit" disabled={createPlaySession.isPending} className="h-11 w-full whitespace-nowrap md:col-span-2 xl:col-span-1 xl:w-auto">
               {createPlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Tạo ca
             </Button>
-            <label className="block md:col-span-4 lg:col-span-5">
+            <label className="block md:col-span-2 xl:col-span-5">
               <span className={formLabelClass}>Ghi chú</span>
               <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
             </label>
@@ -178,7 +199,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
         </FormSection>
       ) : null}
 
-      <section className="space-y-3">
+      <section aria-label="Danh sách ca chơi trong ngày" className="space-y-3">
         {sortedSessions.map((session) => {
           const canModify = canManageSessions && !isPastPlayDate && normalizeSessionStatus(session.status) === 'PENDING';
           const isEditing = editingSessionId === session.id;
@@ -186,25 +207,25 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
           if (isEditing) {
             return (
               <Card key={session.id} className="border-info/25 ring-1 ring-info/10">
-                <div className="grid gap-3 md:grid-cols-[1fr_130px_130px_100px] md:items-end">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_130px_130px_100px] xl:items-end">
                   <label className="block">
                     <span className={formLabelClass}>Tên ca</span>
                     <Input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
-                    <span className={formLabelClass}>Bắt đầu</span>
+                    <span className={formLabelClass}>Giờ bắt đầu</span>
                     <Input type="time" value={editForm.startTime} onChange={(event) => setEditForm((current) => ({ ...current, startTime: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
-                    <span className={formLabelClass}>Kết thúc</span>
+                    <span className={formLabelClass}>Giờ kết thúc</span>
                     <Input type="time" value={editForm.endTime} onChange={(event) => setEditForm((current) => ({ ...current, endTime: event.target.value }))} className={formInputClass} />
                   </label>
                   <label className="block">
-                    <span className={formLabelClass}>Sân</span>
-                    <Input type="number" min={1} max={maxCourtCount} value={editForm.courtCount} onChange={(event) => setEditForm((current) => ({ ...current, courtCount: Number(event.target.value) }))} className={formInputClass} />
-                    <span className="mt-1 block text-[11px] text-muted-foreground">Tối đa {maxCourtCount} sân</span>
+                    <span className={formLabelClass}>Số sân</span>
+                    <Input type="number" min={1} max={maxCourtCount} inputMode="numeric" value={editForm.courtCount} onChange={(event) => setEditForm((current) => ({ ...current, courtCount: Number(event.target.value) }))} className={formInputClass} aria-describedby={`edit-session-court-helper-${session.id}`} />
+                    <span id={`edit-session-court-helper-${session.id}`} className="mt-1 block text-[11px] text-muted-foreground">Đơn vị: sân. Tối đa {maxCourtCount} sân.</span>
                   </label>
-                  <label className="block md:col-span-3">
+                  <label className="block md:col-span-2 xl:col-span-3">
                     <span className={formLabelClass}>Ghi chú</span>
                     <Input value={editForm.note} onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))} className={formInputClass} />
                   </label>
@@ -226,7 +247,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="min-w-0 text-lg font-semibold leading-tight text-foreground">{session.name}</div>
+                    <div className="min-w-0 break-words text-lg font-semibold leading-tight text-foreground">{session.name}</div>
                     <StatusBadge tone={getSessionStatusTone(session.status)}>
                       {getSessionStatusLabel(session.status)}
                     </StatusBadge>
@@ -236,7 +257,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
                 </div>
                 <div className="flex w-full shrink-0 flex-wrap gap-2 md:w-auto md:justify-end">
                   <Link href={`/sessions/${session.id}`} className="w-full md:w-auto" aria-label={`Mở chi tiết ca ${session.name}, ${session.startTime}-${session.endTime}`}>
-                    <Button size="sm" className="w-full md:w-auto">Chi tiết ca</Button>
+                    <Button size="sm" className="h-10 w-full md:w-auto">Chi tiết ca</Button>
                   </Link>
                   <ActionMenu
                     label={`Mở thao tác ca ${session.name}`}
@@ -254,7 +275,7 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
                         icon: Trash2,
                         danger: true,
                         disabled: !canModify || deletePlaySession.isPending,
-                        onSelect: () => void removeSession(session)
+                        onSelect: () => requestRemoveSession(session)
                       }
                     ]}
                   />
@@ -266,8 +287,21 @@ export function PlayDateDetailClient({ playDateId }: { playDateId: string }) {
       </section>
 
       {!isLoading && playDate && playDate.sessions.length === 0 ? (
-        <EmptyState title="Chưa có ca chơi" description="Ngày này chưa có ca nào được tạo." />
+        <PageFeedbackStack>
+          <EmptyState title="Chưa có ca chơi" description="Ngày này chưa có ca nào được tạo." />
+        </PageFeedbackStack>
       ) : null}
+      <ConfirmationDialog
+        open={Boolean(pendingDeleteSession)}
+        title="Xóa ca chơi?"
+        description={pendingDeleteSession ? `Ca "${pendingDeleteSession.name}" sẽ bị xóa theo đúng quyền và mutation hiện tại.` : 'Ca chơi sẽ bị xóa theo đúng quyền và mutation hiện tại.'}
+        confirmLabel="Xóa ca"
+        cancelLabel="Hủy"
+        tone="danger"
+        isLoading={deletePlaySession.isPending}
+        onCancel={() => setPendingDeleteSession(null)}
+        onConfirm={confirmRemoveSession}
+      />
     </PageShell>
   );
 }

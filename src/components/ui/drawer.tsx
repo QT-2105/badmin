@@ -2,11 +2,12 @@
 
 import { X } from 'lucide-react';
 import type { KeyboardEvent, MouseEvent, ReactNode, RefObject } from 'react';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/utils';
 
-import { Button } from './button';
+import { IconButton } from './button';
 
 type DrawerPlacement = 'left' | 'right' | 'bottom';
 type DrawerSize = 'sm' | 'md' | 'lg' | 'full';
@@ -14,6 +15,7 @@ type DrawerSize = 'sm' | 'md' | 'lg' | 'full';
 export type DrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  label?: string;
   title?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
@@ -22,6 +24,7 @@ export type DrawerProps = {
   placement?: DrawerPlacement;
   size?: DrawerSize;
   closeLabel?: string;
+  closeDisabled?: boolean;
   closeOnEscape?: boolean;
   closeOnOutsideClick?: boolean;
   initialFocusRef?: RefObject<HTMLElement | null>;
@@ -47,15 +50,15 @@ const placementStyles: Record<DrawerPlacement, string> = {
 
 const sizeStyles: Record<DrawerPlacement, Record<DrawerSize, string>> = {
   left: {
-    sm: 'w-full max-w-sm',
-    md: 'w-full max-w-md',
-    lg: 'w-full max-w-xl',
+    sm: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-sm',
+    md: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-md',
+    lg: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-xl',
     full: 'w-full max-w-none'
   },
   right: {
-    sm: 'w-full max-w-sm',
-    md: 'w-full max-w-md',
-    lg: 'w-full max-w-xl',
+    sm: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-sm',
+    md: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-md',
+    lg: 'w-full max-w-[calc(100vw-1rem)] sm:max-w-xl',
     full: 'w-full max-w-none'
   },
   bottom: {
@@ -64,6 +67,12 @@ const sizeStyles: Record<DrawerPlacement, Record<DrawerSize, string>> = {
     lg: 'h-auto',
     full: 'h-full max-h-none'
   }
+};
+
+const placementMotionStyles: Record<DrawerPlacement, string> = {
+  left: 'motion-drawer-left-in',
+  right: 'motion-drawer-right-in',
+  bottom: 'motion-drawer-bottom-in'
 };
 
 function getFocusableElements(container: HTMLElement | null) {
@@ -79,6 +88,7 @@ function getFocusableElements(container: HTMLElement | null) {
 export function Drawer({
   open,
   onOpenChange,
+  label = 'Bảng phụ',
   title,
   description,
   actions,
@@ -87,6 +97,7 @@ export function Drawer({
   placement = 'right',
   size = 'md',
   closeLabel = 'Đóng',
+  closeDisabled = false,
   closeOnEscape = true,
   closeOnOutsideClick = true,
   initialFocusRef,
@@ -98,9 +109,14 @@ export function Drawer({
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!open) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !mounted) {
       return;
     }
 
@@ -119,13 +135,18 @@ export function Drawer({
       const returnTarget = returnFocusElement ?? previousActiveElementRef.current;
       returnTarget?.focus();
     };
-  }, [initialFocusRef, open, returnFocusRef]);
+  }, [initialFocusRef, mounted, open, returnFocusRef]);
 
-  if (!open) {
+  if (!open || !mounted) {
     return null;
   }
 
-  const closeDrawer = () => onOpenChange(false);
+  const closeDrawer = () => {
+    if (closeDisabled) {
+      return;
+    }
+    onOpenChange(false);
+  };
 
   const handleBackdropMouseDown = (event: MouseEvent<HTMLDivElement>) => {
     if (closeOnOutsideClick && event.target === event.currentTarget) {
@@ -164,28 +185,30 @@ export function Drawer({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-modal bg-overlay"
+      className="motion-overlay-in fixed inset-0 z-modal bg-overlay motion-reduce:animate-none"
       onKeyDown={handleKeyDown}
       onMouseDown={handleBackdropMouseDown}
     >
       <div
         ref={panelRef}
+        aria-label={title ? undefined : label}
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={title ? titleId : undefined}
         aria-modal="true"
         className={cn(
-          'fixed flex flex-col overflow-hidden border-border bg-surface shadow-md outline-none',
+          'fixed flex flex-col overflow-hidden border-border bg-surface shadow-md outline-none motion-reduce:animate-none',
           placementStyles[placement],
           sizeStyles[placement][size],
+          placementMotionStyles[placement],
           className
         )}
         role="dialog"
         tabIndex={-1}
       >
         {(title || description || actions) ? (
-          <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+          <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
             <div className="min-w-0">
               {title ? (
                 <h2 id={titleId} className="text-section-title">
@@ -200,19 +223,32 @@ export function Drawer({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {actions}
-              <Button aria-label={closeLabel} onClick={closeDrawer} size="sm" variant="ghost">
-                <X className="h-4 w-4" />
-              </Button>
+              <IconButton
+                className="h-10 w-10 shrink-0"
+                icon={<X className="h-4 w-4" />}
+                label={closeLabel}
+                onClick={closeDrawer}
+                disabled={closeDisabled}
+                size="sm"
+                variant="ghost"
+              />
             </div>
           </div>
         ) : (
-          <Button aria-label={closeLabel} className="absolute right-4 top-4 z-10" onClick={closeDrawer} size="sm" variant="ghost">
-            <X className="h-4 w-4" />
-          </Button>
+          <IconButton
+            className="absolute right-4 top-4 z-10 h-10 w-10"
+            icon={<X className="h-4 w-4" />}
+            label={closeLabel}
+            onClick={closeDrawer}
+            disabled={closeDisabled}
+            size="sm"
+            variant="ghost"
+          />
         )}
-        <div className={cn('min-h-0 flex-1 overflow-y-auto px-5 py-4', contentClassName)}>{children}</div>
-        {footer ? <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-5 py-4">{footer}</div> : null}
+        <div className={cn('min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4', contentClassName)}>{children}</div>
+        {footer ? <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5 sm:py-4">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

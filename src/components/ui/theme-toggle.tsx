@@ -43,21 +43,22 @@ export function ThemeToggle({
   }
 
   const Icon = theme === 'dark' ? Moon : Sun;
-  const label = theme === 'dark' ? 'Giao diện tối' : 'Giao diện sáng';
+  const actionLabel = theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      title={label}
-      aria-label={label}
+      title={actionLabel}
+      aria-label={actionLabel}
+      aria-pressed={theme === 'dark'}
       className={cn(
-        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted',
+        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         compact && 'w-10 px-0',
         className
       )}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
       {!compact ? <span>{theme === 'dark' ? 'Tối' : 'Sáng'}</span> : null}
     </button>
   );

@@ -11,8 +11,9 @@ import type { DataTableColumn } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/feedback';
 import { FilterBar } from '@/components/ui/filter-bar';
 import { Input, Select } from '@/components/ui/form';
-import { NoticeCard, PageHeader, PageShell, SectionCard, compactFormInputClass } from '@/components/ui/page-layout';
+import { NoticeCard, PageFeedbackStack, PageHeader, PageShell, PageSummaryGrid, SectionCard, compactFormInputClass } from '@/components/ui/page-layout';
 import { StatCard } from '@/components/ui/stat-card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useDashboardSummary } from '@/hooks/use-dashboard-summary';
 import { formatCurrency } from '@/lib/date-format';
 import { getSessionStatusLabel } from '@/lib/session-status';
@@ -37,7 +38,11 @@ const recentSessionColumns: DataTableColumn<RecentSession>[] = [
   {
     key: 'status',
     header: 'Trạng thái',
-    render: (session) => <span className="text-muted-foreground">{getSessionStatusLabel(session.status)}</span>
+    render: (session) => (
+      <StatusBadge tone="neutral" className="rounded-lg">
+        {getSessionStatusLabel(session.status)}
+      </StatusBadge>
+    )
   },
   {
     key: 'players',
@@ -111,16 +116,16 @@ export function DashboardPageClient() {
   }, [data?.dailyFinance]);
 
   return (
-    <PageShell minWidth="min-w-[720px] md:min-w-0">
+    <PageShell>
       <PageHeader
         eyebrow="Tổng quan vận hành"
         title="Tổng quan"
         description="Theo dõi doanh thu, chi phí, lợi nhuận và tồn kho trong kỳ; mở nhanh các khu vực vận hành cần xử lý."
         actions={(
           <>
-          <Link href="/schedule"><Button size="sm" variant="secondary">Lịch chơi</Button></Link>
-          <Link href="/finance"><Button size="sm" variant="secondary">Thu chi</Button></Link>
-          <Link href="/inventory"><Button size="sm" variant="secondary">Kho cầu</Button></Link>
+          <Link href="/schedule" className="w-full sm:w-auto"><Button size="sm" variant="secondary" className="h-10 w-full sm:w-auto">Lịch chơi</Button></Link>
+          <Link href="/finance" className="w-full sm:w-auto"><Button size="sm" variant="secondary" className="h-10 w-full sm:w-auto">Thu chi</Button></Link>
+          <Link href="/inventory" className="w-full sm:w-auto"><Button size="sm" variant="secondary" className="h-10 w-full sm:w-auto">Kho cầu</Button></Link>
           </>
         )}
       />
@@ -145,13 +150,17 @@ export function DashboardPageClient() {
         )}
       />
 
-      {isLoading ? <NoticeCard>Đang tải dashboard...</NoticeCard> : null}
-      {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+      {(isLoading || error) ? (
+        <PageFeedbackStack>
+          {isLoading ? <NoticeCard>Đang tải dashboard...</NoticeCard> : null}
+          {error ? <NoticeCard tone="danger">{error.message}</NoticeCard> : null}
+        </PageFeedbackStack>
+      ) : null}
 
       {data ? (
         <>
-          <section className="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard icon={TrendingUp} label="Doanh thu" value={`${formatCurrency(data.totalIncome)}đ`} sub={`${data.sessions} ca · ${data.players} lượt người chơi`} tone="income" />
+          <PageSummaryGrid className="sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard icon={TrendingUp} label="Doanh thu" value={`${formatCurrency(data.totalIncome)}đ`} sub={`${data.sessions} ca · ${data.players} lượt người chơi`} tone="primary" />
             <StatCard icon={TrendingDown} label="Chi phí" value={`${formatCurrency(data.totalExpense)}đ`} sub={formatCostSub(data.costBreakdown)} tone="expense" />
             <StatCard
               icon={CircleDollarSign}
@@ -169,9 +178,9 @@ export function DashboardPageClient() {
                 </>
               )}
               sub={`${data.inventoryProducts} loại · ${formatCurrency(data.inventoryValue)}đ vốn`}
-              tone={data.lowStockProducts.length > 0 ? 'warning' : 'inventory'}
+              tone={data.lowStockProducts.length > 0 ? 'warning' : 'success'}
             />
-          </section>
+          </PageSummaryGrid>
 
           <SectionCard
             title="Dòng tiền theo ngày"
@@ -268,12 +277,13 @@ export function DashboardPageClient() {
           <SectionCard
             title="Ca chơi gần đây"
             description="Các ca mới nhất trong kỳ báo cáo để mở nhanh chi tiết và đối soát vận hành."
-            actions={<Link href="/schedule"><Button size="sm" variant="secondary">Xem lịch</Button></Link>}
+            actions={<Link href="/schedule" className="w-full sm:w-auto"><Button size="sm" variant="secondary" className="h-10 w-full sm:w-auto">Xem lịch</Button></Link>}
             className="min-h-[360px]"
             contentClassName="flex flex-1 flex-col"
           >
               <DataTable
                 aria-label="Ca chơi gần đây"
+                caption="Ca chơi gần đây"
                 className="mt-3 flex-1"
                 columns={recentSessionColumns}
                 density="compact"
@@ -283,7 +293,52 @@ export function DashboardPageClient() {
                 }}
                 getRowKey={(session) => session.id}
                 minWidth="1180px"
+                mobileRenderer={(session) => (
+                  <div className="space-y-3">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="break-words font-semibold text-foreground">{session.name}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">{session.playDate} · {session.startTime}-{session.endTime}</div>
+                      </div>
+                      <StatusBadge tone="neutral" className="shrink-0 rounded-lg">
+                        {getSessionStatusLabel(session.status)}
+                      </StatusBadge>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Người chơi</dt>
+                        <dd className="mt-1 font-semibold tabular-nums text-foreground">{session.playerCount}</dd>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Số sân</dt>
+                        <dd className="mt-1 font-semibold tabular-nums text-foreground">{session.courtCount}</dd>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Đã thu</dt>
+                        <dd className="mt-1 font-mono font-semibold text-success">{formatCurrency(session.paidAmount)}đ</dd>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Lãi</dt>
+                        <dd className={`mt-1 font-mono font-semibold ${session.totalProfit >= 0 ? 'text-info' : 'text-danger'}`}>{formatCurrency(session.totalProfit)}đ</dd>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Tiền sân</dt>
+                        <dd className="mt-1 font-mono font-semibold text-foreground">{formatCurrency(session.courtCost)}đ</dd>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background p-2">
+                        <dt className="text-muted-foreground">Tiền cầu</dt>
+                        <dd className="mt-1 font-mono font-semibold text-inventory">{formatCurrency(session.shuttlecockExpense)}đ</dd>
+                      </div>
+                    </dl>
+                    <Link href={`/sessions/${session.id}`} className="block">
+                      <Button size="sm" variant="secondary" className="h-10 w-full">Chi tiết</Button>
+                    </Link>
+                  </div>
+                )}
+                responsiveMode="cards"
+                rowLabel={(session) => `Ca chơi ${session.name}`}
                 rows={data.recentSessions}
+                stickyHeader
               />
           </SectionCard>
         </>
@@ -315,7 +370,7 @@ function Legend({ tone, label }: { tone: ChartTone; label: string }) {
 
 function Bar({ value, max, tone }: { value: number; max: number; tone: ChartTone }) {
   const height = Math.max(2, Math.round((value / max) * 100));
-  return <div className={`w-2.5 rounded-t-md opacity-90 shadow-soft ${chartToneClass[tone]}`} style={{ height: `${height}%` }} />;
+  return <div className={`w-2.5 rounded-t-md opacity-90 ${chartToneClass[tone]}`} style={{ height: `${height}%` }} />;
 }
 
 function BreakdownRow({ label, amount, total }: { label: string; amount: number; total: number }) {

@@ -1,11 +1,7 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-
 import { PlayerAvatar } from '@/components/player/player-avatar';
-import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 import { Surface } from '@/components/ui/surface';
 import { formatCurrency } from '@/lib/date-format';
 import { getLevelLabel } from '@/lib/player-labels';
@@ -33,65 +29,43 @@ export function PlayerQuickView({
   player: QuickViewPlayer | null;
   onClose: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!player) return undefined;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose, player]);
-
-  if (!player || !mounted) return null;
+  if (!player) return null;
 
   const payable = Math.max(0, Number(player.paymentAmount ?? 0) - Number(player.discount ?? 0));
 
-  return createPortal(
-    <div className="fixed inset-0 z-[90] bg-overlay px-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby={`player-quick-view-${player.id}`}>
-      <div className="flex min-h-full items-center justify-center py-4">
-        <Surface
-          variant="elevated"
-          padding="lg"
-          className="max-h-[92vh] w-full max-w-md overflow-y-auto shadow-md"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4">
-              <PlayerAvatar name={player.name} gender={player.gender} avatarUrl={player.avatarUrl} size="lg" className="h-24 w-24 text-2xl" />
-              <div className="min-w-0">
-                <h2 id={`player-quick-view-${player.id}`} className="break-words text-2xl font-semibold leading-tight text-foreground">{player.name}</h2>
-                <p className="text-sm text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level ?? undefined)}</p>
-              </div>
-            </div>
-            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 shrink-0 px-0" aria-label="Đóng thông tin người chơi">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            <Info label="Trạng thái" value={statusLabel(player.status)} />
-            <Info label="Số trận" value={`${player.matchesPlayed ?? 0}`} />
-            <Info label="Phí" value={`${formatCurrency(payable)}đ`} />
-            <Info label="Thanh toán" value={paymentLabel(player.paymentStatus, player.paymentMethod)} />
-            {player.lastCourt ? <Info label="Sân gần nhất" value={player.lastCourt} /> : null}
-          </div>
-
-          {player.note ? (
-            <Surface variant="subtle" padding="sm" className="mt-3">
-              <div className="text-xs text-muted-foreground">Ghi chú</div>
-              <div className="mt-1 text-sm text-foreground">{player.note}</div>
-            </Surface>
-          ) : null}
-        </Surface>
+  return (
+    <Dialog
+      open={Boolean(player)}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      title={player.name}
+      description={`${player.gender || 'Không rõ'} · ${getLevelLabel(player.level ?? undefined)}`}
+      closeLabel="Đóng thông tin người chơi"
+      size="sm"
+      contentClassName="space-y-4"
+    >
+      <div className="flex justify-center">
+        <PlayerAvatar name={player.name} gender={player.gender} avatarUrl={player.avatarUrl} size="lg" className="h-24 w-24 text-2xl" />
       </div>
-    </div>,
-    document.body
+
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <Info label="Trạng thái" value={statusLabel(player.status)} />
+        <Info label="Số trận" value={`${player.matchesPlayed ?? 0}`} />
+        <Info label="Phí" value={`${formatCurrency(payable)}đ`} />
+        <Info label="Thanh toán" value={paymentLabel(player.paymentStatus, player.paymentMethod)} />
+        {player.lastCourt ? <Info label="Sân gần nhất" value={player.lastCourt} /> : null}
+      </div>
+
+      {player.note ? (
+        <Surface variant="subtle" padding="sm">
+          <div className="text-xs text-muted-foreground">Ghi chú</div>
+          <div className="mt-1 text-sm text-foreground">{player.note}</div>
+        </Surface>
+      ) : null}
+    </Dialog>
   );
 }
 

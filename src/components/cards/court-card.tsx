@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRightLeft, Clock, Play, Square, Users, X } from 'lucide-react';
 import { useBadmintonStore, type Court } from '@/lib/badminton-store';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils';
 import { PlayerTeam } from './player-team';
 
 const courtStatusConfig = {
-  EMPTY: { label: 'TRỐNG', bgClass: 'border-slate-700/50 bg-slate-900/45', badgeClass: 'border-slate-600/45 bg-slate-800/80 text-slate-200', glowClass: '', icon: null },
-  READY: { label: 'CHỜ XẾP', bgClass: 'border-amber-300/25 bg-amber-950/20', badgeClass: 'border-amber-300/25 bg-amber-400/15 text-amber-100', glowClass: 'ring-1 ring-amber-300/20', icon: '◆' },
-  PLAYING: { label: 'ĐANG CHƠI', bgClass: 'border-emerald-300/25 bg-emerald-950/18', badgeClass: 'border-emerald-300/25 bg-emerald-400/15 text-emerald-100', glowClass: 'ring-1 ring-emerald-300/25 shadow-lg shadow-emerald-500/10', icon: '●' }
+  EMPTY: { label: 'TRỐNG', bgClass: 'border-slate-700/55 bg-slate-900/38', badgeClass: 'border-slate-600/50 bg-slate-800/70 text-slate-200', glowClass: '', icon: null },
+  READY: { label: 'CHỜ XẾP', bgClass: 'border-amber-300/28 bg-amber-950/16', badgeClass: 'border-amber-300/30 bg-amber-400/15 text-amber-100', glowClass: 'ring-1 ring-amber-300/18', icon: '◆' },
+  PLAYING: { label: 'ĐANG CHƠI', bgClass: 'border-emerald-300/30 bg-emerald-950/16', badgeClass: 'border-emerald-300/30 bg-emerald-400/15 text-emerald-100', glowClass: 'ring-1 ring-emerald-300/24', icon: '●' }
 };
 
 export function CourtCard({
@@ -29,6 +29,7 @@ export function CourtCard({
 }) {
   const { players, swapPairs, startMatch, endMatch, nextMatches, applyNextMatch, cancelReadyCourt } = useBadmintonStore();
   const [elapsedTime, setElapsedTime] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
 
   const status = courtStatusConfig[court.status];
   const courtPlayers = court.slots
@@ -85,7 +86,7 @@ export function CourtCard({
   return (
     <motion.div
       className={cn(
-        'group flex min-h-[12rem] min-w-0 flex-col rounded-xl border p-3 shadow-sm shadow-slate-950/20 backdrop-blur-sm transition-colors hover:border-cyan-300/25 dark:shadow-slate-950/25',
+        'group flex min-h-[11.5rem] min-w-0 flex-col rounded-xl border p-3 shadow-sm shadow-slate-950/16 backdrop-blur-sm transition-colors hover:border-cyan-300/25 dark:shadow-slate-950/20',
         status.bgClass,
         status.glowClass
       )}
@@ -93,7 +94,7 @@ export function CourtCard({
       aria-label={`${court.name}, trạng thái ${status.label}`}
     >
       {/* HEADER: Court name + Status + Timer */}
-      <div className="mb-2.5 flex items-start justify-between gap-2">
+      <div className="mb-2.5 flex items-start justify-between gap-2 border-b border-white/[0.06] pb-2">
         <div className="flex min-w-0 items-center gap-2">
           <h3 className="truncate text-base font-bold leading-6 text-slate-50" title={court.name}>{court.name}</h3>
           {status.icon && <span className="text-base leading-none text-current opacity-80" aria-hidden="true">{status.icon}</span>}
@@ -101,8 +102,8 @@ export function CourtCard({
         <div className="flex shrink-0 items-center gap-1.5">
           {court.status === 'PLAYING' && court.startedAt && (
             <motion.div
-              animate={{ opacity: [0.5, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              animate={prefersReducedMotion ? undefined : { opacity: [0.65, 1] }}
+              transition={prefersReducedMotion ? undefined : { duration: 1, repeat: Infinity }}
               className="flex h-7 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 text-[11px] font-mono font-semibold text-emerald-100"
             >
               <Clock className="h-3 w-3" />
@@ -117,8 +118,9 @@ export function CourtCard({
 
       {/* PLAYERS DISPLAY */}
       {court.status === 'EMPTY' ? (
-        <div className="flex min-h-[6.75rem] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700/60 bg-slate-950/25 px-3 text-center text-xs font-medium text-slate-400">
-          Chờ xếp người chơi
+        <div className="flex min-h-[6.5rem] flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/60 bg-slate-950/25 px-3 text-center">
+          <div className="text-sm font-bold text-slate-300">Sân trống</div>
+          <div className="mt-1 text-xs font-medium text-slate-500">Chờ xếp người chơi</div>
         </div>
       ) : (
         <div className="mb-3 grid min-h-[7rem] flex-1 grid-cols-[minmax(0,1fr)_2.25rem_minmax(0,1fr)] items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)]">

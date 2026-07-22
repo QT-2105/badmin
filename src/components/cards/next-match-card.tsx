@@ -69,15 +69,23 @@ export function NextMatchCard({
   const selectedSlotPlayer = selectedSlot !== null ? players.find((player) => player.id === draftRoster[selectedSlot]) : null;
   const scoreLabel =
     match.score >= 90
-      ? '🟢 Xuất sắc'
+      ? 'Xuất sắc'
       : match.score >= 75
-        ? '🟡 Tốt'
+        ? 'Tốt'
         : match.score >= 60
-          ? '🟠 Bình thường'
-          : '🔴 Kém';
+          ? 'Bình thường'
+          : 'Cần cân nhắc';
+  const scoreToneClass =
+    match.score >= 90
+      ? 'border-emerald-300/25 bg-emerald-400/15 text-emerald-100'
+      : match.score >= 75
+        ? 'border-cyan-300/25 bg-cyan-400/15 text-cyan-100'
+        : match.score >= 60
+          ? 'border-amber-300/25 bg-amber-400/15 text-amber-100'
+          : 'border-rose-300/25 bg-rose-400/15 text-rose-100';
 
   return (
-    <motion.div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/55 shadow-sm shadow-slate-950/20 backdrop-blur-sm transition-colors hover:border-cyan-300/25" aria-label={`Gợi ý trận ${match.index}`}>
+    <motion.div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/52 shadow-sm shadow-slate-950/16 backdrop-blur-sm transition-colors hover:border-cyan-300/25" aria-label={`Gợi ý trận ${match.index}`}>
       <div className="p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -94,7 +102,7 @@ export function NextMatchCard({
                 toggleNextMatchLock(match.id);
                 void onCommitRuntime?.();
               }}
-              className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${match.locked ? 'border-amber-300/25 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
+              className={`inline-flex h-10 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${match.locked ? 'border-amber-300/25 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
               title={match.locked ? 'Bỏ lock gợi ý' : 'Lock gợi ý'}
               aria-pressed={match.locked}
               aria-label={match.locked ? `Bỏ lock gợi ý ${match.index}` : `Lock gợi ý ${match.index}`}
@@ -111,7 +119,7 @@ export function NextMatchCard({
               }}
               disabled={!canApply}
               aria-label={`Áp dụng gợi ý ${match.index}${targetCourt ? ` vào ${targetCourt.name}` : ''}`}
-              className="inline-flex h-9 items-center gap-1 rounded-lg border border-emerald-300/20 bg-emerald-400/15 px-2 text-[11px] font-bold text-emerald-100 transition-colors hover:border-emerald-200/35 hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
+              className="inline-flex h-10 items-center gap-1 rounded-lg border border-emerald-300/20 bg-emerald-400/15 px-2 text-[11px] font-bold text-emerald-100 transition-colors hover:border-emerald-200/35 hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
             >
               <Check className="h-3.5 w-3.5" />
               Áp dụng
@@ -122,7 +130,7 @@ export function NextMatchCard({
               aria-expanded={replaceOpen}
               aria-controls={replacePanelId}
               aria-label={replaceOpen ? `Hủy đổi người gợi ý ${match.index}` : `Mở đổi người gợi ý ${match.index}`}
-              className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${replaceOpen ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
+              className={`inline-flex h-10 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${replaceOpen ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
             >
               <Zap className="h-3.5 w-3.5" />
               {replaceOpen ? 'Huỷ đổi' : 'Đổi người'}
@@ -136,7 +144,7 @@ export function NextMatchCard({
             <div className="flex items-center justify-center text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">VS</div>
             <PairPreview label="Cặp B" players={teamB} onSelectPlayer={setQuickViewPlayer} />
           </div>
-          <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs font-semibold text-slate-300">{match.score}% • {scoreLabel}</div>
+          <div className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${scoreToneClass}`}>{match.score}% • {scoreLabel}</div>
         </div>
 
         </div>

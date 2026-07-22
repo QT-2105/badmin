@@ -1,6 +1,6 @@
 # UI/UX Project Progress
 
-Last updated: 2026-07-20
+Last updated: 2026-07-22
 
 ## Progress Checklist
 
@@ -17,8 +17,8 @@ Last updated: 2026-07-20
 - [x] Stage 08 — Inventory
 - [x] Stage 09 — Users
 - [x] Stage 10 — Settings
-- [ ] Stage 11 — Responsive & Accessibility
-- [ ] Stage 12 — Final UX Polish
+- [x] Stage 11 — Responsive & Accessibility
+- [x] Stage 12 — Final Product Optimization & Project Acceptance
 
 ## Stage Details
 
@@ -285,17 +285,170 @@ Deferred notes:
 
 ### Stage 11 — Responsive & Accessibility
 
-Status: Not started
+Status: In progress / Audit and planning complete
 
-- Target: cross-screen responsive QA, keyboard access, contrast, focus, scroll, and touch target validation.
-- Preserve all screen logic and operational workflows.
+- Stage renamed for execution scope: Product UX Hardening.
+- Target: cross-screen responsive QA, tablet UX, mobile UX, keyboard access, contrast, focus, scroll, touch target validation, shared component consistency, dialog/drawer UX, DataTable presentation, form feedback, and presentation-only component decomposition.
+- Stage 11 documentation scaffold created in `docs/ui-spec/stage-11-product-ux-hardening/`.
+- Completed Sprint 11.0 audit baseline as documentation-only PASS WITH NOTES.
+- Completed Sprint 11.0 Product UX Audit in `docs/ui-spec/stage-11-product-ux-hardening/sprint-11.0-audit/` as documentation-only PASS WITH NOTES.
+- Created UX audit, responsive baseline, accessibility baseline, protected logic map, component risk map, allowed/protected sprint map, sprint plan, validation protocol, acceptance criteria, completion report template, and sprint folders.
+- Initial static audit found:
+  - `window.confirm` remains in Schedule, Inventory, and Runtime leave protection.
+  - Large presentation components over 400 lines remain in Inventory, Session Workspace, Settings, Runtime, Users, and Finance.
+  - Wide table/scroll areas need container-local overflow verification.
+  - Dialog/drawer focus, stacking, and scroll behavior need product-wide review.
+- Completed Sprint 11.1 Layout Hardening with PASS WITH NOTES.
+- Sprint 11.1 removed shared PageShell page-level horizontal scrolling, added app shell/main content overflow containment, normalized shared layout min-width containment and removed Dashboard page-level min-width while preserving chart/table local scroll containers.
+- Sprint 11.1 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`.
+- Completed Sprint 11.2 Navigation Consistency with PASS WITH NOTES.
+- Sprint 11.2 standardized AppShell desktop/mobile navigation presentation, accessible labels for collapsed/icon navigation, active-state presentation, PageHeader back-action semantics, and Schedule detail back-link styling.
+- Sprint 11.2 preserved routes, redirects, permission checks, menu visibility logic, deep links, query parameters, handlers, and all protected business/runtime/security behavior.
+- Sprint 11.2 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`.
+- Completed Sprint 11.3 Page Structure Consistency with PASS WITH NOTES.
+- Sprint 11.3 added shared presentation-only wrappers for feedback stacks, summary grids, and content stacks, then adopted the safe wrappers in Dashboard, Schedule, Session Workspace, Finance, and Inventory.
+- Sprint 11.3 preserved primary/secondary content order, Runtime operational order, all data sources, handlers, queries, mutations, stores, routes, and permissions.
+- Sprint 11.3 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`.
+- Completed Sprint 11.4 Responsive Foundation with PASS WITH NOTES.
+- Sprint 11.4 standardized shared responsive primitives for PageHeader, FilterBar, Surface, SectionCard, ToolbarCard, FormSection, Dialog, Drawer, DataTable, and PaginationControls.
+- Sprint 11.4 used existing Tailwind breakpoints only, improved tablet/mobile wrapping and viewport containment, and preserved all content priority, data, handlers, queries, mutations, stores, routes, permissions, and protected business logic.
+- Sprint 11.4 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`.
+- Completed Sprint 11.5 Tablet Optimization with PASS WITH NOTES.
+- Sprint 11.5 audited App Shell, Dashboard, Schedule, Session Workspace, Runtime, Finance, Inventory, Users, and Settings against tablet viewports 1180x820, 1280x800, 1366x1024, 1024x1366, and 820x1180.
+- Sprint 11.5 increased Runtime touch targets for mobile/tablet toolbar and suggestion mode controls, moved dense Schedule and Session Workspace form grids to desktop width, and changed Settings navigation to a compact tablet strip.
+- Sprint 11.5 preserved Runtime queue ordering, pairing, court assignment, match lifecycle, Zustand state, apply handler, start/end handler, all data sources, handlers, queries, mutations, stores, routes, permissions, and protected business logic.
+- Sprint 11.5 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Completed Sprint 11.6 Mobile Optimization with PASS WITH NOTES.
+- Sprint 11.6 audited Dashboard, Schedule, Finance, Inventory, Users, Settings, and Runtime smoke behavior for 390x844, 414x896, and 430x932.
+- Sprint 11.6 classified tables/lists as responsive table, existing mobile card view, or not applicable; no generic mobile card table view was introduced because finance, inventory, dashboard, and user-management tables need explicit columns and local overflow semantics.
+- Sprint 11.6 improved mobile action sizing/wrapping for Dashboard quick links, Schedule session toggles, Finance manual-entry toggle, Inventory product actions, Users create action, and Settings branding actions.
+- Sprint 11.6 preserved all sort/filter/pagination behavior, actions, permissions, payloads, data sources, handlers, queries, mutations, stores, routes, and protected business logic.
+- Sprint 11.6 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Completed Sprint 11.7 Shared Components Hardening with PASS WITH NOTES.
+- Sprint 11.7 hardened shared primitives: `Button`, new `IconButton`, `StatusBadge`, `Surface`/`Card`, `Dialog`, `Drawer`, `DataTable`, `FormSection`, feedback states, `Skeleton`, empty/error states, and KPI `StatCard`.
+- Sprint 11.7 added optional presentation props only, preserved default behavior, and kept shared components free of business logic, permission logic, query/mutation logic, finance logic, inventory logic, and runtime logic.
+- Sprint 11.7 migrated only Dialog/Drawer close controls to shared `IconButton`; close handlers, escape behavior, outside-click behavior, focus trap, and return focus remain unchanged.
+- Sprint 11.7 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.7 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.8 DataTable UX with PASS WITH NOTES.
+- Sprint 11.8 added optional `DataTable` presentation props: `responsiveMode`, `mobileRenderer`, `rowLabel`, and `stickyHeader`; default behavior remains horizontal-scroll table.
+- Sprint 11.8 added mobile card presentation for Dashboard recent sessions, Finance entries, Inventory products, and Inventory movements while preserving all rows, columns, row IDs, sort/filter/pagination logic, routes, handlers, permissions, and formatting logic.
+- Sprint 11.8 classified Users as KEEP CUSTOM TABLE, Schedule sessions as NOT APPLICABLE, and Permission matrix as KEEP MATRIX GRID because those layouts own inline edit, card-list, or checkbox-matrix semantics.
+- Sprint 11.8 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.8 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.9 Dialog and Drawer UX with PASS WITH NOTES.
+- Sprint 11.9 replaced all UI-flow `window.confirm` calls with shared `ConfirmationDialog`; no `window.alert` calls remain in `src`.
+- Sprint 11.9 added portal rendering and optional `closeDisabled` to shared `Dialog` and `Drawer`, then standardized delete confirmation for Schedule play dates, Schedule sessions, Inventory products, and Runtime unsynced leave guard.
+- Sprint 11.9 preserved delete handlers, mutations, permissions, payloads, loading behavior, success behavior, error behavior, runtime sync logic, routes, and protected business logic.
+- Sprint 11.9 validation passed: static confirm/alert search, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.9 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.10 Forms UX with PASS WITH NOTES.
+- Sprint 11.10 hardened shared form primitives for `Input`, `Select`, `Textarea`, `Checkbox`, `Switch`, new `Radio`, `FormMessage`, `RequiredMark`, and shared form input classes.
+- Sprint 11.10 standardized focus-visible, disabled, invalid, touch-target, date/time tabular, numeric alignment, and reduced-motion presentation without introducing business logic into shared UI.
+- Sprint 11.10 clarified Finance manual transaction quantity/unit-price labels and helper text, and Schedule create/edit session time/court-count labels and helper text.
+- Sprint 11.10 preserved all field names, field types, defaults, validation/schema behavior, payloads, submit handlers, mutations, reset behavior, save strategy, routes, permissions, calculations, stores, API, Prisma, repositories, and services.
+- Sprint 11.10 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.10 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.11 Accessibility Hardening with PASS WITH NOTES.
+- Sprint 11.11 added AppShell skip link/main target and explicit main navigation landmark labeling.
+- Sprint 11.11 hardened ThemeToggle and FullscreenToggle accessible names, pressed state, decorative icons, focus-visible rings, and touch-sized controls.
+- Sprint 11.11 hardened ActionMenu keyboard behavior with `aria-controls`, Escape/select focus return, ArrowUp/ArrowDown preservation, and decorative icon hiding.
+- Sprint 11.11 added Drawer fallback accessible label and DataTable mobile card `list/listitem` semantics.
+- Sprint 11.11 moved PlayerQuickView and Session completion confirmation onto shared `Dialog`, preserving existing close/confirm handlers and loading/disabled conditions.
+- Sprint 11.11 removed the remaining `role="button"` wrapper pattern by using a native button for player quick-view activation.
+- Sprint 11.11 static regression passed: no `role="button"`, `window.confirm`, or `window.alert` matches in source.
+- Sprint 11.11 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`.
+- Sprint 11.11 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.12 Motion and Feedback Consistency with PASS WITH NOTES.
+- Sprint 11.12 added lightweight motion utilities for feedback, overlay, Dialog, and Drawer entry states with explicit `prefers-reduced-motion` support.
+- Sprint 11.12 standardized shared Button, Surface, StatCard, StatusBadge, FeedbackState, Skeleton, Dialog, Drawer, and ActionMenu motion/transition presentation.
+- Sprint 11.12 added reduced-motion support to shared loading spinner and skeleton pulse states.
+- Sprint 11.12 did not add Runtime-specific animation and did not change countdowns, match timers, refresh intervals, retry intervals, runtime cooldowns, or React Query retry configuration.
+- Sprint 11.12 marked Toast as N/A/Future Scope because no source toast provider or primitive exists.
+- Sprint 11.12 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`.
+- Sprint 11.12 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.13A Inventory Presentation Refactor with PASS WITH NOTES.
+- Sprint 11.13A split the large Inventory page presentation into `src/components/inventory/inventory-presentation.tsx` while keeping `InventoryPageClient` responsible for query orchestration, mutation orchestration, form state, permission data, route data, report filtering, pagination, submit handlers, and mutation payloads.
+- Sprint 11.13A introduced presentation-only Inventory sections: `InventoryToolbar`, `InventorySummary`, `InventoryFeedback`, `ProductTableSection`, `MovementFormsSection`, and `MovementTableSection`.
+- Sprint 11.13A line-count baseline changed from `InventoryPageClient` 967 lines to `InventoryPageClient` 363 lines plus `inventory-presentation.tsx` 1047 lines.
+- Sprint 11.13A preserved product payloads, import payloads, outbound payload branching, delete payload, movement ordering, pagination behavior, query hooks, mutation hooks, permission lookup, inventory calculations, current stock, average cost, movement semantics, routes, and protected backend/schema files.
+- Sprint 11.13A validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`.
+- Sprint 11.13A protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.13B Settings Presentation Refactor with PASS WITH NOTES.
+- Sprint 11.13B split the large Settings page presentation into `src/components/settings/settings-presentation.tsx` while keeping `SettingsPageClient` responsible for `useAppSettings`, `useBranding`, `useBrandingMutations`, `normalizeMaxCourtCount`, destructive service calls, local form state, expanded/active section state, destructive confirmation state, settings keys, mutation payloads, and smooth-scroll navigation behavior.
+- Sprint 11.13B introduced presentation-only Settings sections: `SettingsPageView`, `SettingsNavigation`, `BrandingSection`, `FinanceSettingsSection`, `AppearanceSettingsSection`, `ScheduleSettingsSection`, `DestructiveActionSection`, and `SettingsDestructiveDialog`.
+- Sprint 11.13B line-count baseline changed from `SettingsPageClient` 665 lines to `SettingsPageClient` 188 lines plus `settings-presentation.tsx` 727 lines.
+- Sprint 11.13B preserved configuration keys, settings storage, default values, branding payloads, logo upload/delete behavior, destructive service calls, max-court normalization, query hooks, mutation hooks, routes, permissions, and protected backend/schema files.
+- Sprint 11.13B validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`.
+- Sprint 11.13B protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.13C Users Presentation Refactor with PASS WITH NOTES.
+- Sprint 11.13C split the large Users management panel into `src/components/users/auth-users-presentation.tsx` while keeping `AuthUsersPanel` responsible for `useCurrentUser`, `useAuthUsers`, `useRolePermissions`, `useAuthUserMutations`, `useRolePermissionMutations`, create-user state, password drafts, permission drafts, pagination, selected role, payload construction, mutation calls, and permission edit lock derivation.
+- Sprint 11.13C introduced presentation-only Users sections: `AuthUsersPanelView`, `CreateUserSection`, `UsersListSection`, `RolePermissionSection`, `RoleNote`, `RequiredMark`, `FieldHint`, and `UserInitialsAvatar`.
+- Sprint 11.13C line-count baseline changed from `AuthUsersPanel` 623 lines to `AuthUsersPanel` 176 lines plus `auth-users-presentation.tsx` 760 lines.
+- Sprint 11.13C preserved create-user payloads, update-user payload construction, role-permission payloads, password draft clearing, permission draft behavior, OWNER lock behavior, query hooks, mutation hooks, role codes, permission keys, status values, routes, permissions, and protected backend/schema files.
+- Sprint 11.13C validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`.
+- Sprint 11.13C protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.13E Finance Presentation Refactor with PASS WITH NOTES.
+- Sprint 11.13E split the Finance page presentation into `src/components/finance/finance-presentation.tsx` while keeping `FinancePageClient` responsible for `useCurrentUser`, `useTransactions`, `useFinanceMutations`, permission lookup, create-form state, report-period state, sort state, pagination state, feedback state, submit validation, mutation payload construction, report filtering, sorting, slicing, and totals/profit calculation.
+- Sprint 11.13E introduced presentation-only Finance sections: `FinancePageView`, `FinanceHeader`, `FinanceReportFilter`, `FinanceSummary`, `FinanceCreateSection`, `FinanceFeedback`, `FinanceTransactionsSection`, `FinanceTransactionMobileCard`, and `TransactionBadge`.
+- Sprint 11.13E line-count baseline changed from `FinancePageClient` 446 lines to `FinancePageClient` 162 lines plus `finance-presentation.tsx` 581 lines.
+- Sprint 11.13E preserved transaction create payloads, title-required validation, post-submit field reset behavior, report-period query arguments, newest/oldest sorting, pagination slicing, finance totals/profit calculation, category values, adjustment semantics, query hooks, mutation hooks, routes, permissions, and protected backend/schema files.
+- Sprint 11.13E validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.13E protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Completed Sprint 11.14 Full UX Regression with PASS WITH NOTES.
+- Sprint 11.14 checked App Shell, Dashboard, Schedule, Session Workspace, Runtime, Finance, Inventory, Users, and Settings across the requested responsive/theme/state matrix using static source scans plus command validation.
+- Sprint 11.14 confirmed no `window.confirm` or `window.alert` remains in `src`; overflow/fixed/sticky hits are expected local-scroll regions, runtime overlays, dialogs/drawers, DataTable/table/matrix containers, and sticky runtime/table headers.
+- Sprint 11.14 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`.
+- Sprint 11.14 test script status: N/A because `package.json` has no `test` script and no Playwright/E2E dependency is installed; browser screenshot QA and real-device QA remain deferred.
+- Sprint 11.14 protected diff checked clean for `src/app/api/**`, `src/repositories/**`, `src/services/**`, `src/hooks/**`, `src/lib/badminton-store.ts`, `src/lib/auth/**`, `src/lib/finance-calculation.ts`, `src/lib/app-settings.ts`, `src/types/domain.ts`, `prisma/**`, and `middleware.ts`.
+- Stage 11 implementation is complete and accepted with notes.
+- Stage 11 preserved screen logic, operational workflows, protected backend/logic files, business rules, runtime algorithms, finance calculations, inventory calculations, auth/security behavior, routes, permissions, query keys, mutations, payloads and validation.
 
-### Stage 12 — Final UX Polish
+### Stage 12 — Final Product Optimization & Project Acceptance
 
-Status: Not started
+Status: Done / Release Candidate ready with notes
 
-- Target: final visual pass, density tuning, copy cleanup, and interaction polish.
-- No business logic or protected runtime changes without explicit approval.
+- Stage 12 documentation and audit baseline created in `docs/ui-spec/stage-12-final-product-optimization/`.
+- Target: final product optimization and project acceptance before Release Candidate.
+- Completed initial documentation-only work: product audit, visual system audit, color system audit, KPI card audit, component consistency audit, presentation logic audit, performance audit, protected logic map, regression map, sprint implementation plan, acceptance criteria, and completion report template.
+- Sprint 12.1 Color System Optimization completed with PASS WITH NOTES.
+- Sprint 12.2 Typography, Border, Surface and Elevation completed with PASS WITH NOTES.
+- Sprint 12.3 KPI and Statistic Card Optimization completed with PASS WITH NOTES.
+- Sprint 12.4 Layout Density and Visual Hierarchy completed with PASS WITH NOTES.
+- Sprint 12.5 Shared Component Final Polish completed with PASS WITH NOTES.
+- Sprint 12.6 Interaction and Motion Polish completed with PASS WITH NOTES.
+- Sprint 12.7A App Shell and Dashboard Final Polish completed with PASS WITH NOTES.
+- Sprint 12.7B Schedule and Session Workspace Final Polish completed with PASS WITH NOTES.
+- Sprint 12.7C Runtime Final UX Polish completed with PASS WITH NOTES.
+- Sprint 12.7D Finance Final UX Polish completed with PASS WITH NOTES.
+- Sprint 12.7E Inventory Final UX Polish completed with PASS WITH NOTES.
+- Sprint 12.7F Users Final UX Polish completed with PASS WITH NOTES.
+- Sprint 12.7G Settings Final UX Polish completed with PASS WITH NOTES.
+- Sprint 12.8 Presentation Logic Optimization completed with PASS WITH NOTES.
+- Sprint 12.9 Measured Frontend Performance Optimization completed with PASS WITH NOTES.
+- Sprint 12.10 Final Responsive and Accessibility QA completed with PASS WITH NOTES.
+- Sprint 12.11 Full Business Regression completed with PASS WITH NOTES.
+- Sprint 12.12 Final Product and Architecture Audit completed with PASS WITH NOTES.
+- Sprint 12.13 Release Candidate and Stage Completion completed with READY WITH NOTES.
+- Sprint 12.11 validation passed: `npm run lint`, `npm run typecheck`, `npm run build`, `npm run guard:no-db-schema-automation`, `git diff --check`, and protected diff; existing tests are not applicable because no `test` script or test files exist.
+- Sprint 12.4 compacted Finance/Inventory operational sections and Settings navigation/card elevation while preserving Dashboard overview spacing and Runtime workflow.
+- Sprint 12.5 polished shared Button, ActionMenu, FormSection and Skeleton presentation/accessibility states while preserving default handler contracts; Toast, Tooltip and Popover remain missing shared primitives and are deferred.
+- Sprint 12.6 added reduced-motion guards for AppShell collapse, shared form controls, ActionMenu items and FormSection chevron motion; Runtime timing and protected motion files were not changed.
+- Sprint 12.7A refined App Shell sidebar/mobile-header surface hierarchy, active navigation affordance, collapse button presentation, Dashboard recent-session status badges, and Dashboard chart elevation while preserving routes, menu configuration, permission visibility, redirects, Dashboard query, calculations, chart values, and recent-session links.
+- Sprint 12.7B refined Schedule expanded-list semantics, Play Date session list presentation, Session Workspace header action wrapping, completion profit tone, and player-list scanability while preserving play date CRUD, session CRUD, player CRUD, completion validation/payloads, runtime route, hooks, queries, mutations, finance/inventory calculations, routes, permissions, API, database, Prisma, repositories and services.
+- Sprint 12.7C refined Runtime court card readability, player team typography, gender differentiation, empty-court presentation, next-match card touch targets, score tone and queue action visual hierarchy while preserving queue ordering, `PRIORITY`/`WAITING` ordering, `JUST_FINISHED`, pairing, court assignment, next-match generation, apply/start/end/swap behavior, status transitions, Zustand actions and API calls.
+- Sprint 12.7D refined Finance expense semantics, transaction badge tones, and currency/tabular-number readability while preserving revenue formula, expense formula, profit formula, category semantics, session relation, payment status, payment method, API, mutation, payload, query keys, filters, sorting and pagination.
+- Sprint 12.7E refined Inventory stock status badges, low/out-of-stock presentation, consumption KPI tone, movement quantity semantic tones, and product helper copy while preserving `current_stock`, `average_cost`, movement calculations, tube-to-piece conversion, movement type semantics, API, mutation, payload, validation, query keys, cache behavior, repositories, services, database and Prisma.
+- Sprint 12.7F refined Users role/status accessible labels, dense table header separation, tabular role/permission counts, and permission-matrix focus/selected presentation while preserving authentication, session behavior, role codes, permission keys, status values, user-role mapping, role-permission mapping, query keys, mutations, cache invalidation, API, payloads, validation, routes and server authorization.
+- Sprint 12.7G refined Settings navigation capability chips, branding dirty/save/error feedback, local preference toggle text/focus states, finance status chips, destructive feedback presentation, and Settings section heading semantics while preserving configuration keys, default values, persistence, branding payloads, logo behavior, reset service calls, API, query keys, mutations, cache invalidation, permissions, routes, runtime algorithms, finance calculations and inventory calculations.
+- Sprint 12.8 optimized Settings presentation logic by extracting local presentation-only helpers `CapabilityStatusChip`, `SaveStatePill`, and `SettingsFeedbackMessage`; `SettingsPageClient` remains the owner of settings state, handlers, hooks, mutations, service calls, config keys and destructive action flow.
+- Sprint 12.9 audited frontend bundle/performance inputs and hoisted Finance `transactionColumns` to module scope to avoid repeated render allocation while preserving Finance formulas, transaction source, sort/filter/pagination, form submission, query keys, mutations, cache invalidation, API, validation, permissions and routes.
+- Sprint 12.10 completed static responsive/accessibility QA across the requested viewport matrix, created the Final Accessibility Report, confirmed no `window.confirm`/`window.alert`, no page-level `w-screen`, localized horizontal scroll containers, shared dialog/drawer focus semantics, labeled navigation/buttons/forms/tables, reduced-motion support and deferred browser screenshot/focus-trap verification where no automation exists.
+- Sprint 12.11 completed static business regression review for Schedule, Runtime, Finance, Inventory, Users and Settings; no source changes were made, no UI regression requiring a fix was identified, protected backend/logic diff remained clean, and live CRUD/runtime workflow execution remains deferred until an interactive browser or E2E harness exists.
+- Sprint 12.12 completed the final product and architecture audit with overall frontend quality score 8.1/10, no confirmed P0 issues, release-candidate eligibility with notes, and remaining P1 risks around browser/device QA, automated E2E/business regression, accessibility/contrast automation, large presentation files and measured Runtime profiling.
+- Sprint 12.13 created `14_RELEASE_CANDIDATE_REPORT.md` and `15_STAGE_COMPLETION_REPORT.md`; final validation passed for lint, typecheck, build, DB guard, diff check and protected backend/logic diff; no existing test script is available.
+- Final project acceptance report created at `docs/ui-spec/FINAL_PROJECT_ACCEPTANCE_REPORT.md`; Stage 01 through Stage 12 are accepted, and the project is Release Candidate ready with notes.
+- No business logic, runtime workflow, API, database, Prisma, repository, service, query key, mutation, payload, validation, permission, route, finance calculation, inventory calculation, `current_stock`, `average_cost`, queue ordering, pairing, court assignment, or match lifecycle changes are allowed without explicit approval.
 
 ## Completion Report Index
 
@@ -312,8 +465,9 @@ Status: Not started
 | Stage 08 - Inventory | Done | PASS WITH NOTES | `stage-08-inventory/13_STAGE_COMPLETION_REPORT.md` |
 | Stage 09 - Users | Done / Accepted | PASS WITH NOTES | `stage-09-users-permissions/14_STAGE_COMPLETION_REPORT.md` |
 | Stage 10 - Settings | Done / Accepted | PASS WITH NOTES | `stage-10-settings/15_STAGE_COMPLETION_REPORT.md` |
-| Stage 11 - Responsive & Accessibility | Not started | N/A | N/A |
-| Stage 12 - Final UX Polish | Not started | N/A | N/A |
+| Stage 11 - Product UX Hardening | Done / Accepted | PASS WITH NOTES | `stage-11-product-ux-hardening/14_STAGE_COMPLETION_REPORT.md` |
+| Stage 12 - Final Product Optimization & Project Acceptance | Done / RC ready with notes | READY WITH NOTES | `stage-12-final-product-optimization/15_STAGE_COMPLETION_REPORT.md` |
+| Final Project Acceptance | Done / Accepted | READY WITH NOTES | `FINAL_PROJECT_ACCEPTANCE_REPORT.md` |
 
 ## Update Rule
 

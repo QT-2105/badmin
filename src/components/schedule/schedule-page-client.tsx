@@ -6,10 +6,11 @@ import { CalendarPlus, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-re
 
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/dialog';
 import { EmptyState, ErrorState, LoadingState, WarningState } from '@/components/ui/feedback';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/form';
-import { PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
+import { PageFeedbackStack, PageHeader, PageShell, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card } from '@/components/ui/surface';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -29,6 +30,7 @@ export function SchedulePageClient() {
   const [note, setNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(() => new Set());
+  const [pendingDeletePlayDateId, setPendingDeletePlayDateId] = useState<string | null>(null);
   const sortedPlayDates = useMemo(() => {
     return [...playDates].sort((left, right) => right.playDate.localeCompare(left.playDate));
   }, [playDates]);
@@ -72,20 +74,29 @@ export function SchedulePageClient() {
     return 'warning';
   }
 
-  async function removePlayDate(id: string) {
+  function requestRemovePlayDate(id: string) {
     const item = playDates.find((playDateItem) => playDateItem.id === id);
     if (item && isPastDateInput(item.playDate, today)) {
       setActionError('Ngày chơi đã thuộc quá khứ, chỉ được xem lại thông tin.');
       return;
     }
-    if (!window.confirm('Xóa ngày chơi này?')) return;
+    setActionError(null);
+    setPendingDeletePlayDateId(id);
+  }
+
+  async function confirmRemovePlayDate() {
+    if (!pendingDeletePlayDateId) return;
     setActionError(null);
     try {
-      await deletePlayDate.mutateAsync(id);
+      await deletePlayDate.mutateAsync(pendingDeletePlayDateId);
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'Không thể xóa ngày chơi');
+    } finally {
+      setPendingDeletePlayDateId(null);
     }
   }
+
+  const pendingDeletePlayDate = playDates.find((item) => item.id === pendingDeletePlayDateId);
 
   return (
     <PageShell maxWidth="max-w-7xl">
@@ -100,7 +111,7 @@ export function SchedulePageClient() {
           description="Chọn ngày, thêm tiêu đề nếu cần rồi mở ngày để tạo các ca chơi."
           contentClassName="pt-1"
         >
-          <form onSubmit={submit} className="grid gap-3 md:grid-cols-[160px_minmax(220px,1fr)_minmax(220px,1fr)_auto] md:items-end">
+          <form onSubmit={submit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-[160px_minmax(220px,1fr)_minmax(220px,1fr)_auto] xl:items-end">
             <label className="block">
               <span className={formLabelClass}>Ngày chơi</span>
               <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
@@ -113,7 +124,7 @@ export function SchedulePageClient() {
               <span className={formLabelClass}>Ghi chú</span>
               <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
             </label>
-            <Button type="submit" disabled={createPlayDate.isPending} className="h-11 whitespace-nowrap">
+            <Button type="submit" disabled={createPlayDate.isPending} className="h-11 whitespace-nowrap md:col-span-2 xl:col-span-1">
               {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
               Tạo ngày
             </Button>
@@ -121,11 +132,15 @@ export function SchedulePageClient() {
         </FormSection>
       ) : null}
 
-      {isLoading ? <LoadingState title="Đang tải lịch chơi..." size="sm" /> : null}
-      {error ? <ErrorState title={error.message} size="sm" /> : null}
-      {actionError ? <WarningState title={actionError} size="sm" /> : null}
+      {(isLoading || error || actionError) ? (
+        <PageFeedbackStack>
+          {isLoading ? <LoadingState title="Đang tải lịch chơi..." size="sm" /> : null}
+          {error ? <ErrorState title={error.message} size="sm" /> : null}
+          {actionError ? <WarningState title={actionError} size="sm" /> : null}
+        </PageFeedbackStack>
+      ) : null}
 
-      <section className="grid gap-3 lg:grid-cols-2">
+      <section aria-label="Danh sách ngày chơi" className="grid gap-3 lg:grid-cols-2">
         {sortedPlayDates.map((item) => {
           const isPast = isPastDateInput(item.playDate, today);
           const isToday = item.playDate === today;
@@ -146,7 +161,7 @@ export function SchedulePageClient() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="min-w-0 text-lg font-semibold leading-tight text-foreground">{item.title || item.playDate}</div>
+                  <div className="min-w-0 break-words text-lg font-semibold leading-tight text-foreground">{item.title || item.playDate}</div>
                   {isToday ? <StatusBadge tone="info">Hôm nay</StatusBadge> : null}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -157,8 +172,10 @@ export function SchedulePageClient() {
                       onClick={() => togglePlayDateSessions(item.id)}
                       variant="secondary"
                       size="sm"
-                      className="h-8 gap-1 px-2.5 text-xs"
+                      className="h-10 gap-1 px-3 text-xs"
                       aria-label={expanded ? 'Thu gọn danh sách ca' : 'Mở danh sách ca'}
+                      aria-expanded={expanded}
+                      aria-controls={`play-date-sessions-${item.id}`}
                     >
                       {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       {expanded ? 'Thu gọn' : 'Danh sách ca'}
@@ -187,7 +204,7 @@ export function SchedulePageClient() {
                         icon: Trash2,
                         danger: true,
                         disabled: deletePlayDate.isPending,
-                        onSelect: () => void removePlayDate(item.id)
+                        onSelect: () => requestRemovePlayDate(item.id)
                       }
                     ]}
                   />
@@ -195,7 +212,7 @@ export function SchedulePageClient() {
               </div>
             </div>
             {item.sessions.length > 0 && expanded ? (
-              <div className="mt-4 space-y-2 border-t border-border pt-3">
+              <div id={`play-date-sessions-${item.id}`} className="mt-4 space-y-2 border-t border-border pt-3">
                 {sortedSessions.map((session) => (
                   <Link
                     key={session.id}
@@ -219,8 +236,21 @@ export function SchedulePageClient() {
       </section>
 
       {!isLoading && playDates.length === 0 ? (
-        <EmptyState title="Chưa có ngày chơi" description="Tạo ngày chơi đầu tiên ở trên." />
+        <PageFeedbackStack>
+          <EmptyState title="Chưa có ngày chơi" description="Tạo ngày chơi đầu tiên ở trên." />
+        </PageFeedbackStack>
       ) : null}
+      <ConfirmationDialog
+        open={Boolean(pendingDeletePlayDateId)}
+        title="Xóa ngày chơi?"
+        description={pendingDeletePlayDate ? `Ngày ${pendingDeletePlayDate.title || pendingDeletePlayDate.playDate} sẽ bị xóa theo đúng quyền và mutation hiện tại.` : 'Ngày chơi sẽ bị xóa theo đúng quyền và mutation hiện tại.'}
+        confirmLabel="Xóa ngày"
+        cancelLabel="Hủy"
+        tone="danger"
+        isLoading={deletePlayDate.isPending}
+        onCancel={() => setPendingDeletePlayDateId(null)}
+        onConfirm={confirmRemovePlayDate}
+      />
     </PageShell>
   );
 }

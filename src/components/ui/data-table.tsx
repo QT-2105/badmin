@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from './feedback';
 
 type DataTableAlign = 'left' | 'center' | 'right';
 type DataTableDensity = 'compact' | 'default' | 'comfortable';
+type DataTableResponsiveMode = 'scroll' | 'cards';
 
 export type DataTableColumn<Row> = {
   key: string;
@@ -39,9 +40,16 @@ export type DataTableProps<Row> = {
   errorState?: ReactNode | DataTableState;
   pagination?: ReactNode;
   density?: DataTableDensity;
+  responsiveMode?: DataTableResponsiveMode;
   minWidth?: string;
+  stickyHeader?: boolean;
+  caption?: ReactNode;
+  captionClassName?: string;
+  mobileRenderer?: (row: Row, rowIndex: number) => ReactNode;
+  rowLabel?: (row: Row, rowIndex: number) => string;
   className?: string;
   tableClassName?: string;
+  scrollClassName?: string;
   rowClassName?: string | ((row: Row, rowIndex: number) => string | undefined);
   'aria-label'?: string;
 };
@@ -101,9 +109,16 @@ export function DataTable<Row>({
   errorState,
   pagination,
   density = 'default',
+  responsiveMode = 'scroll',
   minWidth = '720px',
+  stickyHeader = false,
+  caption,
+  captionClassName,
+  mobileRenderer,
+  rowLabel,
   className,
   tableClassName,
+  scrollClassName,
   rowClassName,
   'aria-label': ariaLabel
 }: DataTableProps<Row>) {
@@ -117,12 +132,14 @@ export function DataTable<Row>({
       : rows.length === 0
         ? renderState(emptyState, { title: 'Chưa có dữ liệu' }, 'empty')
         : null;
+  const shouldRenderMobileCards = responsiveMode === 'cards' && Boolean(mobileRenderer) && !tableState;
 
   return (
-    <div className={cn('rounded-xl border border-border bg-surface shadow-soft', className)}>
-      <div className="operational-x-scroll">
+    <div className={cn('min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-surface', className)}>
+      <div className={cn('operational-x-scroll max-w-full', shouldRenderMobileCards ? 'hidden md:block' : '', scrollClassName)}>
         <table aria-busy={loading || undefined} aria-label={ariaLabel} className={cn('w-full border-collapse', tableClassName)} style={{ minWidth }}>
-          <thead>
+          {caption ? <caption className={cn('sr-only', captionClassName)}>{caption}</caption> : null}
+          <thead className={cn(stickyHeader ? 'sticky top-0 z-10' : '')}>
             <tr className="border-b border-border bg-surface-subtle">
               {columns.map((column) => {
                 const align = column.align ?? 'left';
@@ -161,7 +178,7 @@ export function DataTable<Row>({
               rows.map((row, rowIndex) => {
                 const resolvedRowClassName = typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName;
                 return (
-                  <tr key={getRowKey(row, rowIndex)} className={cn('border-b border-border last:border-b-0 hover:bg-surface-hover/60', resolvedRowClassName)}>
+                  <tr key={getRowKey(row, rowIndex)} className={cn('border-b border-border/80 last:border-b-0 hover:bg-surface-hover/60', resolvedRowClassName)}>
                     {columns.map((column) => {
                       const align = column.align ?? 'left';
                       const resolvedCellClassName = typeof column.cellClassName === 'function' ? column.cellClassName(row) : column.cellClassName;
@@ -187,6 +204,21 @@ export function DataTable<Row>({
           </tbody>
         </table>
       </div>
+      {shouldRenderMobileCards ? (
+        <div className="grid gap-3 p-3 md:hidden" role="list" aria-label={ariaLabel}>
+          {rows.map((row, rowIndex) => (
+            <article
+              key={getRowKey(row, rowIndex)}
+              aria-label={rowLabel ? rowLabel(row, rowIndex) : undefined}
+              role="listitem"
+              className={cn('rounded-xl border border-border bg-surface-subtle p-3', typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName)}
+            >
+              {mobileRenderer?.(row, rowIndex)}
+              {actions ? <div className="mt-3 flex flex-wrap items-center justify-end gap-2">{actions(row, rowIndex)}</div> : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
       {pagination ? <div className="border-t border-border p-3">{pagination}</div> : null}
     </div>
   );

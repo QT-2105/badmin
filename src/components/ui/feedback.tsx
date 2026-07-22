@@ -1,6 +1,6 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, CircleOff, Inbox, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -15,11 +15,11 @@ export type FeedbackStateProps = {
   tone?: FeedbackTone;
   size?: FeedbackSize;
   className?: string;
+  iconClassName?: string;
+  iconWrapperClassName?: string;
 };
 
-type SkeletonProps = {
-  className?: string;
-};
+type SkeletonProps = HTMLAttributes<HTMLDivElement>;
 
 const toneStyles: Record<FeedbackTone, { container: string; icon: string }> = {
   neutral: {
@@ -27,20 +27,20 @@ const toneStyles: Record<FeedbackTone, { container: string; icon: string }> = {
     icon: 'bg-surface-elevated text-muted-foreground'
   },
   info: {
-    container: 'border-info/25 bg-info-soft text-info',
-    icon: 'bg-info-soft text-info'
+    container: 'border-info/30 bg-info-soft text-info-foreground',
+    icon: 'bg-info-soft text-info-foreground'
   },
   success: {
-    container: 'border-success/25 bg-success-soft text-success',
-    icon: 'bg-success-soft text-success'
+    container: 'border-success/30 bg-success-soft text-success-foreground',
+    icon: 'bg-success-soft text-success-foreground'
   },
   warning: {
-    container: 'border-warning/30 bg-warning-soft text-warning',
-    icon: 'bg-warning-soft text-warning'
+    container: 'border-warning/35 bg-warning-soft text-warning-foreground',
+    icon: 'bg-warning-soft text-warning-foreground'
   },
   danger: {
-    container: 'border-danger/25 bg-danger-soft text-danger',
-    icon: 'bg-danger-soft text-danger'
+    container: 'border-danger/30 bg-danger-soft text-danger-foreground',
+    icon: 'bg-danger-soft text-danger-foreground'
   }
 };
 
@@ -59,8 +59,8 @@ const sizeStyles: Record<FeedbackSize, { container: string; icon: string; title:
   }
 };
 
-export function Skeleton({ className }: SkeletonProps) {
-  return <div className={cn('animate-pulse rounded-lg bg-surface-subtle', className)} />;
+export function Skeleton({ className, 'aria-hidden': ariaHidden, ...props }: SkeletonProps) {
+  return <div aria-hidden={ariaHidden ?? true} className={cn('animate-pulse rounded-lg bg-surface-subtle motion-reduce:animate-none', className)} {...props} />;
 }
 
 export function Separator({ className }: { className?: string }) {
@@ -74,16 +74,18 @@ function FeedbackState({
   action,
   tone = 'neutral',
   size = 'md',
-  className
+  className,
+  iconClassName,
+  iconWrapperClassName
 }: FeedbackStateProps) {
   const toneStyle = toneStyles[tone];
   const sizeStyle = sizeStyles[size];
 
   return (
-    <div className={cn('rounded-xl border text-center', toneStyle.container, sizeStyle.container, className)}>
+    <div className={cn('motion-feedback-in rounded-xl border text-center motion-reduce:animate-none', toneStyle.container, sizeStyle.container, className)}>
       {Icon ? (
-        <div className={cn('mx-auto mb-3 grid place-items-center rounded-full border border-current/10', toneStyle.icon, sizeStyle.icon)}>
-          <Icon className="h-5 w-5" />
+        <div className={cn('mx-auto mb-3 grid place-items-center rounded-full border border-current/10', toneStyle.icon, sizeStyle.icon, iconWrapperClassName)}>
+          <Icon className={cn('h-5 w-5', iconClassName)} aria-hidden="true" />
         </div>
       ) : null}
       <div className={cn('font-semibold text-foreground', sizeStyle.title)}>{title}</div>
@@ -109,12 +111,13 @@ export function EmptyState({
   return <FeedbackState icon={Icon ?? Inbox} title={title} description={description} action={action} tone="neutral" className={cn('border-dashed', className)} />;
 }
 
-export function LoadingState({ icon: Icon = Loader2, className, ...props }: FeedbackStateProps) {
+export function LoadingState({ icon: Icon = Loader2, className, iconClassName, ...props }: FeedbackStateProps) {
   return (
     <FeedbackState
       icon={Icon}
       tone="info"
       className={className}
+      iconClassName={cn(Icon === Loader2 ? 'animate-spin motion-reduce:animate-none' : '', iconClassName)}
       {...props}
     />
   );
