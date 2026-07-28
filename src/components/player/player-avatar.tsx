@@ -30,13 +30,16 @@ export function initialsForName(name: string): string {
 }
 
 export function PlayerAvatar({ name, gender, avatarUrl, size = 'sm', className }: PlayerAvatarProps) {
-  const female = String(gender ?? '').toLowerCase().includes('nữ') || String(gender ?? '').toLowerCase().includes('nu');
+  const normalizedGender = String(gender ?? '').toLowerCase();
+  const female = normalizedGender.includes('nữ') || normalizedGender.includes('nu');
 
   return (
     <span
       className={cn(
         'relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-border font-bold shadow-xs',
-        female ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info',
+        female
+          ? 'border-pink-500/30 bg-pink-500/15 text-pink-700 dark:border-pink-300/25 dark:bg-pink-400/15 dark:text-pink-200'
+          : 'border-sky-500/30 bg-sky-500/15 text-sky-700 dark:border-cyan-300/25 dark:bg-cyan-400/15 dark:text-cyan-200',
         sizeClass[size],
         className
       )}

@@ -12,6 +12,8 @@ export type PlaySessionSummary = {
   shuttlecockPiecesUsed: number;
   shuttlecockProductId: string | null;
   shuttlecockProductName: string | null;
+  extraExpenseTitle: string | null;
+  extraExpenseAmount: number;
   totalIncome: number;
   totalExpense: number;
   totalProfit: number;

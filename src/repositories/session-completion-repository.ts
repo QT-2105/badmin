@@ -11,11 +11,17 @@ export async function completePlaySession(input: {
   courtCost: number;
   shuttlecockProductId: string;
   shuttlecockPiecesUsed: number;
+  extraExpenseTitle?: string | null;
+  extraExpenseAmount?: number;
+  note?: string | null;
   autoCreateCourtFeeTransaction?: boolean;
   autoCreateShuttlecockUsageTransaction?: boolean;
 }): Promise<PlaySessionSummary> {
   const courtCost = Number(input.courtCost);
   const shuttlecockPiecesUsed = Math.floor(Number(input.shuttlecockPiecesUsed));
+  const extraExpenseAmount = Math.max(0, Number(input.extraExpenseAmount || 0));
+  const extraExpenseTitle = input.extraExpenseTitle?.trim().slice(0, 255) || null;
+  const sessionNote = input.note?.trim() || null;
   const autoCreateCourtFeeTransaction = input.autoCreateCourtFeeTransaction !== false;
   const autoCreateShuttlecockUsageTransaction = input.autoCreateShuttlecockUsageTransaction !== false;
 
@@ -29,6 +35,10 @@ export async function completePlaySession(input: {
 
   if (!Number.isFinite(shuttlecockPiecesUsed) || shuttlecockPiecesUsed <= 0) {
     throw new Error('Vui lòng nhập số lượng cầu hao');
+  }
+
+  if (extraExpenseAmount > 0 && !extraExpenseTitle) {
+    throw new Error('Vui lòng nhập nội dung chi phí phát sinh');
   }
 
   await prisma.$transaction(async (tx) => {
@@ -70,6 +80,7 @@ export async function completePlaySession(input: {
     const incomeTitle = `Thu SLOT vãng lai ca ${sessionLabel}`;
     const courtTitle = `Chi SÂN vãng lai ca ${sessionLabel}`;
     const shuttlecockTitle = `Chi CẦU vãng lai ca ${sessionLabel}`;
+    const extraTitle = extraExpenseTitle ? `${extraExpenseTitle} ca ${sessionLabel}` : null;
     const shuttlecockMovementTitle = `Xuất cầu hao ca ${startLabel}-${endLabel} | ngày ${dateLabel}`;
 
     const transactions = [
@@ -111,6 +122,19 @@ export async function completePlaySession(input: {
       });
     }
 
+    if (extraExpenseAmount > 0 && extraTitle) {
+      transactions.push({
+        session_id: input.sessionId,
+        transaction_type: 'EXPENSE',
+        category: 'OTHER',
+        title: extraTitle,
+        quantity: 1,
+        unit_price: extraExpenseAmount,
+        total_amount: extraExpenseAmount,
+        note: extraTitle
+      });
+    }
+
     await tx.session_transactions.createMany({ data: transactions });
 
     await tx.shuttlecock_movements.create({
@@ -141,7 +165,7 @@ export async function completePlaySession(input: {
     });
 
     const totalIncome = slotIncome;
-    const totalExpense = courtCost + shuttlecockCost;
+    const totalExpense = courtCost + shuttlecockCost + extraExpenseAmount;
 
     await tx.session_players.updateMany({
       where: { session_id: input.sessionId },
@@ -162,19 +186,24 @@ export async function completePlaySession(input: {
 
     await tx.runtime_matches.deleteMany({ where: { session_id: input.sessionId } });
 
+    const sessionUpdateData = {
+      status: 'FINISHED',
+      court_cost: courtCost,
+      shuttlecock_pieces_used: shuttlecockPiecesUsed,
+      shuttlecock_product_id: product.id,
+      shuttlecock_product_name: product.name,
+      extra_expense_title: extraExpenseTitle,
+      extra_expense_amount: extraExpenseAmount,
+      ...(input.note !== undefined ? { note: sessionNote } : {}),
+      total_income: totalIncome,
+      total_expense: totalExpense,
+      total_profit: totalIncome - totalExpense,
+      updated_at: new Date()
+    } satisfies Record<string, unknown>;
+
     await tx.play_sessions.update({
       where: { id: input.sessionId },
-      data: {
-        status: 'FINISHED',
-        court_cost: courtCost,
-        shuttlecock_pieces_used: shuttlecockPiecesUsed,
-        shuttlecock_product_id: product.id,
-        shuttlecock_product_name: product.name,
-        total_income: totalIncome,
-        total_expense: totalExpense,
-        total_profit: totalIncome - totalExpense,
-        updated_at: new Date()
-      }
+      data: sessionUpdateData as typeof sessionUpdateData & Parameters<typeof tx.play_sessions.update>[0]['data']
     });
 
     const existingSummary = await tx.session_summaries.findFirst({ where: { session_id: input.sessionId } });

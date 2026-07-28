@@ -22,9 +22,11 @@ function applyTheme(theme: ThemeMode) {
 
 export function ThemeToggle({
   compact = false,
+  align = 'center',
   className
 }: {
   compact?: boolean;
+  align?: 'center' | 'start';
   className?: string;
 }) {
   const [theme, setTheme] = useState<ThemeMode>('dark');
@@ -53,12 +55,16 @@ export function ThemeToggle({
       aria-label={actionLabel}
       aria-pressed={theme === 'dark'}
       className={cn(
-        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface-muted px-3 text-xs font-semibold text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        align === 'start' && !compact ? 'justify-start' : 'justify-center',
+        align === 'start' && !compact ? 'px-0' : '',
         compact && 'w-10 px-0',
         className
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden="true" />
+      <span className={cn('grid shrink-0 place-items-center', align === 'start' && !compact ? 'h-10 w-10' : '')}>
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
       {!compact ? <span>{theme === 'dark' ? 'Tối' : 'Sáng'}</span> : null}
     </button>
   );

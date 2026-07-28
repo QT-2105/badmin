@@ -561,12 +561,14 @@ function normalizeCourtStatus(value: string | null | undefined): CourtStatus {
 
 function formatTime(value?: string | null): string | null {
   if (!value) return null;
+  const match = String(value).match(/\d{1,2}:\d{2}/);
+  if (match) return match[0].padStart(5, '0');
+
   const asDate = new Date(value);
   if (!Number.isNaN(asDate.getTime())) {
-    return asDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return asDate.toISOString().slice(11, 16);
   }
-  const match = String(value).match(/\d{1,2}:\d{2}/);
-  return match ? match[0] : null;
+  return null;
 }
 
 function formatTimeRange(startTime?: string | null, endTime?: string | null): string {

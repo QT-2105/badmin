@@ -46,7 +46,7 @@ export function LiveCourtsSection({
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <div className="grid content-start items-stretch gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))] md:gap-2.5 2xl:[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]" role="list" aria-label="Các sân của ca chơi">
+        <div className="grid content-start items-stretch gap-2 [grid-auto-rows:1fr] [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))] md:gap-2.5 2xl:[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]" role="list" aria-label="Các sân của ca chơi">
           {allCourts.map((court, idx) => (
             <motion.div
               key={court.id}
@@ -58,6 +58,7 @@ export function LiveCourtsSection({
             >
               <CourtCard
                 court={court}
+                courtIndex={idx}
                 schedulingDisabled={schedulingDisabled}
                 disabledReason={disabledReason}
                 onCommitRuntime={onCommitRuntime}

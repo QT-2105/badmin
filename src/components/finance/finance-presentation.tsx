@@ -1,12 +1,11 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { CircleDollarSign, Loader2, Plus, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, CircleDollarSign, Loader2, Plus, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn, type DataTableState } from '@/components/ui/data-table';
 import { SuccessState, WarningState } from '@/components/ui/feedback';
-import { FilterBar } from '@/components/ui/filter-bar';
 import { Input, Select } from '@/components/ui/form';
 import { PageFeedbackStack, PageHeader, PageShell, PageSummaryGrid, SectionCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
@@ -251,18 +250,17 @@ function FinanceReportFilter({
   onReportYearChange
 }: Pick<FinancePageViewProps, 'reportPeriod' | 'reportMonth' | 'reportYear' | 'onReportPeriodChange' | 'onReportMonthChange' | 'onReportYearChange'>) {
   return (
-    <FilterBar
-      title="Kỳ báo cáo"
-      description={reportPeriod === 'MONTH' ? `Tháng ${reportMonth}` : `Năm ${reportYear}`}
-      density="compact"
-      contentClassName="w-full sm:w-auto md:flex-nowrap"
-      filters={(
-        <>
+    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface px-3 py-3 sm:px-4 md:flex-row md:items-center md:justify-between">
+      <div className="min-w-0">
+        <h2 className="text-card-title">Kỳ báo cáo</h2>
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">{formatReportPeriodLabel(reportPeriod, reportMonth, reportYear)}</p>
+      </div>
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           <Select
             aria-label="Chọn kỳ báo cáo"
             value={reportPeriod}
             onChange={(event) => onReportPeriodChange(event.target.value as ReportPeriod)}
-            className={`${compactFormInputClass} w-full sm:w-40`}
+            className={`${compactFormInputClass} w-full sm:w-36`}
           >
             <option value="MONTH">Theo tháng</option>
             <option value="YEAR">Theo năm</option>
@@ -273,7 +271,7 @@ function FinanceReportFilter({
               type="month"
               value={reportMonth}
               onChange={(event) => onReportMonthChange(event.target.value)}
-              className={`${compactFormInputClass} w-full sm:w-44`}
+              className={`${compactFormInputClass} w-full sm:w-40`}
             />
           ) : (
             <Input
@@ -283,13 +281,21 @@ function FinanceReportFilter({
               max={2100}
               value={reportYear}
               onChange={(event) => onReportYearChange(event.target.value)}
-              className={`${compactFormInputClass} w-full sm:w-32`}
+              className={`${compactFormInputClass} w-full sm:w-28`}
             />
           )}
-        </>
-      )}
-    />
+      </div>
+    </section>
   );
+}
+
+function formatReportPeriodLabel(reportPeriod: ReportPeriod, reportMonth: string, reportYear: string): string {
+  if (reportPeriod === 'YEAR') return `Năm ${reportYear}`;
+
+  const [year, month] = reportMonth.split('-');
+  if (!year || !month) return 'Mặc định tháng hiện tại';
+
+  return `Tháng ${month}/${year}`;
 }
 
 function FinanceSummary({
@@ -314,7 +320,7 @@ function FinanceSummary({
         label="Chi phí"
         value={`${formatCurrency(totals.expense)}đ`}
         sub={`${summarySub} · chi phí vận hành`}
-        tone="neutral"
+        tone="expense"
         density="compact"
       />
       <StatCard
@@ -322,7 +328,7 @@ function FinanceSummary({
         label="Lợi nhuận"
         value={`${formatCurrency(profit)}đ`}
         sub={summarySub}
-        tone={profitTone}
+        tone={profit > 0 ? 'primary' : profitTone}
         density="compact"
         className="sm:col-span-2 lg:col-span-1"
       />
@@ -354,15 +360,15 @@ function FinanceCreateSection({
       density="compact"
       actions={(
         <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChange(!isOpen)} className="h-10 w-full whitespace-nowrap sm:w-auto">
-          {isOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           {isOpen ? 'Thu gọn' : 'Mở rộng'}
         </Button>
       )}
     >
       {isOpen ? (
         <form onSubmit={onSubmit} className="rounded-lg border border-border bg-surface-muted p-3 md:p-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.4fr)_130px_180px_150px_96px_150px] xl:items-end">
-            <label className="block xl:col-span-1">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_112px_164px_136px_92px_136px] lg:items-start">
+            <label className="block md:col-span-2 lg:col-span-1">
               <span className={formLabelClass}>Tiêu đề</span>
               <Input
                 required
@@ -396,27 +402,36 @@ function FinanceCreateSection({
             </label>
             <label className="block">
               <span className={formLabelClass}>Số lượng</span>
-              <Input type="number" min={1} inputMode="numeric" value={form.quantity} onChange={(event) => onFormChange({ quantity: Number(event.target.value) })} className={formInputClass} aria-describedby="finance-quantity-helper" />
-              <span id="finance-quantity-helper" className="mt-1 block text-xs leading-4 text-muted-foreground">Đơn vị: lượt / dòng ghi nhận.</span>
+              <Input type="number" min={1} inputMode="numeric" value={form.quantity} onChange={(event) => onFormChange({ quantity: Number(event.target.value) })} className={formInputClass} />
             </label>
             <label className="block">
               <span className={formLabelClass}>Đơn giá</span>
-              <Input type="number" min={0} step={1} inputMode="numeric" value={form.unitPrice} onChange={(event) => onFormChange({ unitPrice: Number(event.target.value) })} className={formInputClass} aria-describedby="finance-unit-price-helper" />
-              <span id="finance-unit-price-helper" className="mt-1 block text-xs leading-4 text-muted-foreground">Đơn vị: đồng.</span>
+              <span className="relative block">
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  value={form.unitPrice}
+                  onChange={(event) => onFormChange({ unitPrice: Number(event.target.value) })}
+                  className={`${formInputClass} pr-10`}
+                  aria-label="Đơn giá, đơn vị Việt Nam đồng"
+                />
+                <span aria-hidden="true" className="pointer-events-none absolute right-3 top-[53%] -translate-y-1/2 text-[11px] font-semibold leading-none text-muted-foreground">
+                  .vnđ
+                </span>
+              </span>
             </label>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-end">
+          <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(260px,1fr)_150px] lg:items-end">
             <label className="block">
               <span className={formLabelClass}>Ghi chú</span>
               <Input value={form.note} onChange={(event) => onFormChange({ note: event.target.value })} className={formInputClass} placeholder="Thông tin đối soát nội bộ nếu có" />
             </label>
-            <Button type="submit" disabled={isCreatePending} className="h-11 w-full whitespace-nowrap sm:w-auto">
+            <Button type="submit" disabled={isCreatePending} className="h-11 w-full whitespace-nowrap lg:w-[150px]">
               {isCreatePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Ghi phiếu
             </Button>
-          </div>
-          <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-2 text-xs leading-5 text-muted-foreground">
-            Tổng tiền vẫn được ghi nhận theo công thức hiện tại: số lượng x đơn giá. Không cần chọn ca chơi cho phiếu nhập tay.
           </div>
         </form>
       ) : null}
@@ -516,6 +531,7 @@ function FinanceTransactionsSection({
             totalItems={totalItems}
             pageSize={pageSize}
             onPageChange={onPageChange}
+            compact
           />
         )}
         responsiveMode="cards"
@@ -553,23 +569,34 @@ function FinanceTransactionMobileCard({ item }: { item: SessionTransactionSummar
   );
 }
 
-function TransactionBadge({ type, adjustmentType }: { type: string; adjustmentType?: string | null }) {
+type TransactionVisualTone = 'success' | 'warning' | 'info' | 'expense';
+
+function getTransactionVisualTone(type: string, adjustmentType?: string | null): TransactionVisualTone {
   const isDeduction = normalizeAdjustmentType(adjustmentType) === 'DEDUCTION';
-  const config = type === 'INCOME'
-    ? isDeduction
-      ? { label: 'Giảm thu', tone: 'warning' as const }
-      : { label: 'Thu', tone: 'success' as const }
-    : isDeduction
-      ? { label: 'Giảm chi', tone: 'info' as const }
-      : { label: 'Chi', tone: 'neutral' as const };
+  if (type === 'INCOME') return isDeduction ? 'warning' : 'success';
+  return isDeduction ? 'info' : 'expense';
+}
+
+function TransactionBadge({ type, adjustmentType }: { type: string; adjustmentType?: string | null }) {
+  const tone = getTransactionVisualTone(type, adjustmentType);
+  const config = {
+    success: { label: 'Thu', tone },
+    warning: { label: 'Giảm thu', tone },
+    info: { label: 'Giảm chi', tone },
+    expense: { label: 'Chi', tone }
+  }[tone];
   return <StatusBadge tone={config.tone} className="w-fit rounded-lg">{config.label}</StatusBadge>;
 }
 
 function getTransactionAmountClass(type: string, amount: number, adjustmentType?: string | null): string {
   const signedAmount = getSignedAmount(amount, adjustmentType);
-  if (signedAmount < 0) return 'text-warning';
-  if (type === 'INCOME') return 'text-success';
-  return 'text-foreground';
+  if (signedAmount === 0) return 'text-muted-foreground';
+
+  const tone = getTransactionVisualTone(type, adjustmentType);
+  if (tone === 'success') return 'text-success-foreground';
+  if (tone === 'warning') return 'text-warning-foreground';
+  if (tone === 'info') return 'text-info-foreground';
+  return 'text-danger-foreground';
 }
 
 function getCategoryLabel(value: string): string {

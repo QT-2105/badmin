@@ -23,6 +23,8 @@ function mapSession(row: {
   shuttlecock_pieces_used?: number | null;
   shuttlecock_product_id?: string | null;
   shuttlecock_product_name?: string | null;
+  extra_expense_title?: string | null;
+  extra_expense_amount?: unknown;
   total_income: unknown;
   total_expense: unknown;
   total_profit: unknown;
@@ -42,6 +44,8 @@ function mapSession(row: {
     shuttlecockPiecesUsed: Number(row.shuttlecock_pieces_used ?? 0),
     shuttlecockProductId: row.shuttlecock_product_id ?? null,
     shuttlecockProductName: row.shuttlecock_product_name ?? null,
+    extraExpenseTitle: row.extra_expense_title ?? null,
+    extraExpenseAmount: toNumber(row.extra_expense_amount),
     totalIncome: toNumber(row.total_income),
     totalExpense: toNumber(row.total_expense),
     totalProfit: toNumber(row.total_profit),

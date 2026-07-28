@@ -1,6 +1,6 @@
 # BADMIN — AI GOVERNANCE ENTRYPOINT
 
-Version: 2026-06-09
+Version: 2026-07-24
 
 ## Required Reading
 
@@ -46,7 +46,10 @@ The root sidebar contains only:
 - Lịch chơi
 - Thu chi
 - Kho cầu
+- Người dùng
 - Cài đặt
+
+`Người dùng` is an existing administrator-facing user and permission management capability. It must remain permission-guarded and must not change authentication, authorization, role, permission, or route-guard semantics.
 
 Realtime scheduling is not root navigation.
 

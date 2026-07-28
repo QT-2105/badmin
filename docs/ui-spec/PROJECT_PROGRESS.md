@@ -1,6 +1,6 @@
 # UI/UX Project Progress
 
-Last updated: 2026-07-22
+Last updated: 2026-07-24
 
 ## Progress Checklist
 
@@ -448,6 +448,7 @@ Status: Done / Release Candidate ready with notes
 - Sprint 12.12 completed the final product and architecture audit with overall frontend quality score 8.1/10, no confirmed P0 issues, release-candidate eligibility with notes, and remaining P1 risks around browser/device QA, automated E2E/business regression, accessibility/contrast automation, large presentation files and measured Runtime profiling.
 - Sprint 12.13 created `14_RELEASE_CANDIDATE_REPORT.md` and `15_STAGE_COMPLETION_REPORT.md`; final validation passed for lint, typecheck, build, DB guard, diff check and protected backend/logic diff; no existing test script is available.
 - Final project acceptance report created at `docs/ui-spec/FINAL_PROJECT_ACCEPTANCE_REPORT.md`; Stage 01 through Stage 12 are accepted, and the project is Release Candidate ready with notes.
+- Navigation governance refreshed on 2026-07-24: root sidebar currently includes Dashboard, Lịch chơi, Thu chi, Kho cầu, Người dùng, and Cài đặt. Users remains an existing Stage 09 administrator capability and must stay permission-guarded.
 - No business logic, runtime workflow, API, database, Prisma, repository, service, query key, mutation, payload, validation, permission, route, finance calculation, inventory calculation, `current_stock`, `average_cost`, queue ordering, pairing, court assignment, or match lifecycle changes are allowed without explicit approval.
 
 ## Completion Report Index

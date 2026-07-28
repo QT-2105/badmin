@@ -10,7 +10,6 @@ import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/branding/brand-logo';
 import { Button } from '@/components/ui/button';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCurrentUser, useLogoutMutation } from '@/hooks/use-auth';
 import { useBranding } from '@/hooks/use-branding';
@@ -46,7 +45,14 @@ const navGroups = [
   }
 ] as const;
 
+const sidebarInteractiveClass =
+  'hover:border-primary/40 hover:bg-primary-soft hover:text-primary hover:ring-2 hover:ring-primary/15 focus-visible:ring-focus/50 active:bg-primary-soft/80 active:text-primary';
+
 function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === '/schedule') {
+    return pathname === href || pathname.startsWith('/schedule/') || pathname.startsWith('/sessions/');
+  }
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -82,12 +88,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen min-w-0">
         <aside
           className={cn(
-            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border/80 bg-surface-elevated/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200 motion-reduce:transition-none',
-            collapsed ? 'w-[72px]' : 'w-[232px]'
+            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border/80 bg-surface-elevated/95 backdrop-blur md:flex md:flex-col transition-[width] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+            collapsed ? 'w-[88px]' : 'w-[232px]'
           )}
         >
-          <div className="flex h-16 items-center justify-between gap-2 border-b border-border/80 px-3">
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+          <div
+            className={cn(
+              'relative flex h-16 items-center gap-2 border-b border-border/80',
+              collapsed ? 'justify-between gap-1.5 px-2' : 'justify-between px-3'
+            )}
+          >
+            <Link
+              href="/dashboard"
+              className={cn(
+                'flex min-w-0 items-center gap-2 rounded-full outline-none transition-[width,opacity,background-color,box-shadow] duration-300 ease-[var(--ease-standard)] hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 motion-reduce:transition-none',
+                collapsed && 'grid h-9 w-9 shrink-0 place-items-center overflow-hidden'
+              )}
+              aria-label={collapsed ? `${branding?.clubName || 'Badmin'} dashboard` : undefined}
+              title={collapsed ? branding?.clubName || 'Badmin' : undefined}
+            >
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
               {!collapsed ? (
                 <span className="min-w-0">
@@ -101,7 +120,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setCollapsed((value) => !value)}
               variant="ghost"
               size="sm"
-              className="h-10 w-10 shrink-0 bg-surface-muted px-0 text-muted-foreground ring-1 ring-border hover:bg-surface-hover hover:text-foreground"
+              className={cn(
+                'h-10 w-10 shrink-0 bg-surface-muted px-0 text-muted-foreground ring-1 ring-border transition-[width,height,background-color,border-color,color,box-shadow] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+                sidebarInteractiveClass,
+                collapsed && 'h-7 w-7 rounded-lg bg-transparent ring-0'
+              )}
               aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             >
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -124,10 +147,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={item.href}
                       href={item.href as Route}
                       className={cn(
-                        'relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
+                        'relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none transition-[background-color,border-color,color,box-shadow,padding] duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                         active
-                          ? 'border-primary/30 bg-primary-soft font-semibold text-primary ring-1 ring-primary/15 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary'
-                          : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground',
+                          ? 'border-primary/30 bg-primary-soft font-semibold text-primary ring-1 ring-primary/15 before:absolute before:left-0 before:top-2 before:h-6 before:w-0.5 before:rounded-r-full before:bg-primary hover:border-primary/50 hover:bg-primary-soft hover:ring-2 hover:ring-primary/20 focus-visible:ring-focus/50 active:bg-primary-soft/80'
+                          : `border-transparent text-muted-foreground ${sidebarInteractiveClass}`,
                         collapsed && 'justify-center px-0'
                       )}
                       aria-current={active ? 'page' : undefined}
@@ -150,15 +173,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="border-t border-border/80 p-2">
             {currentUser ? <CurrentUserSummary user={currentUser} collapsed={collapsed} /> : null}
-            <FullscreenToggle compact={collapsed} className="w-full justify-center" />
-            <ThemeToggle compact={collapsed} className="mt-2 w-full justify-center" />
+            <FullscreenToggle compact={collapsed} className={cn('w-full justify-center', sidebarInteractiveClass)} />
+            <ThemeToggle compact={collapsed} className={cn('mt-2 w-full justify-center', sidebarInteractiveClass)} />
             <Button
               type="button"
               onClick={() => void logout.mutateAsync()}
               disabled={logout.isPending}
               variant="secondary"
               size="sm"
-              className={cn('mt-2 h-10 w-full justify-start text-xs text-muted-foreground hover:text-foreground', collapsed && 'justify-center px-0')}
+              className={cn('mt-2 h-10 w-full justify-start text-xs text-muted-foreground', sidebarInteractiveClass, collapsed && 'justify-center px-0')}
               title={collapsed ? 'Đăng xuất' : undefined}
             >
               <LogOut className="h-4 w-4 shrink-0" />
@@ -171,8 +194,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main
           id="main-content"
           className={cn(
-            'min-h-screen min-w-0 overflow-x-clip bg-background transition-[margin-left] duration-200 motion-reduce:transition-none',
-            collapsed ? 'md:ml-[72px]' : 'md:ml-[232px]'
+            'min-h-screen min-w-0 overflow-x-clip bg-background transition-[margin-left] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+            collapsed ? 'md:ml-[88px]' : 'md:ml-[232px]'
           )}
         >
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-surface-elevated/95 px-3 backdrop-blur md:hidden">
@@ -188,10 +211,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href as Route}
                     className={cn(
-                      'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
+                      'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                       active
-                        ? 'border-primary/30 bg-primary-soft text-primary ring-1 ring-primary/15'
-                        : 'border-transparent text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                        ? 'border-primary/30 bg-primary-soft text-primary ring-1 ring-primary/15 hover:border-primary/50 hover:bg-primary-soft hover:ring-2 hover:ring-primary/20'
+                        : `border-transparent text-muted-foreground ${sidebarInteractiveClass}`
                     )}
                     aria-current={active ? 'page' : undefined}
                     aria-label={`${item.label}${active ? ' đang mở' : ''}`}
@@ -241,16 +264,8 @@ function CurrentUserSummary({ user, collapsed }: { user: AuthUser; collapsed: bo
         <UserInitialsAvatar user={user} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-semibold text-foreground">{user.displayName}</div>
-          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{user.email}</div>
+          <div className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">{getRoleLabel(user.role)}</div>
         </div>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <StatusBadge tone={user.role === 'OWNER' ? 'success' : 'info'} className="min-h-6 px-2 text-[10px]">
-          {getRoleLabel(user.role)}
-        </StatusBadge>
-        <StatusBadge tone={user.status === 'ACTIVE' ? 'success' : 'warning'} className="min-h-6 px-2 text-[10px]">
-          {user.status === 'ACTIVE' ? 'Đang dùng' : 'Tạm khóa'}
-        </StatusBadge>
       </div>
     </section>
   );

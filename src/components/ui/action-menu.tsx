@@ -29,6 +29,7 @@ export type ActionMenuProps = {
   side?: ActionMenuSide;
   disabled?: boolean;
   className?: string;
+  triggerClassName?: string;
   menuClassName?: string;
 };
 
@@ -67,6 +68,7 @@ export function ActionMenu({
   side = 'bottom',
   disabled = false,
   className,
+  triggerClassName,
   menuClassName
 }: ActionMenuProps) {
   const menuId = useId();
@@ -141,7 +143,7 @@ export function ActionMenu({
   };
 
   return (
-    <div ref={containerRef} className={cn('relative inline-flex', className)}>
+    <div ref={containerRef} className={cn('relative inline-flex', open ? 'z-dropdown' : '', className)}>
       <Button
         ref={triggerRef}
         aria-controls={open ? menuId : undefined}
@@ -149,7 +151,7 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-label={label}
         disabled={disabled || !hasEnabledItems}
-        className="h-10 min-w-10 px-3"
+        className={cn('h-10 min-w-10 px-3', triggerClassName)}
         onClick={handleTriggerClick}
         size="sm"
         variant="secondary"

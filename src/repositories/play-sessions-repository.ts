@@ -24,6 +24,8 @@ function mapSession(row: {
   shuttlecock_pieces_used?: number | null;
   shuttlecock_product_id?: string | null;
   shuttlecock_product_name?: string | null;
+  extra_expense_title?: string | null;
+  extra_expense_amount?: unknown;
   total_income: unknown;
   total_expense: unknown;
   total_profit: unknown;
@@ -43,6 +45,8 @@ function mapSession(row: {
     shuttlecockPiecesUsed: Number(row.shuttlecock_pieces_used ?? 0),
     shuttlecockProductId: row.shuttlecock_product_id ?? null,
     shuttlecockProductName: row.shuttlecock_product_name ?? null,
+    extraExpenseTitle: row.extra_expense_title ?? null,
+    extraExpenseAmount: toNumber(row.extra_expense_amount),
     totalIncome: toNumber(row.total_income),
     totalExpense: toNumber(row.total_expense),
     totalProfit: toNumber(row.total_profit),
@@ -78,6 +82,8 @@ export async function createPlaySession(input: {
   shuttlecockPiecesUsed?: number;
   shuttlecockProductId?: string | null;
   shuttlecockProductName?: string | null;
+  extraExpenseTitle?: string | null;
+  extraExpenseAmount?: number;
   totalIncome?: number;
   totalExpense?: number;
   totalProfit?: number;
@@ -120,6 +126,8 @@ export async function updatePlaySession(sessionId: string, input: {
   shuttlecockPiecesUsed?: number;
   shuttlecockProductId?: string | null;
   shuttlecockProductName?: string | null;
+  extraExpenseTitle?: string | null;
+  extraExpenseAmount?: number;
   totalIncome?: number;
   totalExpense?: number;
   totalProfit?: number;
@@ -133,7 +141,7 @@ export async function updatePlaySession(sessionId: string, input: {
       throw new AppError('Không tìm thấy ca chơi.', 404);
     }
 
-    const hasStructuralEdit = input.name !== undefined || input.startTime !== undefined || input.endTime !== undefined || input.courtCount !== undefined || input.note !== undefined;
+    const hasStructuralEdit = input.name !== undefined || input.startTime !== undefined || input.endTime !== undefined || input.courtCount !== undefined;
     const isPastPlayDate = isPastDateInput(toDateInput(existing.play_dates.play_date));
     if (hasStructuralEdit && normalizeSessionStatus(existing.status) !== 'PENDING') {
       throw new AppError('Chỉ có thể chỉnh sửa ca chơi khi ca chưa bắt đầu điều phối.');
@@ -158,24 +166,28 @@ export async function updatePlaySession(sessionId: string, input: {
     }
 
     const nextCourtCount = input.courtCount === undefined ? existing.court_count : Math.max(1, Math.min(12, Math.floor(input.courtCount)));
+    const sessionUpdateData = {
+      ...(input.name !== undefined ? { name: input.name.trim() || existing.name } : {}),
+      ...(input.startTime ? { start_time: parseTimeInput(input.startTime) } : {}),
+      ...(input.endTime ? { end_time: parseTimeInput(input.endTime) } : {}),
+      ...(input.courtCount !== undefined ? { court_count: nextCourtCount } : {}),
+      ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
+      ...(input.status ? { status: toDatabaseSessionStatus(input.status) } : {}),
+      ...(input.courtCost !== undefined ? { court_cost: Number(input.courtCost || 0) } : {}),
+      ...(input.shuttlecockPiecesUsed !== undefined ? { shuttlecock_pieces_used: Math.max(0, Math.floor(Number(input.shuttlecockPiecesUsed || 0))) } : {}),
+      ...(input.shuttlecockProductId !== undefined ? { shuttlecock_product_id: input.shuttlecockProductId || null } : {}),
+      ...(input.shuttlecockProductName !== undefined ? { shuttlecock_product_name: input.shuttlecockProductName?.trim() || null } : {}),
+      ...(input.extraExpenseTitle !== undefined ? { extra_expense_title: input.extraExpenseTitle?.trim().slice(0, 255) || null } : {}),
+      ...(input.extraExpenseAmount !== undefined ? { extra_expense_amount: Math.max(0, Number(input.extraExpenseAmount || 0)) } : {}),
+      ...(input.totalIncome !== undefined ? { total_income: Number(input.totalIncome || 0) } : {}),
+      ...(input.totalExpense !== undefined ? { total_expense: Number(input.totalExpense || 0) } : {}),
+      ...(input.totalProfit !== undefined ? { total_profit: Number(input.totalProfit || 0) } : {}),
+      updated_at: new Date()
+    } satisfies Record<string, unknown>;
+
     const session = await tx.play_sessions.update({
       where: { id: sessionId },
-      data: {
-        ...(input.name !== undefined ? { name: input.name.trim() || existing.name } : {}),
-        ...(input.startTime ? { start_time: parseTimeInput(input.startTime) } : {}),
-        ...(input.endTime ? { end_time: parseTimeInput(input.endTime) } : {}),
-        ...(input.courtCount !== undefined ? { court_count: nextCourtCount } : {}),
-        ...(input.note !== undefined ? { note: input.note?.trim() || null } : {}),
-        ...(input.status ? { status: toDatabaseSessionStatus(input.status) } : {}),
-        ...(input.courtCost !== undefined ? { court_cost: Number(input.courtCost || 0) } : {}),
-        ...(input.shuttlecockPiecesUsed !== undefined ? { shuttlecock_pieces_used: Math.max(0, Math.floor(Number(input.shuttlecockPiecesUsed || 0))) } : {}),
-        ...(input.shuttlecockProductId !== undefined ? { shuttlecock_product_id: input.shuttlecockProductId || null } : {}),
-        ...(input.shuttlecockProductName !== undefined ? { shuttlecock_product_name: input.shuttlecockProductName?.trim() || null } : {}),
-        ...(input.totalIncome !== undefined ? { total_income: Number(input.totalIncome || 0) } : {}),
-        ...(input.totalExpense !== undefined ? { total_expense: Number(input.totalExpense || 0) } : {}),
-        ...(input.totalProfit !== undefined ? { total_profit: Number(input.totalProfit || 0) } : {}),
-        updated_at: new Date()
-      }
+      data: sessionUpdateData as typeof sessionUpdateData & Parameters<typeof tx.play_sessions.update>[0]['data']
     });
 
     return session;

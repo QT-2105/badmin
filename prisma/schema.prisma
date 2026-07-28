@@ -32,6 +32,8 @@ model play_sessions {
   shuttlecock_pieces_used  Int                    @default(0)
   shuttlecock_product_id   String?                @db.Uuid
   shuttlecock_product_name String?                @db.VarChar(255)
+  extra_expense_title      String?                @db.VarChar(255)
+  extra_expense_amount     Decimal?               @default(0) @db.Decimal(12, 2)
   total_income             Decimal?               @default(0) @db.Decimal(12, 2)
   total_expense            Decimal?               @default(0) @db.Decimal(12, 2)
   total_profit             Decimal?               @default(0) @db.Decimal(12, 2)

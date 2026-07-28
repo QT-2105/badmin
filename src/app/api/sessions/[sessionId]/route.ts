@@ -41,6 +41,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       shuttlecockPiecesUsed: payload.shuttlecockPiecesUsed === undefined ? undefined : Number(payload.shuttlecockPiecesUsed),
       shuttlecockProductId: payload.shuttlecockProductId,
       shuttlecockProductName: payload.shuttlecockProductName,
+      extraExpenseTitle: payload.extraExpenseTitle,
+      extraExpenseAmount: payload.extraExpenseAmount === undefined ? undefined : Number(payload.extraExpenseAmount),
       totalIncome: payload.totalIncome === undefined ? undefined : Number(payload.totalIncome),
       totalExpense: payload.totalExpense === undefined ? undefined : Number(payload.totalExpense),
       totalProfit: payload.totalProfit === undefined ? undefined : Number(payload.totalProfit)

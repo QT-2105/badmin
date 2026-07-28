@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
-type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'inventory';
+type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'expense' | 'inventory';
 
 const toneStyles: Record<StatusTone, string> = {
   neutral: 'border-border bg-surface-subtle text-text-secondary',
@@ -10,6 +10,7 @@ const toneStyles: Record<StatusTone, string> = {
   success: 'border-success/30 bg-success-soft text-success-foreground',
   warning: 'border-warning/35 bg-warning-soft text-warning-foreground',
   danger: 'border-danger/30 bg-danger-soft text-danger-foreground',
+  expense: 'border-danger/30 bg-danger-soft text-danger-foreground',
   inventory: 'border-inventory/30 bg-inventory-soft text-inventory-foreground'
 };
 

@@ -67,12 +67,16 @@ export function RealtimeDashboard() {
     const waiting = players.filter((player) => player.status === 'WAITING').length;
     const finished = players.filter((player) => player.status === 'JUST_FINISHED').length;
     const playing = players.filter((player) => player.status === 'PLAYING').length;
+    const male = players.filter((player) => player.gender === 'Nam').length;
+    const female = players.filter((player) => player.gender === 'Nữ').length;
 
     return {
       total: players.length,
       waiting,
       finished,
-      playing
+      playing,
+      male,
+      female
     };
   }, [players]);
 
@@ -186,7 +190,7 @@ export function RealtimeDashboard() {
       <header className="hidden shrink-0 flex-col gap-2 border-b border-white/[0.06] bg-slate-950/60 px-3 py-2 md:flex lg:px-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="grid min-w-0 flex-1 grid-cols-4 gap-1.5" aria-label="Thống kê nhanh điều phối">
-            <StatPill label="Tổng" value={stats.total} tone="text-white" compact />
+            <StatPill label="Tổng" value={stats.total} tone="text-white" subText={`Nam: ${stats.male} | Nữ: ${stats.female}`} compact />
             <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Vừa xong" value={stats.finished} tone="text-violet-200" compact />
             <StatPill label="Đang chơi" value={stats.playing} tone="text-emerald-200" compact />
@@ -267,7 +271,7 @@ export function RealtimeDashboard() {
             </Button>
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-1" aria-label="Thống kê nhanh điều phối">
-            <StatPill label="Tổng" value={stats.total} tone="text-white" compact />
+            <StatPill label="Tổng" value={stats.total} tone="text-white" subText={`Nam: ${stats.male} | Nữ: ${stats.female}`} compact />
             <StatPill label="Chờ" value={stats.waiting} tone="text-cyan-200" compact />
             <StatPill label="Xong" value={stats.finished} tone="text-violet-200" compact />
             <StatPill label="Chơi" value={stats.playing} tone="text-emerald-200" compact />
@@ -437,18 +441,21 @@ function RuntimeNotice({ message, compact = false }: { message: string; compact?
   );
 }
 
-function StatPill({ label, value, tone, compact = false }: { label: string; value: number; tone: string; compact?: boolean }) {
+function StatPill({ label, value, tone, subText, compact = false }: { label: string; value: number; tone: string; subText?: string; compact?: boolean }) {
   return (
     <div
-      aria-label={`${label}: ${value}`}
+      aria-label={subText ? `${label}: ${value}, ${subText}` : `${label}: ${value}`}
       className={
         compact
-          ? `min-w-[78px] rounded-lg border px-2.5 py-1.5 shadow-inner shadow-slate-950/20 ${getStatPillSurfaceTone(label)}`
+          ? `${subText ? 'min-w-[116px]' : 'min-w-[78px]'} rounded-lg border px-2.5 py-1.5 shadow-inner shadow-slate-950/20 ${getStatPillSurfaceTone(label)}`
           : `rounded-xl border px-3 py-2 shadow-inner shadow-slate-950/20 ${getStatPillSurfaceTone(label)}`
       }
     >
-      <p className={`${compact ? 'text-sm' : 'text-base'} font-bold leading-5 ${tone}`}>{value}</p>
-      <p className="text-[9px] uppercase tracking-[0.16em] text-slate-400/90">{label}</p>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <p className={`${compact ? 'text-sm' : 'text-base'} font-bold leading-5 ${tone}`}>{value}</p>
+        {subText ? <p className="truncate text-[10px] font-semibold normal-case tracking-normal text-slate-300/80">({subText})</p> : null}
+      </div>
+      <p className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-400/90">{label}</p>
     </div>
   );
 }

@@ -175,7 +175,7 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-modal="true"
         className={cn(
-          'motion-dialog-in max-h-[calc(100dvh-1.5rem)] w-full max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border bg-surface shadow-md outline-none motion-reduce:animate-none sm:max-h-[calc(100vh-2rem)] sm:max-w-[calc(100vw-2rem)]',
+          'motion-dialog-in max-h-[calc(100dvh-1.5rem)] w-full overflow-hidden rounded-xl border bg-surface shadow-md outline-none motion-reduce:animate-none sm:max-h-[calc(100vh-2rem)]',
           sizeStyles[size],
           toneStyles[tone],
           className

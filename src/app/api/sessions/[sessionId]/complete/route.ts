@@ -20,6 +20,9 @@ export async function POST(request: Request, context: RouteContext) {
       courtCost: Number(payload.courtCost),
       shuttlecockProductId: payload.shuttlecockProductId,
       shuttlecockPiecesUsed: Number(payload.shuttlecockPiecesUsed),
+      extraExpenseTitle: payload.extraExpenseTitle,
+      extraExpenseAmount: payload.extraExpenseAmount === undefined ? undefined : Number(payload.extraExpenseAmount),
+      note: payload.note,
       autoCreateCourtFeeTransaction: payload.autoCreateCourtFeeTransaction,
       autoCreateShuttlecockUsageTransaction: payload.autoCreateShuttlecockUsageTransaction
     });

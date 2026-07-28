@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
-type StatCardTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger' | 'income' | 'expense' | 'profit' | 'inventory';
+type StatCardTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger' | 'income' | 'expense' | 'profit' | 'inventory' | 'stock';
 type StatCardDensity = 'compact' | 'default';
 
 export type StatCardProps = {
@@ -81,6 +81,12 @@ const toneStyles: Record<StatCardTone, { card: string; accent: string; value: st
     accent: 'bg-inventory',
     value: 'text-inventory-foreground',
     icon: 'text-inventory'
+  },
+  stock: {
+    card: 'border-border bg-surface ring-1 ring-violet-500/20',
+    accent: 'bg-violet-500',
+    value: 'text-violet-700 dark:text-violet-300',
+    icon: 'text-violet-600 dark:text-violet-300'
   }
 };
 

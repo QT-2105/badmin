@@ -69,7 +69,7 @@ export async function createPlaySession(playDateId: string, payload: {
   return data.session;
 }
 
-export async function updatePlaySession(sessionId: string, payload: Partial<Pick<PlaySessionSummary, 'name' | 'startTime' | 'endTime' | 'courtCount' | 'note' | 'status' | 'courtCost' | 'shuttlecockPiecesUsed' | 'shuttlecockProductId' | 'shuttlecockProductName' | 'totalIncome' | 'totalExpense' | 'totalProfit'>>): Promise<PlaySessionSummary> {
+export async function updatePlaySession(sessionId: string, payload: Partial<Pick<PlaySessionSummary, 'name' | 'startTime' | 'endTime' | 'courtCount' | 'note' | 'status' | 'courtCost' | 'shuttlecockPiecesUsed' | 'shuttlecockProductId' | 'shuttlecockProductName' | 'extraExpenseTitle' | 'extraExpenseAmount' | 'totalIncome' | 'totalExpense' | 'totalProfit'>>): Promise<PlaySessionSummary> {
   const res = await fetch(`/api/sessions/${sessionId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -83,6 +83,9 @@ export async function completePlaySession(sessionId: string, payload: {
   courtCost: number;
   shuttlecockProductId: string;
   shuttlecockPiecesUsed: number;
+  extraExpenseTitle?: string | null;
+  extraExpenseAmount?: number;
+  note?: string | null;
   autoCreateCourtFeeTransaction?: boolean;
   autoCreateShuttlecockUsageTransaction?: boolean;
 }): Promise<PlaySessionSummary> {

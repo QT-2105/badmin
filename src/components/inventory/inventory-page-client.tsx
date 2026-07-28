@@ -28,6 +28,47 @@ import {
 const emptyProduct: ProductForm = { name: '', brand: '', ballsPerTube: 12, status: 'ACTIVE' };
 const today = new Date();
 
+type QuantityBucket = {
+  balls: number;
+  ballsPerTube: number;
+};
+
+type QuantityBreakdown = {
+  tubes: number;
+  looseBalls: number;
+  balls: number;
+};
+
+function addQuantityToBucket(
+  buckets: Map<string, QuantityBucket>,
+  productId: string,
+  quantityBall: number,
+  ballsPerTube: number
+) {
+  const safeBallsPerTube = Math.max(1, ballsPerTube);
+  const existing = buckets.get(productId);
+  if (existing) {
+    existing.balls += quantityBall;
+    existing.ballsPerTube = existing.ballsPerTube || safeBallsPerTube;
+    return;
+  }
+
+  buckets.set(productId, { balls: quantityBall, ballsPerTube: safeBallsPerTube });
+}
+
+function summarizeQuantityBuckets(buckets: Map<string, QuantityBucket>): QuantityBreakdown {
+  const result: QuantityBreakdown = { tubes: 0, looseBalls: 0, balls: 0 };
+
+  buckets.forEach(({ balls, ballsPerTube }) => {
+    const safeBallsPerTube = Math.max(1, ballsPerTube);
+    result.tubes += Math.floor(balls / safeBallsPerTube);
+    result.looseBalls += balls % safeBallsPerTube;
+    result.balls += balls;
+  });
+
+  return result;
+}
+
 export function InventoryPageClient() {
   const { data: currentUser } = useCurrentUser();
   const { data: products = [], isLoading, error } = useInventoryProducts();
@@ -74,51 +115,53 @@ export function InventoryPageClient() {
   ), [products]);
 
   const reportTotals: InventoryReportTotals = useMemo(() => {
-    return movements.filter((movement) => isInReportPeriod(movement.createdAt, reportPeriod, reportMonth, reportYear)).reduce(
-      (result, movement) => {
+    let sales = 0;
+    let usage = 0;
+    let totalOutboundAmount = 0;
+    const saleBuckets = new Map<string, QuantityBucket>();
+    const usageBuckets = new Map<string, QuantityBucket>();
+    const totalOutboundBuckets = new Map<string, QuantityBucket>();
+
+    movements
+      .filter((movement) => isInReportPeriod(movement.createdAt, reportPeriod, reportMonth, reportYear))
+      .forEach((movement) => {
         const quantityBall = Math.abs(movement.quantityBall);
-        const ballsPerTube = Math.max(1, movement.ballsPerTube);
+        if (quantityBall <= 0) return;
+
         if (movement.movementType === 'SALE') {
-          return {
-            ...result,
-            sales: result.sales + movement.totalAmount,
-            saleTubes: result.saleTubes + (quantityBall / ballsPerTube),
-            saleBalls: result.saleBalls + quantityBall,
-            totalOutboundAmount: result.totalOutboundAmount + movement.totalAmount,
-            totalOutboundTubes: result.totalOutboundTubes + Math.floor(quantityBall / ballsPerTube),
-            totalOutboundLooseBalls: result.totalOutboundLooseBalls + (quantityBall % ballsPerTube),
-            totalOutboundBalls: result.totalOutboundBalls + quantityBall
-          };
+          sales += movement.totalAmount;
+          totalOutboundAmount += movement.totalAmount;
+          addQuantityToBucket(saleBuckets, movement.productId, quantityBall, movement.ballsPerTube);
+          addQuantityToBucket(totalOutboundBuckets, movement.productId, quantityBall, movement.ballsPerTube);
+          return;
         }
+
         if (movement.movementType === 'PLAY_USAGE') {
-          return {
-            ...result,
-            usage: result.usage + movement.totalAmount,
-            usageTubes: result.usageTubes + Math.floor(quantityBall / ballsPerTube),
-            usageLooseBalls: result.usageLooseBalls + (quantityBall % ballsPerTube),
-            usageBalls: result.usageBalls + quantityBall,
-            totalOutboundAmount: result.totalOutboundAmount + movement.totalAmount,
-            totalOutboundTubes: result.totalOutboundTubes + Math.floor(quantityBall / ballsPerTube),
-            totalOutboundLooseBalls: result.totalOutboundLooseBalls + (quantityBall % ballsPerTube),
-            totalOutboundBalls: result.totalOutboundBalls + quantityBall
-          };
+          usage += movement.totalAmount;
+          totalOutboundAmount += movement.totalAmount;
+          addQuantityToBucket(usageBuckets, movement.productId, quantityBall, movement.ballsPerTube);
+          addQuantityToBucket(totalOutboundBuckets, movement.productId, quantityBall, movement.ballsPerTube);
         }
-        return result;
-      },
-      {
-        sales: 0,
-        usage: 0,
-        saleTubes: 0,
-        saleBalls: 0,
-        usageTubes: 0,
-        usageLooseBalls: 0,
-        usageBalls: 0,
-        totalOutboundAmount: 0,
-        totalOutboundTubes: 0,
-        totalOutboundLooseBalls: 0,
-        totalOutboundBalls: 0
-      }
-    );
+      });
+
+    const saleQuantity = summarizeQuantityBuckets(saleBuckets);
+    const usageQuantity = summarizeQuantityBuckets(usageBuckets);
+    const totalOutboundQuantity = summarizeQuantityBuckets(totalOutboundBuckets);
+
+    return {
+      sales,
+      usage,
+      saleTubes: saleQuantity.tubes,
+      saleLooseBalls: saleQuantity.looseBalls,
+      saleBalls: saleQuantity.balls,
+      usageTubes: usageQuantity.tubes,
+      usageLooseBalls: usageQuantity.looseBalls,
+      usageBalls: usageQuantity.balls,
+      totalOutboundAmount,
+      totalOutboundTubes: totalOutboundQuantity.tubes,
+      totalOutboundLooseBalls: totalOutboundQuantity.looseBalls,
+      totalOutboundBalls: totalOutboundQuantity.balls
+    };
   }, [movements, reportMonth, reportPeriod, reportYear]);
   const sortedMovements = useMemo(() => [...movements].sort((left, right) => getTime(right.createdAt) - getTime(left.createdAt)), [movements]);
   const movementTotalPages = Math.max(1, Math.ceil(sortedMovements.length / movementPageSize));

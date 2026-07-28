@@ -81,12 +81,12 @@
 
 .dark {
   color-scheme: dark;
-  --background: 222 34% 8%;
-  --surface: 222 28% 11%;
-  --surface-subtle: 222 24% 14%;
+  --background: 226 52% 5%;
+  --surface: 224 42% 8%;
+  --surface-subtle: 224 34% 11%;
   --surface-muted: var(--surface-subtle);
-  --surface-elevated: 222 22% 17%;
-  --surface-hover: 222 20% 20%;
+  --surface-elevated: 224 44% 7%;
+  --surface-hover: 222 30% 14%;
   --overlay: 222 34% 5% / 0.68;
   --text-primary: 210 34% 94%;
   --text-secondary: 214 24% 82%;
@@ -102,16 +102,16 @@
   --primary-hover: 187 76% 56%;
   --primary-soft: 188 68% 14%;
   --primary-foreground: 222 47% 6%;
-  --secondary: 220 18% 13%;
+  --secondary: 224 32% 10%;
   --secondary-foreground: 210 40% 96%;
   --muted: var(--surface-subtle);
   --muted-foreground: var(--text-muted);
   --accent: var(--primary-soft);
   --accent-foreground: 187 76% 74%;
-  --border: 218 19% 22%;
-  --border-strong: 217 18% 32%;
-  --input: 218 19% 25%;
-  --input-hover: 217 18% 35%;
+  --border: 222 24% 18%;
+  --border-strong: 221 22% 28%;
+  --input: 222 24% 20%;
+  --input-hover: 221 22% 28%;
   --ring: var(--primary);
   --focus-ring: var(--primary);
   --success: 153 58% 56%;

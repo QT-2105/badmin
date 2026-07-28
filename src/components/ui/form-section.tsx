@@ -88,7 +88,7 @@ export function FormSection({
             <Button
               aria-expanded={isExpanded}
               aria-label={isExpanded ? collapseLabel : expandLabel}
-              className="h-10 min-w-10"
+              className="h-10 min-w-10 hover:border-primary/40 hover:bg-primary-soft hover:text-primary hover:ring-2 hover:ring-primary/15 focus-visible:ring-focus/50 active:bg-primary-soft/80 active:text-primary"
               disabled={disabled}
               onClick={() => setExpanded(!isExpanded)}
               size="sm"

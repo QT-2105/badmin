@@ -19,6 +19,11 @@ import { hasPermission } from '@/lib/auth/permissions';
 import { isPastDateInput, todayDateInput } from '@/lib/date-format';
 import { getSessionStatusLabel, normalizeSessionStatus } from '@/lib/session-status';
 
+const scheduleInteractiveClass =
+  'hover:border-primary/40 hover:bg-primary-soft hover:text-primary hover:ring-2 hover:ring-primary/15 focus-visible:ring-focus/50 active:bg-primary-soft/80 active:text-primary';
+const compactScheduleButtonClass = `h-9 whitespace-nowrap px-3 text-xs ${scheduleInteractiveClass}`;
+const compactIconButtonClass = `h-9 min-w-9 px-2 ${scheduleInteractiveClass}`;
+
 export function SchedulePageClient() {
   const { data: playDates = [], isLoading, error } = usePlayDates();
   const { data: currentUser } = useCurrentUser();
@@ -29,6 +34,7 @@ export function SchedulePageClient() {
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [createFormExpanded, setCreateFormExpanded] = useState(true);
   const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(() => new Set());
   const [pendingDeletePlayDateId, setPendingDeletePlayDateId] = useState<string | null>(null);
   const sortedPlayDates = useMemo(() => {
@@ -108,23 +114,28 @@ export function SchedulePageClient() {
       {canManageSchedule ? (
         <FormSection
           title="Tạo ngày chơi"
-          description="Chọn ngày, thêm tiêu đề nếu cần rồi mở ngày để tạo các ca chơi."
-          contentClassName="pt-1"
+          description="Chọn ngày, thêm tiêu đề nếu có (Mặc định hệ thống tự tạo tiêu đề, ngày theo thời gian thực)."
+          collapsible
+          expanded={createFormExpanded}
+          onExpandedChange={setCreateFormExpanded}
+          showCollapseLabel
+          contentClassName="pt-0"
+          className="rounded-xl"
         >
-          <form onSubmit={submit} className="grid gap-3 md:grid-cols-2 xl:grid-cols-[160px_minmax(220px,1fr)_minmax(220px,1fr)_auto] xl:items-end">
-            <label className="block">
-              <span className={formLabelClass}>Ngày chơi</span>
-              <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
-            </label>
+          <form onSubmit={submit} className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_minmax(220px,1fr)_auto] lg:items-end">
             <label className="block">
               <span className={formLabelClass}>Tiêu đề</span>
               <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Thứ ... | 202...-...-..." className={formInputClass} />
+            </label>
+            <label className="block lg:w-[180px]">
+              <span className={formLabelClass}>Ngày chơi</span>
+              <Input type="date" min={today} value={playDate} onChange={(event) => setPlayDate(event.target.value)} className={formInputClass} />
             </label>
             <label className="block">
               <span className={formLabelClass}>Ghi chú</span>
               <Input value={note} onChange={(event) => setNote(event.target.value)} className={formInputClass} />
             </label>
-            <Button type="submit" disabled={createPlayDate.isPending} className="h-11 whitespace-nowrap md:col-span-2 xl:col-span-1">
+            <Button type="submit" disabled={createPlayDate.isPending} className="h-10 whitespace-nowrap px-4 lg:w-auto">
               {createPlayDate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
               Tạo ngày
             </Button>
@@ -150,7 +161,8 @@ export function SchedulePageClient() {
           return (
           <Card
             key={item.id}
-            className={`transition-colors ${
+            padding="sm"
+            className={`transition-[background-color,border-color,box-shadow] duration-150 ${
               isToday
                 ? 'border-info/35 ring-1 ring-info/15'
                 : hasIncompleteSession
@@ -161,10 +173,10 @@ export function SchedulePageClient() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="min-w-0 break-words text-lg font-semibold leading-tight text-foreground">{item.title || item.playDate}</div>
-                  {isToday ? <StatusBadge tone="info">Hôm nay</StatusBadge> : null}
+                  <div className="min-w-0 break-words text-base font-semibold leading-tight text-foreground sm:text-lg">{item.title || item.playDate}</div>
+                  {isToday ? <StatusBadge tone="info" className="min-h-6 px-2 text-xs">Hôm nay</StatusBadge> : null}
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
                   <span>{item.playDate} · {item.sessionCount} ca</span>
                   {item.sessions.length > 0 ? (
                     <Button
@@ -172,7 +184,7 @@ export function SchedulePageClient() {
                       onClick={() => togglePlayDateSessions(item.id)}
                       variant="secondary"
                       size="sm"
-                      className="h-10 gap-1 px-3 text-xs"
+                      className={compactScheduleButtonClass}
                       aria-label={expanded ? 'Thu gọn danh sách ca' : 'Mở danh sách ca'}
                       aria-expanded={expanded}
                       aria-controls={`play-date-sessions-${item.id}`}
@@ -184,19 +196,20 @@ export function SchedulePageClient() {
                 </div>
                 {(hasIncompleteSession || isPast) ? (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {hasIncompleteSession ? <StatusBadge tone="warning">Có ca chưa hoàn tất</StatusBadge> : null}
-                    {isPast ? <StatusBadge tone="neutral">Chỉ xem lại</StatusBadge> : null}
+                    {hasIncompleteSession ? <StatusBadge tone="warning" className="min-h-6 px-2 text-xs">Có ca chưa hoàn tất</StatusBadge> : null}
+                    {isPast ? <StatusBadge tone="neutral" className="min-h-6 px-2 text-xs">Chỉ xem lại</StatusBadge> : null}
                   </div>
                 ) : null}
-                {item.note ? <div className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.note}</div> : null}
+                {item.note ? <div className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm">{item.note}</div> : null}
               </div>
               <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
                 <Link href={`/schedule/${item.id}`} className="w-full sm:w-auto" aria-label={`Mở chi tiết ngày chơi ${item.title || item.playDate}`}>
-                  <Button size="sm" variant="secondary" className="w-full sm:w-auto">Chi tiết ngày</Button>
+                  <Button size="sm" variant="secondary" className={`w-full sm:w-auto ${compactScheduleButtonClass}`}>Chi tiết ngày</Button>
                 </Link>
                 {!isPast && canManageSchedule ? (
                   <ActionMenu
                     label={`Mở thao tác ngày chơi ${item.title || item.playDate}`}
+                    triggerClassName={compactIconButtonClass}
                     items={[
                       {
                         key: 'delete',
@@ -212,13 +225,13 @@ export function SchedulePageClient() {
               </div>
             </div>
             {item.sessions.length > 0 && expanded ? (
-              <div id={`play-date-sessions-${item.id}`} className="mt-4 space-y-2 border-t border-border pt-3">
+              <div id={`play-date-sessions-${item.id}`} className="mt-3 space-y-2 border-t border-border pt-3">
                 {sortedSessions.map((session) => (
                   <Link
                     key={session.id}
                     href={`/sessions/${session.id}`}
                     aria-label={`Mở chi tiết ca ${session.name}, ${session.startTime}-${session.endTime}`}
-                    className="flex flex-col gap-2 rounded-lg border border-border bg-surface-subtle px-3 py-2.5 text-sm outline-none transition hover:border-info/35 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/25 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-surface-subtle px-3 py-2 text-xs outline-none transition-[background-color,border-color,box-shadow] hover:border-primary/40 hover:bg-primary-soft hover:text-primary hover:ring-2 hover:ring-primary/15 focus-visible:ring-2 focus-visible:ring-focus/50 sm:flex-row sm:items-center sm:justify-between sm:text-sm"
                   >
                     <span className="min-w-0 font-semibold text-foreground">
                       {session.startTime}-{session.endTime} · {session.name} · {session.courtCount} sân

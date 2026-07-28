@@ -1,12 +1,11 @@
 'use client';
 
 import { useId, type FormEvent } from 'react';
-import { Boxes, CircleDollarSign, Coins, Loader2, Package, Pencil, Plus, Save, Trash2, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { Boxes, ChevronDown, ChevronUp, CircleDollarSign, Coins, Loader2, Package, Pencil, Plus, Save, Trash2, TrendingDown, TrendingUp, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { Skeleton } from '@/components/ui/feedback';
-import { FilterBar } from '@/components/ui/filter-bar';
 import { Input, Select } from '@/components/ui/form';
 import { NoticeCard, PageFeedbackStack, PageSummaryGrid, SectionCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
@@ -37,6 +36,7 @@ export type InventoryReportTotals = {
   sales: number;
   usage: number;
   saleTubes: number;
+  saleLooseBalls: number;
   saleBalls: number;
   usageTubes: number;
   usageLooseBalls: number;
@@ -48,6 +48,21 @@ export type InventoryReportTotals = {
 };
 
 const inputClass = formInputClass;
+const compactTextInputClass = compactFormInputClass;
+const compactNumberInputClass = `${compactFormInputClass} text-right tabular-nums`;
+const inventoryMovementTabClass =
+  'h-12 rounded-xl px-4 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] hover:border-primary/50 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/35 sm:h-14 sm:text-base';
+const inventoryMovementFormShellClass = 'mt-3 rounded-xl border border-border bg-surface-subtle p-4 sm:p-5';
+const inventoryMovementFieldRowClass = 'mt-4 flex flex-wrap items-start gap-3';
+const inventoryMovementActionRowClass = 'mt-3 flex flex-wrap items-start gap-3';
+const inventoryMovementTypeFieldClass = 'w-full sm:w-[180px] sm:flex-none';
+const inventoryMovementProductFieldClass = 'w-full sm:w-[320px] sm:flex-none';
+const inventoryMovementTitleFieldClass = 'w-full min-w-0 sm:w-[420px] lg:w-[460px] sm:flex-none';
+const inventoryMovementQuantityFieldClass = 'w-[128px] max-w-full flex-none';
+const inventoryMovementPriceFieldClass = 'w-[160px] max-w-full flex-none';
+const inventoryMovementNoteFieldClass = 'w-full min-w-0 sm:w-[360px] lg:w-[420px] sm:flex-none';
+const inventoryMovementSubmitWrapClass = 'flex w-full items-start sm:w-auto sm:flex-none sm:pt-6';
+const inventoryMovementSubmitClass = 'h-10 w-full min-w-36 whitespace-nowrap px-4 sm:w-[170px]';
 
 export function InventoryToolbar({
   reportPeriod,
@@ -65,18 +80,17 @@ export function InventoryToolbar({
   onReportYearChange: (value: string) => void;
 }) {
   return (
-    <FilterBar
-      title="Kỳ báo cáo"
-      description="Áp dụng cho tiền bán cầu và chi cầu hao ca."
-      density="compact"
-      contentClassName="sm:flex-nowrap"
-      filters={(
-        <>
+    <section className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface px-3 py-3 sm:px-4 md:flex-row md:items-center md:justify-between">
+      <div className="min-w-0">
+        <h2 className="text-card-title">Kỳ báo cáo</h2>
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">{formatInventoryReportPeriodLabel(reportPeriod, reportMonth, reportYear)}</p>
+      </div>
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           <Select
             aria-label="Chọn kỳ báo cáo kho cầu"
             value={reportPeriod}
             onChange={(event) => onReportPeriodChange(event.target.value as ReportPeriod)}
-            className={`${compactFormInputClass} sm:w-36`}
+            className={`${compactFormInputClass} w-full sm:w-36`}
           >
             <option value="MONTH">Theo tháng</option>
             <option value="YEAR">Theo năm</option>
@@ -87,7 +101,7 @@ export function InventoryToolbar({
               type="month"
               value={reportMonth}
               onChange={(event) => onReportMonthChange(event.target.value)}
-              className={`${compactFormInputClass} sm:w-44`}
+              className={`${compactFormInputClass} w-full sm:w-40`}
             />
           ) : (
             <Input
@@ -97,13 +111,21 @@ export function InventoryToolbar({
               max={2100}
               value={reportYear}
               onChange={(event) => onReportYearChange(event.target.value)}
-              className={`${compactFormInputClass} sm:w-28`}
+              className={`${compactFormInputClass} w-full sm:w-28`}
             />
           )}
-        </>
-      )}
-    />
+      </div>
+    </section>
   );
+}
+
+function formatInventoryReportPeriodLabel(reportPeriod: ReportPeriod, reportMonth: string, reportYear: string): string {
+  if (reportPeriod === 'YEAR') return `Năm ${reportYear}`;
+
+  const [year, month] = reportMonth.split('-');
+  if (!year || !month) return 'Mặc định tháng hiện tại';
+
+  return `Tháng ${month}/${year}`;
 }
 
 export function InventorySummary({
@@ -126,19 +148,19 @@ export function InventorySummary({
           <StatCard label="Tổng loại cầu" value={`${productsLength}`} sub="Danh mục đang theo dõi" tone="neutral" icon={Boxes} />
           <StatCard
             label="Tồn kho"
-            value={`${totals.tubes} ống ${totals.looseBalls} quả`}
+            value={formatStockSummary(totals)}
             sub={`${totals.balls} quả`}
-            tone={totals.balls > 0 ? 'success' : 'danger'}
+            tone={totals.balls > 0 ? 'stock' : 'danger'}
             icon={Package}
           />
           <StatCard label="Giá trị tồn vốn" value={`${formatCurrency(totals.stockCost)}đ`} sub="Theo giá vốn bình quân" tone="info" icon={Coins} />
-          <StatCard label="Chi cầu hao ca" value={`${formatCurrency(reportTotals.usage)}đ`} sub={`${reportTotals.usageTubes} ống ${reportTotals.usageLooseBalls} quả (${reportTotals.usageBalls} quả)`} tone="warning" icon={TrendingDown} />
-          <StatCard label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} sub={`${formatQuantity(reportTotals.saleTubes)} ống (${reportTotals.saleBalls} quả)`} tone="income" icon={TrendingUp} />
+          <StatCard label="Chi cầu hao ca" value={`${formatCurrency(reportTotals.usage)}đ`} sub={formatTubeBallSummary(reportTotals.usageTubes, reportTotals.usageLooseBalls, reportTotals.usageBalls)} tone="expense" icon={TrendingDown} />
+          <StatCard label="Tiền bán cầu" value={`${formatCurrency(reportTotals.sales)}đ`} sub={formatTubeBallSummary(reportTotals.saleTubes, reportTotals.saleLooseBalls, reportTotals.saleBalls)} tone="income" icon={TrendingUp} />
           <StatCard
             label="Tổng tiền cầu"
             value={`${formatCurrency(reportTotals.totalOutboundAmount)}đ`}
-            sub={`${reportTotals.totalOutboundTubes} ống ${reportTotals.totalOutboundLooseBalls} quả (${reportTotals.totalOutboundBalls} quả)`}
-            tone="neutral"
+            sub={formatTubeBallSummary(reportTotals.totalOutboundTubes, reportTotals.totalOutboundLooseBalls, reportTotals.totalOutboundBalls)}
+            tone="info"
             icon={CircleDollarSign}
           />
         </>
@@ -229,7 +251,6 @@ export function ProductTableSection({
             <StatusBadge tone={product.status === 'ACTIVE' ? 'success' : 'neutral'} className="ml-1 rounded-md">
               {product.status === 'ACTIVE' ? 'Đang dùng' : 'Ngưng dùng'}
             </StatusBadge>
-            <StockStatusBadge product={product} />
           </div>
         </div>
       )
@@ -292,13 +313,19 @@ export function ProductTableSection({
       actions={canManageInventory ? (
         <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
           {editingProductId ? (
-            <Button variant="ghost" size="sm" className="h-10 w-full whitespace-nowrap sm:w-auto" onClick={onCancelEdit}>
+            <Button variant="ghost" size="sm" className="h-10 w-full whitespace-nowrap transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 sm:w-auto" onClick={onCancelEdit}>
               <X className="h-4 w-4" />
               Hủy sửa
             </Button>
           ) : null}
-          <Button variant="secondary" size="sm" className="h-10 w-full whitespace-nowrap sm:w-auto" onClick={onToggleForm}>
-            {isProductFormOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-10 w-full whitespace-nowrap transition-colors hover:border-primary/50 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 sm:w-auto"
+            onClick={onToggleForm}
+            aria-expanded={isProductFormOpen}
+          >
+            {isProductFormOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             {isProductFormOpen ? 'Thu gọn' : 'Mở rộng'}
           </Button>
         </div>
@@ -317,24 +344,24 @@ export function ProductTableSection({
               {editingProductId ? 'Đang sửa' : 'Tạo mới'}
             </StatusBadge>
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.4fr)_minmax(180px,1fr)_120px_140px] xl:items-start">
-            <Field label="Tên loại cầu" value={productForm.name} onChange={(value) => onProductFormChange({ ...productForm, name: value })} required helper="Tên hiển thị trong danh mục và phiếu kho." />
-            <Field label="Hãng" value={productForm.brand} onChange={(value) => onProductFormChange({ ...productForm, brand: value })} helper="Có thể để trống nếu không theo dõi hãng." />
-            <NumberField label="Quả/ống" value={productForm.ballsPerTube} min={1} onChange={(value) => onProductFormChange({ ...productForm, ballsPerTube: value })} helper="Giữ theo giá trị mặc định hiện tại khi tạo mới." />
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.2fr)_minmax(160px,0.85fr)_108px_136px_auto] xl:items-start">
+            <Field label="Tên loại cầu" value={productForm.name} onChange={(value) => onProductFormChange({ ...productForm, name: value })} required helper="Tên hiển thị trong phiếu kho." />
+            <Field label="Hãng" value={productForm.brand} onChange={(value) => onProductFormChange({ ...productForm, brand: value })} helper="Có thể để trống." />
+            <NumberField label="Quả/ống" value={productForm.ballsPerTube} min={1} onChange={(value) => onProductFormChange({ ...productForm, ballsPerTube: value })} helper="Mặc định khi tạo mới." />
             <label className="block">
               <span className={formLabelClass}>Trạng thái</span>
               <Select value={productForm.status} onChange={(event) => onProductFormChange({ ...productForm, status: event.target.value })} className={inputClass}>
                 <option value="ACTIVE">Đang dùng</option>
                 <option value="INACTIVE">Ngưng dùng</option>
               </Select>
-              <span className="mt-1 block text-xs leading-4 text-muted-foreground">Ngưng dùng sẽ ẩn khỏi thao tác mới nếu logic nguồn áp dụng.</span>
+              <span className="mt-1 block text-xs leading-4 text-muted-foreground">Ẩn khỏi thao tác mới nếu logic nguồn áp dụng.</span>
             </label>
-          </div>
-          <div className="mt-4 flex justify-end">
-            <Button type="submit" disabled={createProductPending || updateProductPending} className="h-11 w-full min-w-32 whitespace-nowrap sm:w-auto">
-              {createProductPending || updateProductPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editingProductId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {editingProductId ? 'Lưu' : 'Thêm'}
-            </Button>
+            <div className="flex items-end xl:pt-6">
+              <Button type="submit" disabled={createProductPending || updateProductPending} className="h-11 w-full min-w-32 whitespace-nowrap transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-focus/40 xl:w-32">
+                {createProductPending || updateProductPending ? <Loader2 className="h-4 w-4 animate-spin" /> : editingProductId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {editingProductId ? 'Lưu' : 'Thêm'}
+              </Button>
+            </div>
           </div>
         </form>
       ) : null}
@@ -357,8 +384,8 @@ export function ProductTableSection({
         stickyHeader
         actions={canManageInventory ? (product) => (
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="secondary" className="h-10 px-3" aria-label={`Sửa ${product.name}`} onClick={() => onEditProduct(product)}><Pencil className="h-4 w-4" /></Button>
-            <Button size="sm" variant="danger" className="h-10 px-3" aria-label={`Xóa ${product.name}`} disabled={deleteProductPending} onClick={() => onRequestRemoveProduct(product)}><Trash2 className="h-4 w-4" /></Button>
+            <Button size="sm" variant="secondary" className="h-10 px-3 transition-colors hover:border-primary/50 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40" aria-label={`Sửa ${product.name}`} onClick={() => onEditProduct(product)}><Pencil className="h-4 w-4" /></Button>
+            <Button size="sm" variant="danger" className="h-10 px-3 transition-colors hover:bg-danger/90 focus-visible:ring-2 focus-visible:ring-danger/30" aria-label={`Xóa ${product.name}`} disabled={deleteProductPending} onClick={() => onRequestRemoveProduct(product)}><Trash2 className="h-4 w-4" /></Button>
           </div>
         ) : undefined}
       />
@@ -443,9 +470,35 @@ export function MovementFormsSection({
 }) {
   return (
     <SectionCard density="compact">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button type="button" variant={stockFormTab === 'IMPORT' ? 'primary' : 'outline'} onClick={() => onStockFormTabChange(stockFormTab === 'IMPORT' ? null : 'IMPORT')} className="h-12 whitespace-nowrap">Phiếu nhập kho</Button>
-        <Button type="button" variant={stockFormTab === 'OUTBOUND' ? 'primary' : 'outline'} onClick={() => onStockFormTabChange(stockFormTab === 'OUTBOUND' ? null : 'OUTBOUND')} className="h-12 whitespace-nowrap">Phiếu xuất kho</Button>
+      <div className="w-full max-w-[920px] rounded-2xl border border-border bg-surface-subtle p-2">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="ghost"
+            aria-pressed={stockFormTab === 'IMPORT'}
+            onClick={() => onStockFormTabChange(stockFormTab === 'IMPORT' ? null : 'IMPORT')}
+            className={`${inventoryMovementTabClass} ${
+              stockFormTab === 'IMPORT'
+                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover'
+                : 'border border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Phiếu nhập kho
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            aria-pressed={stockFormTab === 'OUTBOUND'}
+            onClick={() => onStockFormTabChange(stockFormTab === 'OUTBOUND' ? null : 'OUTBOUND')}
+            className={`${inventoryMovementTabClass} ${
+              stockFormTab === 'OUTBOUND'
+                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover'
+                : 'border border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Phiếu xuất kho
+          </Button>
+        </div>
       </div>
 
       {stockFormTab === 'IMPORT' ? (
@@ -520,7 +573,7 @@ export function MovementTableSection({
     {
       key: 'type',
       header: 'Loại',
-      width: '132px',
+      width: '120px',
       render: (movement) => (
         <div className="flex min-w-0 flex-col items-start gap-1">
           <MovementBadge type={movement.movementType} />
@@ -538,35 +591,42 @@ export function MovementTableSection({
       key: 'quantity',
       header: 'SL quả',
       align: 'right',
-      width: '104px',
+      width: '96px',
       render: (movement) => <MovementQuantity type={movement.movementType} quantity={movement.quantityBall} />
     },
     {
       key: 'cost',
       header: 'Vốn/quả',
       align: 'right',
-      width: '120px',
+      width: '112px',
       render: (movement) => <MoneyDetail amount={movement.costPerBall} tone="muted" />
     },
     {
       key: 'usage-price',
       header: 'Giá hao/quả',
       align: 'right',
-      width: '130px',
+      width: '124px',
       render: (movement) => <MoneyDetail amount={movement.usagePricePerBall} tone="info" />
     },
     {
       key: 'total',
       header: 'Tổng tiền',
       align: 'right',
-      width: '172px',
+      width: '150px',
       render: (movement) => (
-        <div className="space-y-1">
+        <div className="space-y-1 text-right">
           <div className="font-semibold tabular-nums text-foreground">{formatCurrency(movement.totalAmount)}đ</div>
           <div className="text-xs tabular-nums text-muted-foreground">Đơn giá {formatCurrency(movement.unitPrice)}đ</div>
-          <div className="text-xs text-muted-foreground">{formatCreatedAt(movement.createdAt)}</div>
         </div>
       )
+    },
+    {
+      key: 'created',
+      header: 'Thời gian',
+      align: 'right',
+      width: '160px',
+      cellClassName: 'text-muted-foreground tabular-nums',
+      render: (movement) => formatCreatedAt(movement.createdAt)
     }
   ];
 
@@ -600,6 +660,7 @@ export function MovementTableSection({
             totalItems={sortedMovementsLength}
             pageSize={movementPageSize}
             onPageChange={onMovementPageChange}
+            compact
           />
         )}
         responsiveMode="cards"
@@ -646,7 +707,7 @@ function ImportMovementForm({
   onImportNoteChange: (value: string) => void;
 }) {
   return (
-    <form onSubmit={onSubmitImport} className="mt-4 rounded-xl border border-border bg-surface-subtle p-3 sm:p-4">
+    <form onSubmit={onSubmitImport} className={inventoryMovementFormShellClass}>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-section-title">Tạo phiếu nhập kho</h2>
@@ -656,17 +717,23 @@ function ImportMovementForm({
         </div>
         <StatusBadge tone="success" className="w-fit rounded-lg">IMPORT</StatusBadge>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_minmax(260px,1.3fr)_120px]">
-        <ProductSelect label="Loại cầu" value={importProductId} products={products} onChange={onImportProductIdChange} />
-        <Field label="Tiêu đề" value={importTitle} onChange={onImportTitleChange} required helper="Nội dung phiếu nhập để đối soát lịch sử kho." />
-        <NumberField label="Số lượng ống" value={importTubes} min={1} onChange={onImportTubesChange} helper={importProduct ? `${importProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
+      <div className={inventoryMovementFieldRowClass}>
+        <ProductSelect className={inventoryMovementProductFieldClass} selectClassName={compactTextInputClass} label="Loại cầu" value={importProductId} products={products} onChange={onImportProductIdChange} />
+        <Field className={inventoryMovementTitleFieldClass} inputClassName={compactTextInputClass} label="Tiêu đề" value={importTitle} onChange={onImportTitleChange} required helper="Nội dung phiếu nhập để đối soát lịch sử kho." />
+        <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số lượng ống" value={importTubes} min={1} onChange={onImportTubesChange} helper={importProduct ? `${importProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
       </div>
-      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1.2fr)]">
-        <NumberField label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1} onChange={onCostPricePerTubeChange} helper="Giá vốn thực tế theo ống." />
-        <NumberField label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1} onChange={onUsagePricePerTubeChange} helper="Giá dùng để tính cầu hao." />
-        <Field label="Ghi chú" value={importNote} onChange={onImportNoteChange} helper="Tùy chọn." />
+      <div className={inventoryMovementActionRowClass}>
+        <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1} onChange={onCostPricePerTubeChange} helper="Giá vốn thực tế theo ống." />
+        <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1} onChange={onUsagePricePerTubeChange} helper="Giá dùng để tính cầu hao." />
+        <Field className={inventoryMovementNoteFieldClass} inputClassName={compactTextInputClass} label="Ghi chú" value={importNote} onChange={onImportNoteChange} helper="Tùy chọn." />
+        <div className={inventoryMovementSubmitWrapClass}>
+          <Button type="submit" className={inventoryMovementSubmitClass} disabled={!importProduct || createMovementPending}>
+            {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Ghi nhập kho
+          </Button>
+        </div>
       </div>
-      <div className="mt-4 grid gap-2 rounded-xl border border-border bg-surface p-3 text-sm sm:grid-cols-3">
+      <div className="mt-3 grid gap-2 rounded-xl border border-border bg-surface p-3 text-sm sm:grid-cols-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Quy đổi</div>
           <div className="mt-1 font-semibold tabular-nums text-foreground">{importProduct ? `${importTubes * importProduct.ballsPerTube} quả` : 'Chọn loại cầu'}</div>
@@ -679,12 +746,6 @@ function ImportMovementForm({
           <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cầu hao/quả</div>
           <div className="mt-1 font-semibold tabular-nums text-info">{formatCurrency(importProduct ? usagePricePerTube / importProduct.ballsPerTube : 0)}đ</div>
         </div>
-      </div>
-      <div className="mt-4 flex justify-end">
-        <Button type="submit" className="h-11 w-full min-w-40 whitespace-nowrap sm:w-auto" disabled={!importProduct || createMovementPending}>
-          {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          Ghi nhập kho
-        </Button>
       </div>
     </form>
   );
@@ -734,7 +795,7 @@ function OutboundMovementForm({
   onOutboundNoteChange: (value: string) => void;
 }) {
   return (
-    <form onSubmit={onSubmitOutbound} className="mt-4 rounded-xl border border-border bg-surface-subtle p-3 sm:p-4">
+    <form onSubmit={onSubmitOutbound} className={inventoryMovementFormShellClass}>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-section-title">{outboundType === 'ADJUSTMENT' ? 'Tạo phiếu điều chỉnh tồn' : 'Tạo phiếu xuất kho'}</h2>
@@ -747,33 +808,39 @@ function OutboundMovementForm({
         <MovementBadge type={outboundType} />
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(260px,1.25fr)]">
-        <label className="block">
+      <div className={inventoryMovementFieldRowClass}>
+        <label className={`block ${inventoryMovementTypeFieldClass}`}>
           <span className={formLabelClass}>Loại xuất kho</span>
-          <Select value={outboundType} onChange={(event) => onOutboundTypeChange(event.target.value as OutboundType)} className={inputClass}>
+          <Select value={outboundType} onChange={(event) => onOutboundTypeChange(event.target.value as OutboundType)} className={compactTextInputClass}>
             <option value="SALE">Bán cầu</option>
             <option value="PLAY_USAGE">Chi cầu hao ca</option>
             <option value="ADJUSTMENT">Điều chỉnh tồn</option>
             <option value="OTHER">Ngoại lệ</option>
           </Select>
         </label>
-        <ProductSelect label="Loại cầu" value={outboundProductId} products={products} onChange={onOutboundProductIdChange} />
-        <Field label="Tiêu đề" value={outboundTitle} onChange={onOutboundTitleChange} required helper="Nội dung phiếu xuất để đối soát lịch sử kho." />
+        <ProductSelect className={inventoryMovementProductFieldClass} selectClassName={compactTextInputClass} label="Loại cầu" value={outboundProductId} products={products} onChange={onOutboundProductIdChange} />
+        <Field className={inventoryMovementTitleFieldClass} inputClassName={compactTextInputClass} label="Tiêu đề" value={outboundTitle} onChange={onOutboundTitleChange} required helper="Nội dung phiếu xuất để đối soát lịch sử kho." />
       </div>
 
-      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(220px,1.2fr)]">
+      <div className={inventoryMovementActionRowClass}>
         {outboundType === 'ADJUSTMENT' ? (
-          <NumberField label="Tồn thực tế theo quả" value={actualQuantityBall} min={0} onChange={onActualQuantityBallChange} helper={outboundProduct ? `Hiện hệ thống ghi nhận ${outboundProduct.quantityBall} quả.` : 'Chọn loại cầu trước khi nhập tồn.'} />
+          <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Tồn thực tế theo quả" value={actualQuantityBall} min={0} onChange={onActualQuantityBallChange} helper={outboundProduct ? `Hiện hệ thống ghi nhận ${outboundProduct.quantityBall} quả.` : 'Chọn loại cầu trước khi nhập tồn.'} />
         ) : outboundType === 'PLAY_USAGE' ? (
-          <NumberField label="Số cầu hao" value={outboundBalls} min={1} onChange={onOutboundBallsChange} helper="Đơn vị quả." />
+          <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số cầu hao" value={outboundBalls} min={1} onChange={onOutboundBallsChange} helper="Đơn vị quả." />
         ) : (
           <>
-            <NumberField label="Số lượng ống" value={outboundTubes} min={outboundType === 'SALE' ? 1 : 0} onChange={onOutboundTubesChange} helper={outboundProduct ? `${outboundProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
-            {outboundType === 'OTHER' ? <NumberField label="Số quả lẻ" value={outboundBalls} min={0} onChange={onOutboundBallsChange} helper="Tùy chọn." /> : null}
-            <NumberField label="Đơn giá/ống" value={salePricePerTube} min={0} step={1} onChange={onSalePricePerTubeChange} helper={outboundType === 'SALE' ? 'Giá bán theo ống.' : 'Giá tham chiếu theo ống.'} />
+            <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số lượng ống" value={outboundTubes} min={outboundType === 'SALE' ? 1 : 0} onChange={onOutboundTubesChange} helper={outboundProduct ? `${outboundProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
+            {outboundType === 'OTHER' ? <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số quả lẻ" value={outboundBalls} min={0} onChange={onOutboundBallsChange} helper="Tùy chọn." /> : null}
+            <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Đơn giá/ống" value={salePricePerTube} min={0} step={1} onChange={onSalePricePerTubeChange} helper={outboundType === 'SALE' ? 'Giá bán theo ống.' : 'Giá tham chiếu theo ống.'} />
           </>
         )}
-        <Field label="Ghi chú" value={outboundNote} onChange={onOutboundNoteChange} helper="Tùy chọn." />
+        <Field className={inventoryMovementNoteFieldClass} inputClassName={compactTextInputClass} label="Ghi chú" value={outboundNote} onChange={onOutboundNoteChange} helper="Tùy chọn." />
+        <div className={inventoryMovementSubmitWrapClass}>
+          <Button type="submit" className={inventoryMovementSubmitClass} disabled={!outboundProduct || createMovementPending}>
+            {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Ghi xuất kho
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-2 rounded-xl border border-border bg-surface p-3 text-sm sm:grid-cols-3">
@@ -806,12 +873,6 @@ function OutboundMovementForm({
         </div>
       </div>
 
-      <div className="mt-4 flex justify-end">
-        <Button type="submit" className="h-11 w-full min-w-40 whitespace-nowrap sm:w-auto" disabled={!outboundProduct || createMovementPending}>
-          {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          Ghi xuất kho
-        </Button>
-      </div>
     </form>
   );
 }
@@ -835,10 +896,7 @@ function ProductMobileCard({ product }: { product: ShuttlecockProductSummary }) 
       <dl className="grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-lg border border-border bg-background p-2">
           <dt className="text-muted-foreground">Tồn ống - quả</dt>
-          <dd className="mt-1 flex flex-wrap items-center gap-2 font-semibold tabular-nums text-foreground">
-            {formatTubes(product.quantityBall, product.ballsPerTube)}
-            <StockStatusBadge product={product} />
-          </dd>
+          <dd className="mt-1 font-semibold tabular-nums text-foreground">{formatTubes(product.quantityBall, product.ballsPerTube)}</dd>
         </div>
         <div className="rounded-lg border border-border bg-background p-2">
           <dt className="text-muted-foreground">Tồn quả</dt>
@@ -898,12 +956,12 @@ function MovementMobileCard({ movement }: { movement: ShuttlecockMovementSummary
   );
 }
 
-function Field({ label, value, required, helper, onChange }: { label: string; value: string; required?: boolean; helper?: string; onChange: (value: string) => void }) {
+function Field({ label, value, required, helper, className, inputClassName, onChange }: { label: string; value: string; required?: boolean; helper?: string; className?: string; inputClassName?: string; onChange: (value: string) => void }) {
   const fieldId = useId();
   const helperId = helper ? `${fieldId}-helper` : undefined;
 
   return (
-    <label className="block" htmlFor={fieldId}>
+    <label className={className ?? 'block'} htmlFor={fieldId}>
       <span className={formLabelClass}>{label}{required ? <span className="ml-1 text-danger">*</span> : null}</span>
       <Input
         id={fieldId}
@@ -912,19 +970,19 @@ function Field({ label, value, required, helper, onChange }: { label: string; va
         aria-describedby={helperId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={inputClass}
+        className={inputClassName ?? inputClass}
       />
       {helper ? <span id={helperId} className="mt-1 block text-xs leading-4 text-muted-foreground">{helper}</span> : null}
     </label>
   );
 }
 
-function NumberField({ label, value, min, step, disabled, helper, onChange }: { label: string; value: number; min?: number; step?: number; disabled?: boolean; helper?: string; onChange: (value: number) => void }) {
+function NumberField({ label, value, min, step, disabled, helper, className, inputClassName, onChange }: { label: string; value: number; min?: number; step?: number; disabled?: boolean; helper?: string; className?: string; inputClassName?: string; onChange: (value: number) => void }) {
   const fieldId = useId();
   const helperId = helper ? `${fieldId}-helper` : undefined;
 
   return (
-    <label className="block" htmlFor={fieldId}>
+    <label className={className ?? 'block'} htmlFor={fieldId}>
       <span className={formLabelClass}>{label}</span>
       <Input
         id={fieldId}
@@ -935,20 +993,20 @@ function NumberField({ label, value, min, step, disabled, helper, onChange }: { 
         aria-describedby={helperId}
         value={Number.isFinite(value) ? value : 0}
         onChange={(event) => onChange(Number(event.target.value))}
-        className={inputClass}
+        className={inputClassName ?? inputClass}
       />
       {helper ? <span id={helperId} className="mt-1 block text-xs leading-4 text-muted-foreground">{helper}</span> : null}
     </label>
   );
 }
 
-function ProductSelect({ label, value, products, onChange }: { label: string; value: string; products: ShuttlecockProductSummary[]; onChange: (value: string) => void }) {
+function ProductSelect({ label, value, products, className, selectClassName, onChange }: { label: string; value: string; products: ShuttlecockProductSummary[]; className?: string; selectClassName?: string; onChange: (value: string) => void }) {
   const fieldId = useId();
 
   return (
-    <label className="block" htmlFor={fieldId}>
+    <label className={className ?? 'block'} htmlFor={fieldId}>
       <span className={formLabelClass}>{label}</span>
-      <Select id={fieldId} required aria-required value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
+      <Select id={fieldId} required aria-required value={value} onChange={(event) => onChange(event.target.value)} className={selectClassName ?? inputClass}>
         <option value="">Chọn loại cầu</option>
         {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
       </Select>
@@ -1002,14 +1060,18 @@ function formatTubes(balls: number, ballsPerTube: number): string {
   return `${Math.floor(balls / ballsPerTube)} ống ${balls % ballsPerTube} quả`;
 }
 
-function StockStatusBadge({ product }: { product: ShuttlecockProductSummary }) {
-  if (product.quantityBall <= 0) {
-    return <StatusBadge tone="danger" className="w-fit rounded-md">Hết hàng</StatusBadge>;
-  }
-  if (product.quantityBall < product.ballsPerTube) {
-    return <StatusBadge tone="warning" className="w-fit rounded-md">Sắp hết</StatusBadge>;
-  }
-  return <StatusBadge tone="success" className="w-fit rounded-md">Còn hàng</StatusBadge>;
+function formatStockSummary(totals: InventoryTotals): string {
+  if (totals.balls <= 0) return '0 quả';
+  if (totals.looseBalls <= 0) return `${formatQuantity(totals.tubes)} ống`;
+  return `${formatQuantity(totals.tubes)} ống ${formatQuantity(totals.looseBalls)} quả`;
+}
+
+function formatTubeBallSummary(tubes: number, looseBalls: number, balls: number): string {
+  if (balls <= 0) return '0 quả';
+  const tubeText = `${formatQuantity(tubes)} ống`;
+  return looseBalls > 0
+    ? `${tubeText} ${formatQuantity(looseBalls)} quả (${formatQuantity(balls)} quả)`
+    : `${tubeText} (${formatQuantity(balls)} quả)`;
 }
 
 function estimateOutboundBalls(type: OutboundType, product: ShuttlecockProductSummary | undefined, tubes: number, balls: number): number {
