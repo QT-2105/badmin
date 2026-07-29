@@ -123,6 +123,10 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     ? session?.totalProfit ?? actualCompletionProfit
     : previewProfit ?? draftCompletionProfit;
   const completionProfitLabel = normalizedStatus === 'COMPLETED' ? 'Lợi nhuận' : 'Lợi nhuận tạm tính';
+  const paidSlotCount = players.filter((player) => player.paymentStatus === 'PAID').length;
+  const completionCourtCount = Math.max(session?.courtCount ?? 0, 1);
+  const completionCourtCost = Number(courtCost || 0);
+  const completionProfit = paymentTotals.paid - completionCourtCost - shuttlecockExpense - extraExpenseValue;
 
   const unpaidPlayers = useMemo(() => players.filter((player) => player.paymentStatus !== 'PAID' && player.paymentStatus !== 'WAIVED'), [players]);
   const genderCounts = useMemo(() => players.reduce(
@@ -820,13 +824,13 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           }
         }}
         title="Hoàn tất ca chơi?"
-        description="Hệ thống sẽ tự tạo phiếu thu tiền slot, chi tiền sân, chi tiền cầu, chi phí phát sinh nếu có và trừ kho cầu theo số lượng đã nhập."
+        description="Kiểm tra lại các khoản thu, chi và lợi nhuận trước khi chốt ca."
         closeLabel="Đóng xác nhận hoàn tất ca"
         closeDisabled={completePlaySession.isPending}
         closeOnEscape={!completePlaySession.isPending}
         closeOnOutsideClick={!completePlaySession.isPending}
         tone="warning"
-        size="sm"
+        size="md"
         footer={(
           <>
             <Button variant="secondary" onClick={() => setShowCompleteConfirm(false)} disabled={completePlaySession.isPending} className="hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50">Hủy</Button>
@@ -842,30 +846,72 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             Còn {unpaidPlayers.length} người chưa thanh toán. Sau khi hoàn tất ca, thông tin ca sẽ bị khóa và doanh số được chốt theo người đã thu.
           </div>
         ) : null}
-        <dl className="mt-3 space-y-1 rounded-lg border border-border bg-surface-subtle p-3 text-sm text-text-secondary">
-          <div className="flex items-center justify-between gap-3">
-            <dt>Thu slot</dt>
-            <dd className="font-mono text-foreground">{formatCurrency(paymentTotals.paid)}đ</dd>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-surface-subtle">
+          <table className="w-full table-fixed border-collapse text-xs sm:text-sm">
+            <colgroup>
+              <col className="w-[28%]" />
+              <col className="w-[20%]" />
+              <col className="w-[24%]" />
+              <col className="w-[28%]" />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-border bg-surface text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="px-2 py-2.5 sm:px-3">Hạng Mục</th>
+                <th className="px-2 py-2.5 text-right sm:px-3">Số Lượng</th>
+                <th className="px-2 py-2.5 text-right sm:px-3">Đơn Giá</th>
+                <th className="px-2 py-2.5 text-right sm:px-3">Thành Tiền</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              <tr>
+                <th scope="row" className="px-2 py-2.5 text-left font-medium text-foreground sm:px-3">Thu Slot</th>
+                <td className="px-2 py-2.5 text-right tabular-nums text-text-secondary sm:px-3">{paidSlotCount} slot</td>
+                <td className="px-2 py-2.5 text-right text-muted-foreground sm:px-3">—</td>
+                <td className="px-2 py-2.5 text-right font-mono font-medium text-foreground sm:px-3">{formatCurrency(paymentTotals.paid)}đ</td>
+              </tr>
+              <tr>
+                <th scope="row" className="px-2 py-2.5 text-left font-medium text-foreground sm:px-3">Chi Sân</th>
+                <td className="px-2 py-2.5 text-right tabular-nums text-text-secondary sm:px-3">{completionCourtCount} sân</td>
+                <td className="px-2 py-2.5 text-right font-mono text-text-secondary sm:px-3">{formatCurrency(completionCourtCost / completionCourtCount)}đ</td>
+                <td className="px-2 py-2.5 text-right font-mono font-medium text-foreground sm:px-3">{formatCurrency(completionCourtCost)}đ</td>
+              </tr>
+              <tr>
+                <th scope="row" className="px-2 py-2.5 text-left font-medium text-foreground sm:px-3">Chi Cầu</th>
+                <td className="px-2 py-2.5 text-right tabular-nums text-text-secondary sm:px-3">{shuttlecockPiecesUsed || 0} quả</td>
+                <td className="px-2 py-2.5 text-right font-mono text-text-secondary sm:px-3">{formatCurrency(selectedShuttlecock?.avgUsagePricePerBall ?? 0)}đ</td>
+                <td className="px-2 py-2.5 text-right font-mono font-medium text-foreground sm:px-3">{formatCurrency(shuttlecockExpense)}đ</td>
+              </tr>
+              {extraExpenseValue > 0 ? (
+                <tr>
+                  <th scope="row" className="px-2 py-2.5 text-left font-medium text-foreground sm:px-3">Chi Khác</th>
+                  <td className="px-2 py-2.5 text-right text-muted-foreground sm:px-3">—</td>
+                  <td className="px-2 py-2.5 text-right text-muted-foreground sm:px-3">—</td>
+                  <td className="px-2 py-2.5 text-right font-mono font-medium text-foreground sm:px-3">{formatCurrency(extraExpenseValue)}đ</td>
+                </tr>
+              ) : null}
+              <tr className="border-t-2 border-border bg-surface">
+                <th scope="row" className="px-2 py-3 text-left font-semibold text-foreground sm:px-3">Lợi Nhuận</th>
+                <td className="px-2 py-3 text-right text-muted-foreground sm:px-3">—</td>
+                <td className="px-2 py-3 text-right text-muted-foreground sm:px-3">—</td>
+                <td className={`px-2 py-3 text-right font-mono font-semibold sm:px-3 ${completionProfit < 0 ? 'text-danger' : 'text-success'}`}>
+                  {formatCurrency(completionProfit)}đ
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {!settings.autoCreateCourtFeeTransaction || !settings.autoCreateShuttlecockUsageTransaction ? (
+          <div className="mt-3 rounded-lg border border-border bg-surface-subtle px-3 py-2.5 text-xs leading-5 text-muted-foreground sm:text-sm">
+            <p className="font-semibold text-foreground">Lưu ý:</p>
+            <ul className="mt-1 list-disc pl-5">
+              <li>
+                Các khoản chi vẫn được tính vào lợi nhuận.
+                {!settings.autoCreateCourtFeeTransaction ? ' Không tạo phiếu chi sân.' : ''}
+                {!settings.autoCreateShuttlecockUsageTransaction ? ' Không tạo phiếu chi cầu.' : ''}
+              </li>
+            </ul>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt>Chi sân</dt>
-            <dd className="text-right font-mono text-foreground">{formatCurrency(Number(courtCost || 0))}đ{settings.autoCreateCourtFeeTransaction ? '' : ' · không tạo phiếu'}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt>Chi cầu</dt>
-            <dd className="text-right font-mono text-foreground">{shuttlecockPiecesUsed || 0} quả · {formatCurrency(shuttlecockExpense)}đ{settings.autoCreateShuttlecockUsageTransaction ? '' : ' · không tạo phiếu chi'}</dd>
-          </div>
-          {extraExpenseValue > 0 ? (
-            <div className="flex items-center justify-between gap-3">
-              <dt>Chi phí phát sinh</dt>
-              <dd className="text-right font-mono text-foreground">{formatCurrency(extraExpenseValue)}đ</dd>
-            </div>
-          ) : null}
-          <div className="flex items-center justify-between gap-3">
-            <dt>Lợi nhuận</dt>
-            <dd className="font-mono font-semibold text-foreground">{formatCurrency(paymentTotals.paid - Number(courtCost || 0) - shuttlecockExpense - extraExpenseValue)}đ</dd>
-          </div>
-        </dl>
+        ) : null}
       </Dialog>
       <PlayerQuickView player={quickViewPlayer} onClose={() => setQuickViewPlayer(null)} />
     </PageShell>

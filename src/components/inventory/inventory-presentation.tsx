@@ -6,7 +6,7 @@ import { Boxes, ChevronDown, ChevronUp, CircleDollarSign, Coins, Loader2, Packag
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { Skeleton } from '@/components/ui/feedback';
-import { Input, Select } from '@/components/ui/form';
+import { Input, Select, Textarea } from '@/components/ui/form';
 import { NoticeCard, PageFeedbackStack, PageSummaryGrid, SectionCard, compactFormInputClass, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { PAGE_SIZE_OPTIONS, PaginationControls, type PageSize } from '@/components/ui/pagination-controls';
 import { StatCard } from '@/components/ui/stat-card';
@@ -48,21 +48,20 @@ export type InventoryReportTotals = {
 };
 
 const inputClass = formInputClass;
-const compactTextInputClass = compactFormInputClass;
-const compactNumberInputClass = `${compactFormInputClass} text-right tabular-nums`;
 const inventoryMovementTabClass =
-  'h-12 rounded-xl px-4 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] hover:border-primary/50 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/35 sm:h-14 sm:text-base';
-const inventoryMovementFormShellClass = 'mt-3 rounded-xl border border-border bg-surface-subtle p-4 sm:p-5';
-const inventoryMovementFieldRowClass = 'mt-4 flex flex-wrap items-start gap-3';
-const inventoryMovementActionRowClass = 'mt-3 flex flex-wrap items-start gap-3';
-const inventoryMovementTypeFieldClass = 'w-full sm:w-[180px] sm:flex-none';
-const inventoryMovementProductFieldClass = 'w-full sm:w-[320px] sm:flex-none';
-const inventoryMovementTitleFieldClass = 'w-full min-w-0 sm:w-[420px] lg:w-[460px] sm:flex-none';
-const inventoryMovementQuantityFieldClass = 'w-[128px] max-w-full flex-none';
-const inventoryMovementPriceFieldClass = 'w-[160px] max-w-full flex-none';
-const inventoryMovementNoteFieldClass = 'w-full min-w-0 sm:w-[360px] lg:w-[420px] sm:flex-none';
-const inventoryMovementSubmitWrapClass = 'flex w-full items-start sm:w-auto sm:flex-none sm:pt-6';
-const inventoryMovementSubmitClass = 'h-10 w-full min-w-36 whitespace-nowrap px-4 sm:w-[170px]';
+  'h-10 min-w-0 rounded-lg px-3 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] hover:border-primary/50 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/35 sm:px-4';
+const inventoryMovementFormShellClass = 'mt-3 rounded-xl border border-border bg-surface-subtle p-3 sm:p-4';
+const inventoryMovementFieldRowClass = 'mt-3 flex flex-wrap items-start gap-x-3 gap-y-3';
+const inventoryMovementTypeFieldClass = 'w-full sm:min-w-[190px] sm:flex-[1.5_1_190px]';
+const inventoryMovementProductFieldClass = 'w-full sm:min-w-[280px] sm:flex-[3_1_280px]';
+const inventoryMovementTitleFieldClass = 'mt-4 w-full';
+const inventoryMovementQuantityFieldClass = 'w-full sm:min-w-[100px] sm:flex-[0.5_1_100px]';
+const inventoryMovementPriceFieldClass = 'w-full sm:min-w-[150px] sm:flex-[0.8_1_150px]';
+const inventoryMovementNoteFieldClass = 'mt-3 w-full';
+const inventoryMovementSubmitClass = 'h-10 w-full whitespace-nowrap px-4 sm:w-auto sm:min-w-[160px]';
+const inventoryMovementSummaryClass = 'mt-3 grid w-full divide-y divide-border overflow-hidden rounded-xl border border-border bg-background text-sm shadow-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0';
+const inventoryMovementSummaryItemClass = 'min-h-16 px-3 py-2.5';
+const inventoryMovementSummaryLabelClass = 'text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
 
 export function InventoryToolbar({
   reportPeriod,
@@ -470,16 +469,17 @@ export function MovementFormsSection({
 }) {
   return (
     <SectionCard density="compact">
-      <div className="w-full max-w-[920px] rounded-2xl border border-border bg-surface-subtle p-2">
-        <div className="grid gap-2 sm:grid-cols-2">
+      <div className="w-full rounded-xl border border-border bg-surface-subtle p-1">
+        <div className="grid grid-cols-2 gap-1">
           <Button
             type="button"
             variant="ghost"
             aria-pressed={stockFormTab === 'IMPORT'}
+            aria-expanded={stockFormTab === 'IMPORT'}
             onClick={() => onStockFormTabChange(stockFormTab === 'IMPORT' ? null : 'IMPORT')}
             className={`${inventoryMovementTabClass} ${
               stockFormTab === 'IMPORT'
-                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover'
+                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-none hover:bg-primary-hover'
                 : 'border border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -489,10 +489,11 @@ export function MovementFormsSection({
             type="button"
             variant="ghost"
             aria-pressed={stockFormTab === 'OUTBOUND'}
+            aria-expanded={stockFormTab === 'OUTBOUND'}
             onClick={() => onStockFormTabChange(stockFormTab === 'OUTBOUND' ? null : 'OUTBOUND')}
             className={`${inventoryMovementTabClass} ${
               stockFormTab === 'OUTBOUND'
-                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover'
+                ? 'border border-primary/45 bg-primary text-primary-foreground shadow-none hover:bg-primary-hover'
                 : 'border border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -708,42 +709,32 @@ function ImportMovementForm({
 }) {
   return (
     <form onSubmit={onSubmitImport} className={inventoryMovementFormShellClass}>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-section-title">Tạo phiếu nhập kho</h2>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
-            Nhập theo số ống. Hệ thống dùng số quả/ống của loại cầu để quy đổi và cập nhật tồn kho.
-          </p>
-        </div>
-        <StatusBadge tone="success" className="w-fit rounded-lg">IMPORT</StatusBadge>
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-section-title">Tạo phiếu nhập kho</h2>
+        <Button type="submit" className={inventoryMovementSubmitClass} disabled={!importProduct || createMovementPending}>
+          {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Ghi nhập kho
+        </Button>
       </div>
+      <Field className={inventoryMovementTitleFieldClass} label="Tiêu đề" value={importTitle} onChange={onImportTitleChange} required />
       <div className={inventoryMovementFieldRowClass}>
-        <ProductSelect className={inventoryMovementProductFieldClass} selectClassName={compactTextInputClass} label="Loại cầu" value={importProductId} products={products} onChange={onImportProductIdChange} />
-        <Field className={inventoryMovementTitleFieldClass} inputClassName={compactTextInputClass} label="Tiêu đề" value={importTitle} onChange={onImportTitleChange} required helper="Nội dung phiếu nhập để đối soát lịch sử kho." />
-        <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số lượng ống" value={importTubes} min={1} onChange={onImportTubesChange} helper={importProduct ? `${importProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
+        <ProductSelect className={inventoryMovementProductFieldClass} label="Loại cầu" value={importProductId} products={products} onChange={onImportProductIdChange} />
+        <NumberField className={inventoryMovementQuantityFieldClass} label="Số lượng ống" value={importTubes} min={1} onChange={onImportTubesChange} />
+        <NumberField className={inventoryMovementPriceFieldClass} label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1} onChange={onCostPricePerTubeChange} />
+        <NumberField className={inventoryMovementPriceFieldClass} label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1} onChange={onUsagePricePerTubeChange} />
       </div>
-      <div className={inventoryMovementActionRowClass}>
-        <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Giá vốn nhập/ống" value={costPricePerTube} min={0} step={1} onChange={onCostPricePerTubeChange} helper="Giá vốn thực tế theo ống." />
-        <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Giá đề xuất/ống" value={usagePricePerTube} min={0} step={1} onChange={onUsagePricePerTubeChange} helper="Giá dùng để tính cầu hao." />
-        <Field className={inventoryMovementNoteFieldClass} inputClassName={compactTextInputClass} label="Ghi chú" value={importNote} onChange={onImportNoteChange} helper="Tùy chọn." />
-        <div className={inventoryMovementSubmitWrapClass}>
-          <Button type="submit" className={inventoryMovementSubmitClass} disabled={!importProduct || createMovementPending}>
-            {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Ghi nhập kho
-          </Button>
-        </div>
-      </div>
-      <div className="mt-3 grid gap-2 rounded-xl border border-border bg-surface p-3 text-sm sm:grid-cols-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Quy đổi</div>
+      <TextareaField className={inventoryMovementNoteFieldClass} label="Ghi chú" value={importNote} onChange={onImportNoteChange} />
+      <div className={inventoryMovementSummaryClass}>
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>Quy đổi</div>
           <div className="mt-1 font-semibold tabular-nums text-foreground">{importProduct ? `${importTubes * importProduct.ballsPerTube} quả` : 'Chọn loại cầu'}</div>
         </div>
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Vốn/quả</div>
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>Vốn/quả</div>
           <div className="mt-1 font-semibold tabular-nums text-foreground">{formatCurrency(importProduct ? costPricePerTube / importProduct.ballsPerTube : 0)}đ</div>
         </div>
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cầu hao/quả</div>
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>Cầu hao/quả</div>
           <div className="mt-1 font-semibold tabular-nums text-info">{formatCurrency(importProduct ? usagePricePerTube / importProduct.ballsPerTube : 0)}đ</div>
         </div>
       </div>
@@ -796,61 +787,48 @@ function OutboundMovementForm({
 }) {
   return (
     <form onSubmit={onSubmitOutbound} className={inventoryMovementFormShellClass}>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-section-title">{outboundType === 'ADJUSTMENT' ? 'Tạo phiếu điều chỉnh tồn' : 'Tạo phiếu xuất kho'}</h2>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
-            {outboundType === 'ADJUSTMENT'
-              ? 'Nhập số quả kiểm kê thực tế. Hệ thống tự ghi nhận phần chênh lệch để đối soát tồn kho.'
-              : 'Bán cầu theo ống, chi cầu hao theo quả. Tồn kho vẫn được lưu và trừ theo đơn vị quả.'}
-          </p>
-        </div>
-        <MovementBadge type={outboundType} />
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-section-title">{outboundType === 'ADJUSTMENT' ? 'Tạo phiếu điều chỉnh tồn' : 'Tạo phiếu xuất kho'}</h2>
+        <Button type="submit" className={inventoryMovementSubmitClass} disabled={!outboundProduct || createMovementPending}>
+          {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Ghi xuất kho
+        </Button>
       </div>
-
+      <Field className={inventoryMovementTitleFieldClass} label="Tiêu đề" value={outboundTitle} onChange={onOutboundTitleChange} required />
       <div className={inventoryMovementFieldRowClass}>
         <label className={`block ${inventoryMovementTypeFieldClass}`}>
           <span className={formLabelClass}>Loại xuất kho</span>
-          <Select value={outboundType} onChange={(event) => onOutboundTypeChange(event.target.value as OutboundType)} className={compactTextInputClass}>
+          <Select value={outboundType} onChange={(event) => onOutboundTypeChange(event.target.value as OutboundType)} className={inputClass}>
             <option value="SALE">Bán cầu</option>
             <option value="PLAY_USAGE">Chi cầu hao ca</option>
             <option value="ADJUSTMENT">Điều chỉnh tồn</option>
             <option value="OTHER">Ngoại lệ</option>
           </Select>
         </label>
-        <ProductSelect className={inventoryMovementProductFieldClass} selectClassName={compactTextInputClass} label="Loại cầu" value={outboundProductId} products={products} onChange={onOutboundProductIdChange} />
-        <Field className={inventoryMovementTitleFieldClass} inputClassName={compactTextInputClass} label="Tiêu đề" value={outboundTitle} onChange={onOutboundTitleChange} required helper="Nội dung phiếu xuất để đối soát lịch sử kho." />
-      </div>
-
-      <div className={inventoryMovementActionRowClass}>
+        <ProductSelect className={inventoryMovementProductFieldClass} label="Loại cầu" value={outboundProductId} products={products} onChange={onOutboundProductIdChange} />
         {outboundType === 'ADJUSTMENT' ? (
-          <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Tồn thực tế theo quả" value={actualQuantityBall} min={0} onChange={onActualQuantityBallChange} helper={outboundProduct ? `Hiện hệ thống ghi nhận ${outboundProduct.quantityBall} quả.` : 'Chọn loại cầu trước khi nhập tồn.'} />
+          <NumberField className={inventoryMovementPriceFieldClass} label="Tồn thực tế theo quả" value={actualQuantityBall} min={0} onChange={onActualQuantityBallChange} />
         ) : outboundType === 'PLAY_USAGE' ? (
-          <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số cầu hao" value={outboundBalls} min={1} onChange={onOutboundBallsChange} helper="Đơn vị quả." />
+          <NumberField className={inventoryMovementQuantityFieldClass} label="Số cầu hao" value={outboundBalls} min={1} onChange={onOutboundBallsChange} />
         ) : (
           <>
-            <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số lượng ống" value={outboundTubes} min={outboundType === 'SALE' ? 1 : 0} onChange={onOutboundTubesChange} helper={outboundProduct ? `${outboundProduct.ballsPerTube} quả/ống` : 'Chọn loại cầu'} />
-            {outboundType === 'OTHER' ? <NumberField className={inventoryMovementQuantityFieldClass} inputClassName={compactNumberInputClass} label="Số quả lẻ" value={outboundBalls} min={0} onChange={onOutboundBallsChange} helper="Tùy chọn." /> : null}
-            <NumberField className={inventoryMovementPriceFieldClass} inputClassName={compactNumberInputClass} label="Đơn giá/ống" value={salePricePerTube} min={0} step={1} onChange={onSalePricePerTubeChange} helper={outboundType === 'SALE' ? 'Giá bán theo ống.' : 'Giá tham chiếu theo ống.'} />
+            <NumberField className={inventoryMovementQuantityFieldClass} label="Số lượng ống" value={outboundTubes} min={outboundType === 'SALE' ? 1 : 0} onChange={onOutboundTubesChange} />
+            {outboundType === 'OTHER' ? <NumberField className={inventoryMovementQuantityFieldClass} label="Số quả lẻ" value={outboundBalls} min={0} onChange={onOutboundBallsChange} /> : null}
+            <NumberField className={inventoryMovementPriceFieldClass} label="Đơn giá/ống" value={salePricePerTube} min={0} step={1} onChange={onSalePricePerTubeChange} />
           </>
         )}
-        <Field className={inventoryMovementNoteFieldClass} inputClassName={compactTextInputClass} label="Ghi chú" value={outboundNote} onChange={onOutboundNoteChange} helper="Tùy chọn." />
-        <div className={inventoryMovementSubmitWrapClass}>
-          <Button type="submit" className={inventoryMovementSubmitClass} disabled={!outboundProduct || createMovementPending}>
-            {createMovementPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Ghi xuất kho
-          </Button>
-        </div>
       </div>
-
-      <div className="mt-4 grid gap-2 rounded-xl border border-border bg-surface p-3 text-sm sm:grid-cols-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Tồn hiện tại</div>
-          <div className="mt-1 font-semibold tabular-nums text-foreground">{outboundProduct ? formatTubes(outboundProduct.quantityBall, outboundProduct.ballsPerTube) : 'Chọn loại cầu'}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{outboundProduct?.quantityBall ?? 0} quả</div>
+      <TextareaField className={inventoryMovementNoteFieldClass} label="Ghi chú" value={outboundNote} onChange={onOutboundNoteChange} />
+      <div className={inventoryMovementSummaryClass}>
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>Tồn hiện tại</div>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-semibold tabular-nums text-foreground">{outboundProduct ? formatTubes(outboundProduct.quantityBall, outboundProduct.ballsPerTube) : 'Chọn loại cầu'}</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{outboundProduct?.quantityBall ?? 0} quả</span>
+          </div>
         </div>
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>
             {outboundType === 'ADJUSTMENT' ? 'Hướng điều chỉnh' : 'Số lượng xuất'}
           </div>
           {outboundType === 'ADJUSTMENT' ? (
@@ -859,8 +837,8 @@ function OutboundMovementForm({
             <div className="mt-1 font-semibold tabular-nums text-foreground">{estimateOutboundBalls(outboundType, outboundProduct, outboundTubes, outboundBalls)} quả</div>
           )}
         </div>
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className={inventoryMovementSummaryItemClass}>
+          <div className={inventoryMovementSummaryLabelClass}>
             {outboundType === 'ADJUSTMENT' ? 'Tồn sau kiểm kê' : outboundType === 'PLAY_USAGE' ? 'Giá cầu hao' : 'Tạm tính'}
           </div>
           <div className="mt-1 font-semibold tabular-nums text-info">
@@ -872,7 +850,6 @@ function OutboundMovementForm({
           </div>
         </div>
       </div>
-
     </form>
   );
 }
@@ -973,6 +950,23 @@ function Field({ label, value, required, helper, className, inputClassName, onCh
         className={inputClassName ?? inputClass}
       />
       {helper ? <span id={helperId} className="mt-1 block text-xs leading-4 text-muted-foreground">{helper}</span> : null}
+    </label>
+  );
+}
+
+function TextareaField({ label, value, className, onChange }: { label: string; value: string; className?: string; onChange: (value: string) => void }) {
+  const fieldId = useId();
+
+  return (
+    <label className={className ?? 'block'} htmlFor={fieldId}>
+      <span className={formLabelClass}>{label}</span>
+      <Textarea
+        id={fieldId}
+        rows={2}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 min-h-16 resize-y"
+      />
     </label>
   );
 }
