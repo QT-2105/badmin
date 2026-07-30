@@ -281,7 +281,7 @@ export function InventoryPageClient() {
   }
 
   return (
-    <PageShell className="gap-4 md:gap-5">
+    <PageShell className="gap-4 md:gap-5" maxWidth="max-w-[1920px]">
       <PageHeader
         eyebrow="Kho vận hành"
         title="Kho cầu"

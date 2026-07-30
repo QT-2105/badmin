@@ -35,7 +35,13 @@ const SUGGESTION_MODES: Array<{ value: SuggestionMode; label: string }> = [
 ];
 
 export function RealtimeDashboard() {
-  const { updateCooldowns, players, session, suggestionMode, refreshNextMatches, setRuntimeSessionId, runtimeSessionId } = useBadmintonStore();
+  const updateCooldowns = useBadmintonStore((state) => state.updateCooldowns);
+  const players = useBadmintonStore((state) => state.players);
+  const session = useBadmintonStore((state) => state.session);
+  const suggestionMode = useBadmintonStore((state) => state.suggestionMode);
+  const refreshNextMatches = useBadmintonStore((state) => state.refreshNextMatches);
+  const setRuntimeSessionId = useBadmintonStore((state) => state.setRuntimeSessionId);
+  const runtimeSessionId = useBadmintonStore((state) => state.runtimeSessionId);
   const router = useRouter();
   const [isPlayerFullscreenOpen, setIsPlayerFullscreenOpen] = useState(false);
   const [isMatchHistoryOpen, setIsMatchHistoryOpen] = useState(false);

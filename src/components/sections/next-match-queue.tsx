@@ -17,7 +17,10 @@ export function NextMatchQueue({
   disabledReason?: string | null;
   onCommitRuntime?: () => Promise<boolean>;
 }) {
-  const { nextMatches, courts, refreshNextMatches, applyNextMatch } = useBadmintonStore();
+  const nextMatches = useBadmintonStore((state) => state.nextMatches);
+  const courts = useBadmintonStore((state) => state.courts);
+  const refreshNextMatches = useBadmintonStore((state) => state.refreshNextMatches);
+  const applyNextMatch = useBadmintonStore((state) => state.applyNextMatch);
   const [activeReplaceMatchId, setActiveReplaceMatchId] = useState<string | null>(null);
   const emptyCourts = courts.filter((c) => c.status === 'EMPTY');
   const canAutoAssign = !schedulingDisabled && emptyCourts.length > 0 && nextMatches.length > 0;

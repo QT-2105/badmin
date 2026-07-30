@@ -18,7 +18,7 @@ export function LiveCourtsSection({
   onCommitRuntime?: () => Promise<boolean>;
   onRecordMatch?: (payload: MatchHistoryPayload) => Promise<void>;
 }) {
-  const { courts } = useBadmintonStore();
+  const courts = useBadmintonStore((state) => state.courts);
 
   // Filter only active courts (READY or PLAYING)
   const activeCourts = courts.filter((c) => c.status !== 'EMPTY');

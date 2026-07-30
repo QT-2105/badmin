@@ -158,7 +158,7 @@ export function DashboardPageClient() {
   }, [data?.lowStockProducts.length]);
 
   return (
-    <PageShell>
+    <PageShell maxWidth="max-w-[1920px]">
       <PageHeader
         eyebrow="Tổng quan vận hành"
         title="Tổng quan"

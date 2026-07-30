@@ -176,7 +176,7 @@ export function FinancePageView({
     description: `Chưa có phiếu thu chi nào được ghi nhận trong ${selectedPeriodLabel}.`
   };
   return (
-    <PageShell className="gap-4 md:gap-5">
+    <PageShell className="gap-4 md:gap-5" maxWidth="max-w-[1920px]">
       <FinanceHeader />
 
       <FinanceReportFilter

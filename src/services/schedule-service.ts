@@ -88,6 +88,7 @@ export async function completePlaySession(sessionId: string, payload: {
   note?: string | null;
   autoCreateCourtFeeTransaction?: boolean;
   autoCreateShuttlecockUsageTransaction?: boolean;
+  autoCreateExtraExpenseTransaction?: boolean;
 }): Promise<PlaySessionSummary> {
   const res = await fetch(`/api/sessions/${sessionId}/complete`, {
     method: 'POST',

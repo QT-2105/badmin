@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AlertCircle, Check, ChevronDown, ImageUp, Loader2, Pencil, Play, Plus, Save, Square, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
 import { PlayerFeeInput } from '@/components/player/player-fee-input';
 import { PlayerAvatar } from '@/components/player/player-avatar';
@@ -10,6 +10,7 @@ import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/playe
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/feedback';
+import { Switch } from '@/components/ui/form';
 import { NoticeCard, PageFeedbackStack, PageHeader, PageShell, PageSummaryGrid, formInputClass, formLabelClass } from '@/components/ui/page-layout';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -45,6 +46,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const [shuttlecockPiecesUsed, setShuttlecockPiecesUsed] = useState('');
   const [extraExpenseTitle, setExtraExpenseTitle] = useState('');
   const [extraExpenseAmount, setExtraExpenseAmount] = useState('');
+  const [autoCreateExtraExpenseTransaction, setAutoCreateExtraExpenseTransaction] = useState(false);
   const [sessionNote, setSessionNote] = useState('');
   const [completionExpanded, setCompletionExpanded] = useState(true);
   const [completionDetailsExpanded, setCompletionDetailsExpanded] = useState(false);
@@ -54,6 +56,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const [playerActionError, setPlayerActionError] = useState<string | null>(null);
   const [playerSort, setPlayerSort] = useState<PlayerSortValue>('DEFAULT');
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const extraExpenseTransactionSwitchId = useId();
+  const extraExpenseTransactionHintId = useId();
   const normalizedStatus = normalizeSessionStatus(session?.status);
   const runtimeLocked = normalizedStatus === 'COMPLETED' || normalizedStatus === 'CANCELLED';
   const requiredPlayers = (session?.courtCount ?? 1) * 6;
@@ -314,7 +318,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           extraExpenseAmount: extraExpenseValue,
           note: sessionNote.trim() || null,
           autoCreateCourtFeeTransaction: settings.autoCreateCourtFeeTransaction,
-          autoCreateShuttlecockUsageTransaction: settings.autoCreateShuttlecockUsageTransaction
+          autoCreateShuttlecockUsageTransaction: settings.autoCreateShuttlecockUsageTransaction,
+          autoCreateExtraExpenseTransaction
         }
       });
       setShowCompleteConfirm(false);
@@ -325,7 +330,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <PageShell maxWidth="max-w-6xl">
+    <PageShell maxWidth="max-w-7xl">
       <PageHeader
         backAction={
           <Link
@@ -434,7 +439,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {completionExpanded ? (
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[172px_minmax(280px,1fr)] lg:grid-cols-[172px_minmax(360px,520px)_128px_148px] lg:items-end lg:justify-start">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(152px,172px)_minmax(280px,1fr)] lg:grid-cols-[minmax(144px,200px)_minmax(280px,1fr)_minmax(108px,136px)_148px] lg:items-center">
           <Surface variant="subtle" padding="sm" className="min-w-0 border-info/20 bg-info-soft/40 md:p-3">
             <label className="block">
               <span className={formLabelClass}>Chi phí sân</span>
@@ -474,7 +479,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               />
             </label>
           </Surface>
-          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full justify-center hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50 sm:w-[148px] sm:justify-self-start lg:w-full">
+          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full justify-center hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50 sm:w-[148px] sm:justify-self-start lg:place-self-center">
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
@@ -497,7 +502,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               </Button>
             </div>
             {completionDetailsExpanded ? (
-              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px]">
+              <div className="mt-3 grid gap-3 md:grid-cols-[minmax(220px,1fr)_180px] lg:grid-cols-[minmax(240px,1fr)_180px_172px]">
                 <label className="block">
                   <span className={formLabelClass}>Nội dung chi phí phát sinh</span>
                   <input
@@ -521,7 +526,38 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                     className={`${formInputClass} h-11 text-right tabular-nums`}
                   />
                 </label>
-                <label className="block lg:col-span-2">
+                <div className="block md:col-span-2 lg:col-span-1">
+                  <label htmlFor={extraExpenseTransactionSwitchId} className={formLabelClass}>Tạo phiếu chi</label>
+                  <div className="mt-1 flex min-h-11 flex-wrap items-center gap-2">
+                    <label
+                      htmlFor={extraExpenseTransactionSwitchId}
+                      className={`inline-flex h-9 w-fit items-center gap-2 rounded-full border px-2.5 transition-colors focus-within:ring-2 focus-within:ring-focus/15 motion-reduce:transition-none ${
+                        runtimeLocked || !canCompleteSession
+                          ? 'cursor-not-allowed border-border bg-surface-subtle opacity-60'
+                          : autoCreateExtraExpenseTransaction
+                            ? 'cursor-pointer border-success/30 bg-success-soft/45 hover:bg-success-soft/65'
+                            : 'cursor-pointer border-border bg-background hover:border-inputHover'
+                      }`}
+                    >
+                      <Switch
+                        id={extraExpenseTransactionSwitchId}
+                        checked={autoCreateExtraExpenseTransaction}
+                        onChange={(event) => setAutoCreateExtraExpenseTransaction(event.target.checked)}
+                        disabled={runtimeLocked || !canCompleteSession}
+                        aria-describedby={extraExpenseTransactionHintId}
+                        aria-label="Tự động tạo phiếu chi cho phí phát sinh"
+                        className="h-5 w-9 shrink-0 before:h-4 before:w-4 checked:before:translate-x-4"
+                      />
+                      <span className={`min-w-5 text-xs font-semibold ${autoCreateExtraExpenseTransaction ? 'text-success' : 'text-muted-foreground'}`}>
+                        {autoCreateExtraExpenseTransaction ? 'Bật' : 'Tắt'}
+                      </span>
+                    </label>
+                    <span id={extraExpenseTransactionHintId} className="text-xs leading-4 text-muted-foreground">
+                      Phân loại Khác
+                    </span>
+                  </div>
+                </div>
+                <label className="block md:col-span-2 lg:col-span-3">
                   <span className={formLabelClass}>Ghi chú ca</span>
                   <textarea
                     value={sessionNote}
@@ -668,12 +704,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                   </select>
                 </label>
               </Surface>
-              <Surface variant="subtle" padding="sm" className="hidden gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[minmax(260px,360px)_92px_96px_140px_minmax(16px,1fr)_132px] lg:items-center">
+              <Surface variant="subtle" padding="sm" className="hidden gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[minmax(260px,1fr)_112px_132px_160px_160px] lg:items-center">
                 <div>Tên người chơi</div>
                 <div>Tổng set</div>
                 <div>Phí</div>
                 <div>Thanh toán</div>
-                <div aria-hidden="true" />
                 <label className="flex items-center justify-end">
                   <span className="sr-only">Sắp xếp danh sách người chơi</span>
                   <select
@@ -774,7 +809,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               <Surface
                 key={player.id}
                 padding="sm"
-                className="grid gap-2 px-3 py-1.5 text-sm lg:grid-cols-[minmax(260px,360px)_92px_96px_140px_minmax(16px,1fr)_132px] lg:items-center"
+                className="grid gap-2 px-3 py-1.5 text-sm lg:grid-cols-[minmax(260px,1fr)_112px_132px_160px_160px] lg:items-center"
               >
                 <button
                   type="button"
@@ -792,7 +827,6 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 <div className="text-text-secondary lg:text-left">{player.totalMatches} trận</div>
                 <div className="font-mono tabular-nums text-foreground lg:text-left">{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
-                <div aria-hidden="true" className="hidden lg:block" />
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   {canOperateSession ? (
                   <Button type="button" variant="secondary" iconOnly disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-9 w-9 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50" aria-label={`Chỉnh sửa ${player.fullName}`}>
@@ -900,7 +934,9 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
             </tbody>
           </table>
         </div>
-        {!settings.autoCreateCourtFeeTransaction || !settings.autoCreateShuttlecockUsageTransaction ? (
+        {!settings.autoCreateCourtFeeTransaction
+        || !settings.autoCreateShuttlecockUsageTransaction
+        || (extraExpenseValue > 0 && !autoCreateExtraExpenseTransaction) ? (
           <div className="mt-3 rounded-lg border border-border bg-surface-subtle px-3 py-2.5 text-xs leading-5 text-muted-foreground sm:text-sm">
             <p className="font-semibold text-foreground">Lưu ý:</p>
             <ul className="mt-1 list-disc pl-5">
@@ -908,6 +944,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 Các khoản chi vẫn được tính vào lợi nhuận.
                 {!settings.autoCreateCourtFeeTransaction ? ' Không tạo phiếu chi sân.' : ''}
                 {!settings.autoCreateShuttlecockUsageTransaction ? ' Không tạo phiếu chi cầu.' : ''}
+                {extraExpenseValue > 0 && !autoCreateExtraExpenseTransaction ? ' Không tạo phiếu chi phát sinh.' : ''}
               </li>
             </ul>
           </div>

@@ -21,7 +21,12 @@ export function NextMatchCard({
   onReplaceOpenChange?: (open: boolean) => void;
   onCommitRuntime?: () => Promise<boolean>;
 }) {
-  const { players, courts, nextMatches, applyNextMatch, replaceNextMatchPlayer, toggleNextMatchLock } = useBadmintonStore();
+  const players = useBadmintonStore((state) => state.players);
+  const courts = useBadmintonStore((state) => state.courts);
+  const nextMatches = useBadmintonStore((state) => state.nextMatches);
+  const applyNextMatch = useBadmintonStore((state) => state.applyNextMatch);
+  const replaceNextMatchPlayer = useBadmintonStore((state) => state.replaceNextMatchPlayer);
+  const toggleNextMatchLock = useBadmintonStore((state) => state.toggleNextMatchLock);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [draftRoster, setDraftRoster] = useState<string[]>(match.roster);
   const [pendingReplacements, setPendingReplacements] = useState<Array<{ slotIndex: number; playerId: string }>>([]);

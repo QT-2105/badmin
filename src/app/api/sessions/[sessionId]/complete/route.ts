@@ -24,7 +24,8 @@ export async function POST(request: Request, context: RouteContext) {
       extraExpenseAmount: payload.extraExpenseAmount === undefined ? undefined : Number(payload.extraExpenseAmount),
       note: payload.note,
       autoCreateCourtFeeTransaction: payload.autoCreateCourtFeeTransaction,
-      autoCreateShuttlecockUsageTransaction: payload.autoCreateShuttlecockUsageTransaction
+      autoCreateShuttlecockUsageTransaction: payload.autoCreateShuttlecockUsageTransaction,
+      autoCreateExtraExpenseTransaction: payload.autoCreateExtraExpenseTransaction
     });
 
     return NextResponse.json({ session });

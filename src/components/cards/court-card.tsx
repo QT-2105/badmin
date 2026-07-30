@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowRightLeft, Clock, Play, Square, Users, X } from 'lucide-react';
 import { useBadmintonStore, type Court } from '@/lib/badminton-store';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
@@ -60,9 +60,14 @@ export function CourtCard({
   onCommitRuntime?: () => Promise<boolean>;
   onRecordMatch?: (payload: MatchHistoryPayload) => Promise<void>;
 }) {
-  const { players, swapPairs, startMatch, endMatch, nextMatches, applyNextMatch, cancelReadyCourt } = useBadmintonStore();
+  const players = useBadmintonStore((state) => state.players);
+  const swapPairs = useBadmintonStore((state) => state.swapPairs);
+  const startMatch = useBadmintonStore((state) => state.startMatch);
+  const endMatch = useBadmintonStore((state) => state.endMatch);
+  const nextMatches = useBadmintonStore((state) => state.nextMatches);
+  const applyNextMatch = useBadmintonStore((state) => state.applyNextMatch);
+  const cancelReadyCourt = useBadmintonStore((state) => state.cancelReadyCourt);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const prefersReducedMotion = useReducedMotion();
 
   const status = courtStatusConfig[court.status];
   const courtPlayers = court.slots
@@ -119,14 +124,13 @@ export function CourtCard({
   }
 
   return (
-    <motion.div
+    <div
       className={cn(
         'group relative isolate flex h-full min-h-[11.5rem] min-w-0 flex-col overflow-hidden rounded-xl border p-3 shadow-sm shadow-slate-950/16 backdrop-blur-sm transition-colors dark:shadow-slate-950/20',
         courtTheme.surfaceClass,
         status.bgClass,
         status.glowClass
       )}
-      layout
       aria-label={`${court.name}, trạng thái ${status.label}`}
     >
       <div className={cn('pointer-events-none absolute inset-0 z-0 bg-gradient-to-br', courtTheme.washClass)} aria-hidden="true" />
@@ -138,14 +142,12 @@ export function CourtCard({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {court.status === 'PLAYING' && court.startedAt && (
-            <motion.div
-              animate={prefersReducedMotion ? undefined : { opacity: [0.65, 1] }}
-              transition={prefersReducedMotion ? undefined : { duration: 1, repeat: Infinity }}
+            <div
               className="flex h-7 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 text-[11px] font-mono font-semibold text-emerald-100"
             >
               <Clock className="h-3 w-3" />
               {formatTime(elapsedTime)}
-            </motion.div>
+            </div>
           )}
           <span role="status" className={cn('rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em]', status.badgeClass)}>
             {status.label}
@@ -278,7 +280,7 @@ export function CourtCard({
           </motion.button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 

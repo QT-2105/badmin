@@ -6,6 +6,18 @@ function toNumber(value: unknown): number {
   return Number(value ?? 0);
 }
 
+function getPlayDateLabels(value: Date): { dateLabel: string; weekdayLabel: string } {
+  const weekdayLabels = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  const day = String(value.getUTCDate()).padStart(2, '0');
+  const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+  const year = value.getUTCFullYear();
+
+  return {
+    dateLabel: `${day}/${month}/${year}`,
+    weekdayLabel: weekdayLabels[value.getUTCDay()]
+  };
+}
+
 export async function completePlaySession(input: {
   sessionId: string;
   courtCost: number;
@@ -16,6 +28,7 @@ export async function completePlaySession(input: {
   note?: string | null;
   autoCreateCourtFeeTransaction?: boolean;
   autoCreateShuttlecockUsageTransaction?: boolean;
+  autoCreateExtraExpenseTransaction?: boolean;
 }): Promise<PlaySessionSummary> {
   const courtCost = Number(input.courtCost);
   const shuttlecockPiecesUsed = Math.floor(Number(input.shuttlecockPiecesUsed));
@@ -24,6 +37,7 @@ export async function completePlaySession(input: {
   const sessionNote = input.note?.trim() || null;
   const autoCreateCourtFeeTransaction = input.autoCreateCourtFeeTransaction !== false;
   const autoCreateShuttlecockUsageTransaction = input.autoCreateShuttlecockUsageTransaction !== false;
+  const autoCreateExtraExpenseTransaction = input.autoCreateExtraExpenseTransaction === true;
 
   if (!Number.isFinite(courtCost) || courtCost <= 0) {
     throw new Error('Vui lòng nhập chi phí sân');
@@ -73,14 +87,14 @@ export async function completePlaySession(input: {
       if (player.payment_status !== 'PAID') return total;
       return total + Math.max(0, toNumber(player.payment_amount) - toNumber(player.discount));
     }, 0);
-    const dateLabel = session.play_dates.play_date.toLocaleDateString('vi-VN');
+    const { dateLabel, weekdayLabel } = getPlayDateLabels(session.play_dates.play_date);
     const startLabel = session.start_time.toISOString().slice(11, 16);
     const endLabel = session.end_time.toISOString().slice(11, 16);
     const sessionLabel = `${startLabel}-${endLabel} - ${dateLabel}`;
     const incomeTitle = `Thu SLOT vãng lai ca ${sessionLabel}`;
     const courtTitle = `Chi SÂN vãng lai ca ${sessionLabel}`;
     const shuttlecockTitle = `Chi CẦU vãng lai ca ${sessionLabel}`;
-    const extraTitle = extraExpenseTitle ? `${extraExpenseTitle} ca ${sessionLabel}` : null;
+    const extraExpenseTransactionNote = `Chi phí phát sinh tạo tự động ca ${startLabel}-${endLabel} | ${weekdayLabel} Ngày ${dateLabel}`;
     const shuttlecockMovementTitle = `Xuất cầu hao ca ${startLabel}-${endLabel} | ngày ${dateLabel}`;
 
     const transactions = [
@@ -122,16 +136,16 @@ export async function completePlaySession(input: {
       });
     }
 
-    if (extraExpenseAmount > 0 && extraTitle) {
+    if (autoCreateExtraExpenseTransaction && extraExpenseAmount > 0 && extraExpenseTitle) {
       transactions.push({
         session_id: input.sessionId,
         transaction_type: 'EXPENSE',
         category: 'OTHER',
-        title: extraTitle,
+        title: extraExpenseTitle,
         quantity: 1,
         unit_price: extraExpenseAmount,
         total_amount: extraExpenseAmount,
-        note: extraTitle
+        note: extraExpenseTransactionNote
       });
     }
 

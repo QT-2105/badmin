@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -18,7 +18,9 @@ export function PlayerFeeInput({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<'top' | 'bottom'>('bottom');
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   function selectFee(fee: number) {
     onChange(String(fee));
@@ -39,6 +41,35 @@ export function PlayerFeeInput({
     return () => document.removeEventListener('mousedown', closeOnOutside);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+
+    function updatePlacement() {
+      const root = rootRef.current;
+      const menu = menuRef.current;
+      if (!root || !menu) return;
+
+      const gap = 6;
+      const viewportPadding = 8;
+      const rootRect = root.getBoundingClientRect();
+      const menuHeight = menu.offsetHeight;
+      const spaceBelow = window.innerHeight - rootRect.bottom - gap - viewportPadding;
+      const spaceAbove = rootRect.top - gap - viewportPadding;
+      const nextPlacement = spaceBelow >= menuHeight || spaceBelow >= spaceAbove ? 'bottom' : 'top';
+
+      setPlacement((current) => current === nextPlacement ? current : nextPlacement);
+    }
+
+    updatePlacement();
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('scroll', updatePlacement, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, true);
+    };
+  }, [open]);
+
   return (
     <div ref={rootRef} className={cn('relative mt-1', className)}>
       <input
@@ -53,7 +84,13 @@ export function PlayerFeeInput({
         className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition hover:border-inputHover focus:border-focus focus:ring-2 focus:ring-focus/15 disabled:bg-surface-subtle disabled:text-text-disabled"
       />
       {open && !disabled ? (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-dropdown grid w-full min-w-[150px] grid-cols-1 gap-1 rounded-lg border border-border bg-popover p-1 shadow-md">
+        <div
+          ref={menuRef}
+          className={cn(
+            'absolute left-0 z-dropdown grid max-h-[min(14rem,calc(100vh-1rem))] w-full min-w-[150px] grid-cols-1 gap-1 overflow-y-auto overscroll-contain rounded-lg border border-border bg-popover p-1 shadow-md',
+            placement === 'top' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
+          )}
+        >
           {PLAYER_FEE_OPTIONS.map((fee) => {
             const active = String(fee) === String(value);
             return (

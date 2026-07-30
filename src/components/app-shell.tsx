@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, CircleDollarSign, LogOut, Package, Settings2, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -72,13 +72,43 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('badmin_sidebar_collapsed') === 'true';
   });
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem('badmin_sidebar_collapsed', String(collapsed));
   }, [collapsed]);
 
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  function markNavigationPending(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.defaultPrevented
+      || event.button !== 0
+      || event.metaKey
+      || event.ctrlKey
+      || event.shiftKey
+      || event.altKey
+      || isNavItemActive(pathname, href)
+    ) {
+      return;
+    }
+
+    setPendingHref(href);
+  }
+
   return (
     <div className="min-h-screen min-w-0 overflow-x-clip bg-background text-foreground">
+      {pendingHref ? (
+        <div
+          role="status"
+          aria-label="Đang chuyển trang"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-0.5 overflow-hidden bg-primary/15"
+        >
+          <span className="block h-full w-2/5 animate-[badmin-navigation-progress_900ms_ease-in-out_infinite] bg-primary shadow-[0_0_10px_var(--color-primary)] motion-reduce:w-full motion-reduce:animate-none" />
+        </div>
+      ) : null}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-focus/25"
@@ -88,7 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen min-w-0">
         <aside
           className={cn(
-            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border/80 bg-surface-elevated/95 backdrop-blur md:flex md:flex-col transition-[width] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+            'fixed left-0 top-0 z-30 hidden h-screen border-r border-border/80 bg-surface-elevated/95 backdrop-blur md:flex md:flex-col transition-[width] duration-200 ease-[var(--ease-standard)] motion-reduce:transition-none',
             collapsed ? 'w-[88px]' : 'w-[232px]'
           )}
         >
@@ -101,7 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               href="/dashboard"
               className={cn(
-                'flex min-w-0 items-center gap-2 rounded-full outline-none transition-[width,opacity,background-color,box-shadow] duration-300 ease-[var(--ease-standard)] hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 motion-reduce:transition-none',
+                'flex min-w-0 items-center gap-2 rounded-full outline-none transition-[width,opacity,background-color,box-shadow] duration-200 ease-[var(--ease-standard)] hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 motion-reduce:transition-none',
                 collapsed && 'grid h-9 w-9 shrink-0 place-items-center overflow-hidden'
               )}
               aria-label={collapsed ? `${branding?.clubName || 'Badmin'} dashboard` : undefined}
@@ -121,7 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               variant="ghost"
               size="sm"
               className={cn(
-                'h-10 w-10 shrink-0 bg-surface-muted px-0 text-muted-foreground ring-1 ring-border transition-[width,height,background-color,border-color,color,box-shadow] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+                'h-10 w-10 shrink-0 bg-surface-muted px-0 text-muted-foreground ring-1 ring-border transition-[width,height,background-color,border-color,color,box-shadow] duration-200 ease-[var(--ease-standard)] motion-reduce:transition-none',
                 sidebarInteractiveClass,
                 collapsed && 'h-7 w-7 rounded-lg bg-transparent ring-0'
               )}
@@ -146,6 +176,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href as Route}
+                      onClick={(event) => markNavigationPending(event, item.href)}
                       className={cn(
                         'relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none transition-[background-color,border-color,color,box-shadow,padding] duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                         active
@@ -194,7 +225,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main
           id="main-content"
           className={cn(
-            'min-h-screen min-w-0 overflow-x-clip bg-background transition-[margin-left] duration-300 ease-[var(--ease-standard)] motion-reduce:transition-none',
+            'min-h-screen min-w-0 overflow-x-clip bg-background transition-[margin-left] duration-200 ease-[var(--ease-standard)] motion-reduce:transition-none',
             collapsed ? 'md:ml-[88px]' : 'md:ml-[232px]'
           )}
         >
@@ -210,6 +241,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href as Route}
+                    onClick={(event) => markNavigationPending(event, item.href)}
                     className={cn(
                       'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                       active

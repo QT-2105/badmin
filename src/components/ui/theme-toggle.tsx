@@ -10,9 +10,13 @@ type ThemeMode = 'dark' | 'light';
 const storageKey = 'badmin_theme';
 
 function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') return 'dark';
-  const stored = window.localStorage.getItem(storageKey);
-  return stored === 'light' ? 'light' : 'dark';
+  if (typeof window === 'undefined') return 'light';
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    return stored === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
 }
 
 function applyTheme(theme: ThemeMode) {
@@ -29,7 +33,7 @@ export function ThemeToggle({
   align?: 'center' | 'start';
   className?: string;
 }) {
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [theme, setTheme] = useState<ThemeMode>('light');
 
   useEffect(() => {
     const initial = getInitialTheme();
@@ -40,8 +44,12 @@ export function ThemeToggle({
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    window.localStorage.setItem(storageKey, next);
     applyTheme(next);
+    try {
+      window.localStorage.setItem(storageKey, next);
+    } catch {
+      // Theme vẫn có hiệu lực cho phiên hiện tại nếu trình duyệt chặn localStorage.
+    }
   }
 
   const Icon = theme === 'dark' ? Moon : Sun;

@@ -31,7 +31,10 @@ export function PlayerDatabasePanel({
   readonly?: boolean;
   fullHeight?: boolean;
 }) {
-  const { players, updatePlayer, updatePlayerPayment, runtimeSessionId } = useBadmintonStore();
+  const players = useBadmintonStore((state) => state.players);
+  const updatePlayer = useBadmintonStore((state) => state.updatePlayer);
+  const updatePlayerPayment = useBadmintonStore((state) => state.updatePlayerPayment);
+  const runtimeSessionId = useBadmintonStore((state) => state.runtimeSessionId);
   const { updatePlayer: persistPlayer } = useSessionPlayerMutations(runtimeSessionId || '');
   const isCompact = viewMode === 'compact';
   const [sortBy, setSortBy] = useState('FEMALE_FIRST');

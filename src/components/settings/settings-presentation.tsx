@@ -148,7 +148,7 @@ export function SettingsPageView({
   onConfirmDestructiveAction: () => void;
 }) {
   return (
-    <PageShell maxWidth="max-w-7xl">
+    <PageShell maxWidth="max-w-[1920px]">
       <PageHeader
         eyebrow="Cấu hình vận hành"
         title="Cài đặt"

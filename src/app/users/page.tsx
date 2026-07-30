@@ -7,7 +7,7 @@ export default async function UsersPage() {
   await requirePageUser('/users');
   return (
     <AppShell>
-      <PageShell className="gap-4 md:gap-5" maxWidth="max-w-7xl">
+      <PageShell className="gap-4 md:gap-5" maxWidth="max-w-[1920px]">
         <PageHeader
           eyebrow="Quản lý truy cập"
           title="Người dùng"
