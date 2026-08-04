@@ -218,10 +218,6 @@ function hasPlayerTag(player: Pick<Player, 'playerTags'>, tag: PlayerTag): boole
   return normalizePlayerTags(player.playerTags).includes(tag);
 }
 
-function isPlayerEligibleForAutoSuggestion(player: Player, excludedPlayerIds: Set<string>): boolean {
-  return isEligibleForAutoSuggestion(player, excludedPlayerIds);
-}
-
 function filterCandidatesBySuggestionMode(candidates: Player[], mode: SuggestionMode): Player[] {
   if (mode === 'men') {
     return candidates.filter((player) => player.gender === 'Nam');
