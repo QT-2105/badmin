@@ -91,14 +91,14 @@ export function NextMatchCard({
 
   return (
     <motion.div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/52 shadow-sm shadow-slate-950/16 backdrop-blur-sm transition-colors hover:border-cyan-300/25" aria-label={`Gợi ý trận ${match.index}`}>
-      <div className="p-3">
+      <div className="p-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-300">Gợi ý #{match.index}</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.10em] text-slate-300">Gợi ý #{match.index}</div>
               {match.locked ? <span className="rounded-full border border-amber-300/25 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-100">Đã lock</span> : null}
             </div>
-            <div className="mt-1 text-[11px] font-medium text-slate-500">{targetCourt ? `Áp dụng vào ${targetCourt.name}` : 'Hết sân trống'}</div>
+            <div className="mt-0.5 text-[10px] font-medium text-slate-500">{targetCourt ? `Áp dụng vào ${targetCourt.name}` : 'Hết sân trống'}</div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <button
@@ -107,7 +107,7 @@ export function NextMatchCard({
                 toggleNextMatchLock(match.id);
                 void onCommitRuntime?.();
               }}
-              className={`inline-flex h-10 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${match.locked ? 'border-amber-300/25 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
+              className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2 text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${match.locked ? 'border-amber-300/25 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
               title={match.locked ? 'Bỏ lock gợi ý' : 'Lock gợi ý'}
               aria-pressed={match.locked}
               aria-label={match.locked ? `Bỏ lock gợi ý ${match.index}` : `Lock gợi ý ${match.index}`}
@@ -124,7 +124,7 @@ export function NextMatchCard({
               }}
               disabled={!canApply}
               aria-label={`Áp dụng gợi ý ${match.index}${targetCourt ? ` vào ${targetCourt.name}` : ''}`}
-              className="inline-flex h-10 items-center gap-1 rounded-lg border border-emerald-300/20 bg-emerald-400/15 px-2 text-[11px] font-bold text-emerald-100 transition-colors hover:border-emerald-200/35 hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
+              className="inline-flex h-9 items-center gap-1 rounded-lg border border-emerald-300/20 bg-emerald-400/15 px-2 text-[10px] font-bold text-emerald-100 transition-colors hover:border-emerald-200/35 hover:bg-emerald-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
             >
               <Check className="h-3.5 w-3.5" />
               Áp dụng
@@ -135,47 +135,47 @@ export function NextMatchCard({
               aria-expanded={replaceOpen}
               aria-controls={replacePanelId}
               aria-label={replaceOpen ? `Hủy đổi người gợi ý ${match.index}` : `Mở đổi người gợi ý ${match.index}`}
-              className={`inline-flex h-10 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${replaceOpen ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
+              className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2 text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${replaceOpen ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-300/25 hover:bg-white/[0.08] hover:text-white'}`}
             >
               <Zap className="h-3.5 w-3.5" />
               {replaceOpen ? 'Huỷ đổi' : 'Đổi người'}
             </button>
           </div>
         </div>
-        <div className="mt-3 flex items-start justify-between gap-3">
+        <div className="mt-2.5 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-          <div className="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-stretch gap-2 text-xs">
+          <div className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] items-stretch gap-1.5 text-xs">
             <PairPreview label="Cặp A" players={teamA} onSelectPlayer={setQuickViewPlayer} />
-            <div className="flex items-center justify-center text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">VS</div>
+            <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-[0.06em] text-slate-500">VS</div>
             <PairPreview label="Cặp B" players={teamB} onSelectPlayer={setQuickViewPlayer} />
           </div>
-          <div className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${scoreToneClass}`}>{match.score}% • {scoreLabel}</div>
+          <div className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${scoreToneClass}`}>{match.score}% • {scoreLabel}</div>
         </div>
 
         </div>
       </div>
 
       {replaceOpen && (
-        <div id={replacePanelId} className="space-y-3 border-t border-white/10 bg-slate-950/45 px-3 py-3">
-          <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div id={replacePanelId} className="space-y-2.5 border-t border-white/10 bg-slate-950/45 px-2.5 py-2.5">
+          <div className="grid min-w-0 gap-2.5 min-[420px]:grid-cols-[minmax(0,1.12fr)_minmax(11rem,0.88fr)]">
             <div className="rounded-xl border border-white/10 bg-white/[0.035] p-2.5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="text-xs font-bold text-slate-200">Chọn người trong cặp cần đổi</div>
-                <div className="text-[11px] font-medium text-slate-500">Bấm vào 1 người</div>
+                <div className="text-[11px] font-bold text-slate-200">Chọn người trong cặp cần đổi</div>
+                <div className="text-[10px] font-medium text-slate-500">Bấm vào 1 người</div>
               </div>
-              <div className="grid grid-cols-[minmax(0,1fr)_2rem_minmax(0,1fr)] items-stretch gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_1rem_minmax(0,1fr)] items-stretch gap-1.5">
                 <ReplacePairColumn label="Cặp A" slots={[0, 1]} roster={draftRoster} players={players} selectedSlot={selectedSlot} onSelect={setSelectedSlot} />
-                <div className="flex items-center justify-center text-[11px] font-black text-slate-500">VS</div>
+                <div className="flex items-center justify-center text-[10px] font-black text-slate-500">VS</div>
                 <ReplacePairColumn label="Cặp B" slots={[2, 3]} roster={draftRoster} players={players} selectedSlot={selectedSlot} onSelect={setSelectedSlot} />
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.035] p-2.5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.035] p-1.5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="text-xs font-bold text-slate-200">Chọn người thay thế</div>
-                <div className="text-[11px] font-medium text-slate-500">Chọn rồi lưu</div>
+                <div className="text-[11px] font-bold text-slate-200">Chọn người thay thế</div>
+                <div className="text-[10px] font-medium text-slate-500">Chọn rồi lưu</div>
               </div>
-              <div className="max-h-44 space-y-1.5 overflow-y-auto overscroll-contain pr-1">
+              <div className="max-h-40 space-y-1 overflow-y-auto overscroll-contain pr-1">
                 {replacementPlayers.map((wp) => (
                     <button
                       key={wp.id}
@@ -191,13 +191,13 @@ export function NextMatchCard({
                       }}
                       disabled={selectedSlot === null}
                       aria-label={`Chọn ${wp.name} thay thế${sourceMatchByPlayerId.has(wp.id) ? ` từ gợi ý ${sourceMatchByPlayerId.get(wp.id)}` : ''}`}
-                      className="w-full rounded-lg border border-white/[0.06] bg-slate-950/35 px-2.5 py-2 text-left transition-colors hover:border-cyan-300/25 hover:bg-slate-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/50 disabled:bg-slate-900/25 disabled:opacity-45"
+                      className="w-full rounded-lg border border-white/[0.06] bg-slate-950/35 px-2 py-1.5 text-left transition-colors hover:border-cyan-300/25 hover:bg-slate-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/50 disabled:bg-slate-900/25 disabled:opacity-45"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0 break-words text-xs font-bold leading-4 text-slate-100" title={wp.name}>{getDisplayPlayerName(wp.name)}</div>
+                        <div className="min-w-0 break-words text-[11px] font-bold leading-4 text-slate-100" title={wp.name}>{getDisplayPlayerName(wp.name)}</div>
                         {sourceMatchByPlayerId.has(wp.id) ? <span className="shrink-0 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-100">Gợi ý #{sourceMatchByPlayerId.get(wp.id)}</span> : null}
                       </div>
-                      <div className="text-xxs text-[11px] font-medium text-slate-400">{wp.gender} • {getLevelLabel(wp.level)} • {wp.matchesPlayed} trận • {wp.status === 'JUST_FINISHED' ? 'vừa xong' : wp.status === 'PRIORITY' ? 'trong gợi ý' : 'chờ'}</div>
+                      <div className="text-[10px] font-medium text-slate-400">{wp.gender} • {getLevelLabel(wp.level)} • {wp.matchesPlayed} trận • {wp.status === 'JUST_FINISHED' ? 'vừa xong' : wp.status === 'PRIORITY' ? 'trong gợi ý' : 'chờ'}</div>
                     </button>
                   ))}
                 {replacementPlayers.length === 0 ? (
@@ -209,8 +209,8 @@ export function NextMatchCard({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2">
-            <div className="min-w-0 text-[11px] font-medium text-slate-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/60 px-2.5 py-2">
+            <div className="min-w-0 text-[10px] font-medium text-slate-400">
               {selectedSlotPlayer ? `Đang chọn: ${selectedSlotPlayer.name}` : pendingReplacements.length > 0 ? `Đã đổi nháp ${pendingReplacements.length} vị trí. Bấm lưu để ghi nhận.` : 'Chọn người cần đổi, sau đó chọn người thay thế.'}
             </div>
             <button
@@ -227,7 +227,7 @@ export function NextMatchCard({
                 setPendingReplacements([]);
                 void onCommitRuntime?.();
               }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-400 px-3 text-xs font-bold text-slate-950 transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800 disabled:text-slate-500"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-cyan-200/30 bg-cyan-400 px-3 text-[11px] font-bold text-slate-950 transition-colors hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800 disabled:text-slate-500"
             >
               <Check className="h-3.5 w-3.5" />
               Lưu lại
@@ -250,25 +250,25 @@ function PairPreview({
   onSelectPlayer: (player: QuickViewPlayer) => void;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-2">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{label}</div>
-      <div className="grid gap-1.5">
+    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-1.5">
+      <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</div>
+      <div className="grid gap-1">
         {players.map((player, index) => (
           <button
             type="button"
             key={player?.id ?? index}
-            className="grid min-h-[54px] w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-2 rounded-lg border border-transparent p-1.5 text-left transition-colors hover:border-cyan-300/20 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+            className="grid min-h-[48px] w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-1.5 rounded-lg border border-transparent p-1.5 text-left transition-colors hover:border-cyan-300/20 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
             onClick={() => player && onSelectPlayer(toQuickViewPlayer(player))}
             aria-label={player ? `Xem nhanh ${player.name}` : 'Vị trí trống'}
             aria-disabled={!player}
           >
             <PlayerAvatar name={player?.name ?? 'Người chơi'} gender={player?.gender} avatarUrl={player?.avatarUrl} size="xs" />
             <div className="min-w-0">
-              <p className="overflow-hidden break-words text-xs font-bold leading-4 text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{player ? getDisplayPlayerName(player.name) : 'Trống'}</p>
-              <p className="mt-0.5 text-[11px] font-medium leading-4 text-slate-400">
+              <p className="overflow-hidden break-words text-[11px] font-bold leading-[1.2] text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{player ? getDisplayPlayerName(player.name) : 'Trống'}</p>
+              <p className="mt-0.5 text-[10px] font-medium leading-3 text-slate-400">
                 {player ? <><span className={player.gender === 'Nam' ? 'text-cyan-200' : 'text-pink-200'}>{player.gender}</span> • {getLevelLabel(player.level)} • {player.matchesPlayed} trận</> : 'Chưa có người'}
               </p>
-              {player ? <PlayerTagBadges tags={player.playerTags} compact className="mt-1" /> : null}
+              {player ? <PlayerTagBadges tags={player.playerTags} compact className="mt-0.5" /> : null}
             </div>
           </button>
         ))}
@@ -311,8 +311,8 @@ function ReplacePairColumn({
   onSelect: (slot: number) => void;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-2">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{label}</div>
+    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-2.5">
+      <div className="mb-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</div>
       <div className="space-y-1.5">
         {slots.map((slot) => {
           const player = players.find((item) => item.id === roster[slot]);
@@ -324,11 +324,11 @@ function ReplacePairColumn({
               onClick={() => onSelect(slot)}
               aria-pressed={selectedSlot === slot}
               aria-label={player ? `Chọn ${player.name} ở ${label} để đổi` : `Chọn vị trí trống ở ${label}`}
-              className={`w-full rounded-lg border px-2.5 py-2 text-left transition-colors hover:border-cyan-300/25 hover:bg-slate-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${selectedSlot === slot ? 'border-cyan-300/40 bg-cyan-400/10 ring-1 ring-cyan-300/40' : 'border-white/[0.06] bg-slate-950/35'}`}
+              className={`w-full rounded-lg border px-2.5 py-2.5 text-left transition-colors hover:border-cyan-300/25 hover:bg-slate-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${selectedSlot === slot ? 'border-cyan-300/40 bg-cyan-400/10 ring-1 ring-cyan-300/40' : 'border-white/[0.06] bg-slate-950/35'}`}
             >
-              <div className="overflow-hidden break-words text-xs font-bold leading-4 text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{player ? getDisplayPlayerName(player.name) : 'Trống'}</div>
-              <div className="mt-0.5 text-[11px] font-medium text-slate-400">{player ? `${player.gender} • ${getLevelLabel(player.level)} • ${player.matchesPlayed} trận` : '—'}</div>
-              <div className="mt-1 overflow-hidden break-words text-[10px] font-medium leading-4 text-slate-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={partner?.name}>Cặp với: {partner ? getDisplayPlayerName(partner.name) : '—'}</div>
+              <div className="overflow-hidden break-words text-[11px] font-bold leading-[1.2] text-slate-100 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={player?.name}>{player ? getDisplayPlayerName(player.name) : 'Trống'}</div>
+              <div className="mt-0.5 text-[10px] font-medium text-slate-400">{player ? `${player.gender} • ${getLevelLabel(player.level)} • ${player.matchesPlayed} trận` : '—'}</div>
+              <div className="mt-1 overflow-hidden break-words text-[10px] font-medium leading-3 text-slate-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]" title={partner?.name}>Cặp với: {partner ? getDisplayPlayerName(partner.name) : '—'}</div>
             </button>
           );
         })}
