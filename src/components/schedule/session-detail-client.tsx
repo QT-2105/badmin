@@ -55,6 +55,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [playerActionError, setPlayerActionError] = useState<string | null>(null);
   const [playerSort, setPlayerSort] = useState<PlayerSortValue>('DEFAULT');
+  const [addPlayerDetailsExpanded, setAddPlayerDetailsExpanded] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const extraExpenseTransactionSwitchId = useId();
   const extraExpenseTransactionHintId = useId();
@@ -191,6 +192,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
       }
       setForm(emptyPlayerForm);
       setFormAvatarFile(null);
+      setAddPlayerDetailsExpanded(false);
     } catch (caught) {
       setPlayerActionError(caught instanceof Error ? caught.message : 'Không thể thêm người chơi');
     }
@@ -614,61 +616,85 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
 
         {canOperateSession ? (
         <Surface variant="subtle" padding="sm" className="p-2.5">
-          <form onSubmit={submitPlayer} className="grid min-w-0 gap-2.5 md:grid-cols-[minmax(180px,1fr)_92px_84px_120px_40px_104px] md:items-end xl:grid-cols-[minmax(320px,1fr)_96px_88px_132px_40px_112px]">
-            <label className="block min-w-0">
-              <span className={formLabelClass}>Tên người chơi</span>
-              <input
-                value={form.fullName}
-                onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-                className={`${formInputClass} h-10`}
-                required
-              />
-            </label>
-            <label className="block min-w-0">
-              <span className={formLabelClass}>Giới tính</span>
-              <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={`${formInputClass} h-10`}>
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-                <option value="Khác">Khác</option>
-              </select>
-            </label>
-            <label className="block min-w-0">
-              <span className={formLabelClass}>Trình độ</span>
-              <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className={`${formInputClass} h-10`}>
-                {LEVEL_OPTIONS.slice(0, 6).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block min-w-0">
-              <span className={formLabelClass}>Phí</span>
-              <PlayerFeeInput
-                value={form.paymentAmount}
-                onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
-              />
-            </label>
-            <label className="block w-10">
-              <span className={formLabelClass}>Ảnh</span>
-              <span
-                className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
-                title="Chọn hoặc chụp ảnh người chơi"
-              >
-                <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
-              </span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                aria-label="Chọn hoặc chụp ảnh người chơi mới"
-                className="sr-only"
-                onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            <div className="flex min-w-0 md:w-full">
-              <Button type="submit" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-10 w-full rounded-lg hover:bg-primary-hover hover:ring-2 hover:ring-primary/20 focus-visible:ring-focus/50">
-                {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Thêm
-              </Button>
+          <form onSubmit={submitPlayer} className="space-y-2.5">
+            <div className="grid min-w-0 gap-2.5 md:grid-cols-[minmax(180px,1fr)_92px_84px_120px_40px_90px] md:items-end xl:grid-cols-[minmax(320px,1fr)_96px_88px_132px_40px_96px]">
+              <label className="block min-w-0">
+                <span className={formLabelClass}>Tên người chơi</span>
+                <input
+                  value={form.fullName}
+                  onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+                  className={`${formInputClass} h-10`}
+                  required
+                />
+              </label>
+              <label className="block min-w-0">
+                <span className={formLabelClass}>Giới tính</span>
+                <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className={`${formInputClass} h-10`}>
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </label>
+              <label className="block min-w-0">
+                <span className={formLabelClass}>Trình độ</span>
+                <select value={form.level} onChange={(event) => setForm((current) => ({ ...current, level: event.target.value }))} className={`${formInputClass} h-10`}>
+                  {LEVEL_OPTIONS.slice(0, 6).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block min-w-0">
+                <span className={formLabelClass}>Phí</span>
+                <PlayerFeeInput
+                  value={form.paymentAmount}
+                  onChange={(value) => setForm((current) => ({ ...current, paymentAmount: value }))}
+                />
+              </label>
+              <label className="block w-10">
+                <span className={formLabelClass}>Ảnh</span>
+                <span
+                  className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
+                  title="Chọn hoặc chụp ảnh người chơi"
+                >
+                  <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  aria-label="Chọn hoặc chụp ảnh người chơi mới"
+                  className="sr-only"
+                  onChange={(event) => setFormAvatarFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <div className="flex min-w-0 flex-col gap-1.5 md:items-end">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  iconOnly
+                  onClick={() => setAddPlayerDetailsExpanded((open) => !open)}
+                  aria-label={addPlayerDetailsExpanded ? 'Thu gọn ghi chú thêm người chơi' : 'Mở rộng ghi chú thêm người chơi'}
+                  className="h-8 w-8 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50"
+                >
+                  <ChevronDown className={`h-4 w-4 transition-transform ${addPlayerDetailsExpanded ? 'rotate-180' : ''}`} />
+                </Button>
+                <Button type="submit" size="sm" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-9 w-full min-w-[84px] rounded-lg px-2.5 hover:bg-primary-hover hover:ring-2 hover:ring-primary/20 focus-visible:ring-focus/50">
+                  {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Thêm
+                </Button>
+              </div>
             </div>
+            {addPlayerDetailsExpanded ? (
+              <label className="block min-w-0">
+                <span className={formLabelClass}>Ghi chú</span>
+                <textarea
+                  value={form.note}
+                  onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
+                  className={`${formInputClass} min-h-[76px] resize-y py-2.5`}
+                  placeholder="Ghi chú người chơi (tuỳ chọn)"
+                />
+              </label>
+            ) : null}
           </form>
         </Surface>
         ) : null}
@@ -786,6 +812,15 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                         <option value="BANK">Chuyển khoản</option>
                         <option value="WAIVED">Free</option>
                       </select>
+                    </label>
+                    <label className="block min-w-0 sm:col-span-2 xl:col-span-full">
+                      <span className={formLabelClass}>Ghi chú</span>
+                      <textarea
+                        value={editForm.note}
+                        onChange={(event) => setEditForm((current) => ({ ...current, note: event.target.value }))}
+                        className={`${formInputClass} min-h-[76px] resize-y py-2.5`}
+                        placeholder="Ghi chú người chơi (tuỳ chọn)"
+                      />
                     </label>
                   </div>
                   <div className="mt-3 flex justify-end gap-2">

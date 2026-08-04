@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { normalizePlayerTags, type PlayerTag } from '@/lib/player-tags';
+import { isPlayerEligibleForAutoSuggestion as isEligibleForAutoSuggestion } from '@/lib/runtime-eligibility';
 import type { RuntimeCourt, RuntimeMatch, RuntimeSession, RuntimeSessionPlayer, RuntimeSnapshot } from '@/types/runtime';
 
 export type PlayerStatus = 'WAITING' | 'JUST_FINISHED' | 'PLAYING' | 'RESTING' | 'PRIORITY' | 'FINISHED';
@@ -159,7 +160,7 @@ export function generateCourts(count: number, existing: Court[] = []): Court[] {
 
 export function buildCourtSuggestion(players: Player[], court: Court, excludedPlayerIds: Set<string> = new Set(), mode: SuggestionMode = 'random', history: MatchHistory[] = []): string[] {
   const availableCandidates = players
-    .filter((player) => isPlayerEligibleForAutoSuggestion(player, excludedPlayerIds));
+    .filter((player) => isEligibleForAutoSuggestion(player, excludedPlayerIds));
   const nonHostCandidates = availableCandidates.filter((player) => !hasPlayerTag(player, 'HOST'));
   const candidateSource = nonHostCandidates.length >= 4 ? nonHostCandidates : availableCandidates;
   const baseCandidates = candidateSource
@@ -218,12 +219,7 @@ function hasPlayerTag(player: Pick<Player, 'playerTags'>, tag: PlayerTag): boole
 }
 
 function isPlayerEligibleForAutoSuggestion(player: Player, excludedPlayerIds: Set<string>): boolean {
-  if (excludedPlayerIds.has(player.id)) return false;
-  if (player.status !== 'WAITING' && player.status !== 'JUST_FINISHED') return false;
-  const tags = normalizePlayerTags(player.playerTags);
-  if (tags.includes('INJURED') || tags.includes('LEFT_EARLY')) return false;
-  if (tags.includes('NOT_ARRIVED') && !tags.includes('PRIORITY') && !tags.includes('HOST')) return false;
-  return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
+  return isEligibleForAutoSuggestion(player, excludedPlayerIds);
 }
 
 function filterCandidatesBySuggestionMode(candidates: Player[], mode: SuggestionMode): Player[] {

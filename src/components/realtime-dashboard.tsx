@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
@@ -20,6 +20,7 @@ import { getSessionStatusLabel, isRuntimeActiveStatus, isRuntimeReadonlyStatus, 
 import { getDisplayPlayerName } from '@/lib/player-display';
 import { getLevelLabel } from '@/lib/player-labels';
 import { PLAYER_TAG_OPTIONS, normalizePlayerTags } from '@/lib/player-tags';
+import { isPlayerEligibleForAutoSuggestion } from '@/lib/runtime-eligibility';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { LiveCourtsSection } from './sections/live-courts-section';
 import { MatchHistoryPanel } from './sections/match-history-panel';
@@ -48,6 +49,7 @@ export function RealtimeDashboard() {
   const [pendingLeaveHref, setPendingLeaveHref] = useState<Route | null>(null);
   const [historyPlayerId, setHistoryPlayerId] = useState('');
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [syncErrorNotice, setSyncErrorNotice] = useState<string | null>(null);
   const [autoMatchNotice, setAutoMatchNotice] = useState<string | null>(null);
   const [selectedSuggestionMode, setSelectedSuggestionMode] = useState<SuggestionMode>(suggestionMode);
   const prefersReducedMotion = useReducedMotion();
@@ -107,6 +109,16 @@ export function RealtimeDashboard() {
     [players, selectedSuggestionMode, schedulingDisabledReason]
   );
 
+  const commitRuntimeWithNotice = useCallback(async (): Promise<boolean> => {
+    const committed = await commitRuntimeSnapshot();
+    if (!committed) {
+      setSyncErrorNotice('Không thể đồng bộ runtime. Vui lòng kiểm tra kết nối và thử lại.');
+      return false;
+    }
+    setSyncErrorNotice(null);
+    return true;
+  }, [commitRuntimeSnapshot]);
+
   function confirmLeave(event: MouseEvent<HTMLAnchorElement>, href: Route) {
     if (syncState === 'pending' || syncState === 'syncing' || syncState === 'error') {
       event.preventDefault();
@@ -137,7 +149,7 @@ export function RealtimeDashboard() {
       return;
     }
     setAutoMatchNotice(null);
-    void commitRuntimeSnapshot();
+    void commitRuntimeWithNotice();
   }
 
   async function recordMatchHistory(payload: MatchHistoryPayload) {
@@ -214,6 +226,7 @@ export function RealtimeDashboard() {
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} /> : null}
         {historyError ? <RuntimeNotice message={historyError} /> : null}
+        {syncErrorNotice ? <RuntimeNotice message={syncErrorNotice} /> : null}
         {autoMatchNotice ? <RuntimeNotice message={autoMatchNotice} /> : null}
       </header>
 
@@ -242,21 +255,21 @@ export function RealtimeDashboard() {
               </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 overflow-y-auto overscroll-contain p-2.5 min-[1100px]:grid-cols-[minmax(380px,1fr)_minmax(420px,1fr)] min-[1100px]:overflow-hidden xl:grid-cols-[minmax(420px,1fr)_minmax(460px,1fr)]">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 overflow-y-auto overscroll-contain p-2.5 min-[1100px]:grid-cols-[minmax(520px,1.15fr)_minmax(400px,0.85fr)] min-[1100px]:overflow-hidden xl:grid-cols-[minmax(620px,1.2fr)_minmax(430px,0.8fr)]">
               <div className="flex min-h-[min(52vh,560px)] flex-col gap-2 overflow-hidden min-[1100px]:min-h-0">
                 <div className="min-h-0 flex-1 overflow-hidden pr-1">
                 <LiveCourtsSection
                   showHeader={false}
                   schedulingDisabled={schedulingDisabled}
                   disabledReason={schedulingDisabledReason}
-                  onCommitRuntime={commitRuntimeSnapshot}
+                  onCommitRuntime={commitRuntimeWithNotice}
                   onRecordMatch={recordMatchHistory}
                 />
                 </div>
                 <PlayerStatusOverview players={players} />
               </div>
               <div className="min-h-[min(42vh,520px)] overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-2 shadow-inner shadow-slate-950/30 min-[1100px]:min-h-0">
-                <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
+                <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeWithNotice} />
               </div>
             </div>
           </section>
@@ -285,13 +298,14 @@ export function RealtimeDashboard() {
         </div>
         {schedulingDisabledReason ? <RuntimeNotice message={schedulingDisabledReason} compact /> : null}
         {historyError ? <RuntimeNotice message={historyError} compact /> : null}
+        {syncErrorNotice ? <RuntimeNotice message={syncErrorNotice} compact /> : null}
         {autoMatchNotice ? <RuntimeNotice message={autoMatchNotice} compact /> : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3">
           <LiveCourtsSection
             schedulingDisabled={schedulingDisabled}
             disabledReason={schedulingDisabledReason}
-            onCommitRuntime={commitRuntimeSnapshot}
+            onCommitRuntime={commitRuntimeWithNotice}
             onRecordMatch={recordMatchHistory}
           />
           <div className="mt-2">
@@ -324,7 +338,7 @@ export function RealtimeDashboard() {
               <SuggestionModePicker value={selectedSuggestionMode} onChange={setSelectedSuggestionMode} disabled={schedulingDisabled} />
             </div>
             <div className="max-h-[46vh] min-h-[220px] overflow-hidden p-3">
-              <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeSnapshot} />
+              <NextMatchQueue showHeader={false} schedulingDisabled={schedulingDisabled} disabledReason={schedulingDisabledReason} onCommitRuntime={commitRuntimeWithNotice} />
             </div>
           </div>
         </motion.div>
@@ -542,7 +556,7 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
       <div className="mb-2.5 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">Hàng chờ</div>
+            <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Trạng thái người chơi</div>
             <span className="rounded-full border border-cyan-300/15 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold text-cyan-100">
               {sortedPlayers.length} người
             </span>
@@ -551,7 +565,7 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
             {tagStats.map((tag) => (
               <span
                 key={tag.value}
-                className={`rounded-full border px-2 py-0.5 text-[9px] font-bold leading-4 ${tag.count > 0 ? tag.activeClassName : tag.className}`}
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-4 ${tag.count > 0 ? tag.activeClassName : tag.className}`}
               >
                 {tag.label} {tag.count}
               </span>
@@ -570,12 +584,12 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
         </button>
       </div>
       {expanded ? <div id={listId} className="max-h-56 overflow-y-auto overscroll-contain pr-1">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list" aria-label="Danh sách hàng chờ">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list" aria-label="Danh sách trạng thái người chơi">
           {visiblePlayers.map((player) => (
-            <div key={player.id} role="listitem" className="grid min-h-[82px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-xl border border-white/[0.06] bg-slate-950/50 px-2.5 py-2 text-[11px] transition-colors hover:border-cyan-300/20 hover:bg-slate-900/70">
+            <div key={player.id} role="listitem" className="grid min-h-[82px] grid-cols-[minmax(0,1fr)_auto] items-start gap-2 rounded-xl border border-white/[0.06] bg-slate-950/50 px-2.5 py-2 text-xs transition-colors hover:border-cyan-300/20 hover:bg-slate-900/70">
               <div className="min-w-0">
-                <div className="truncate text-sm font-bold leading-5 text-slate-100" title={player.name}>{getDisplayPlayerName(player.name)}</div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-semibold">
+                <div className="truncate text-xs font-semibold leading-5 text-slate-100" title={player.name}>{getDisplayPlayerName(player.name)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs font-medium">
                   <span className={player.gender === 'Nữ' ? 'text-pink-200' : 'text-cyan-200'}>{player.gender}</span>
                   <span className="text-slate-500">·</span>
                   <span className="font-semibold text-cyan-200">{getLevelLabel(player.level)}</span>
@@ -585,8 +599,8 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
                 <PlayerTagBadges tags={player.playerTags} compact className="mt-1" />
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
-                <div className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono font-semibold text-slate-200">{player.matchesPlayed} trận</div>
-                <span className={`rounded-full border px-2 py-0.5 font-bold ${getPlayerStatusTone(player.status)}`}>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs font-semibold text-slate-200">{player.matchesPlayed} trận</div>
+                <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${getPlayerStatusTone(player.status)}`}>
                   {getPlayerStatusLabel(player.status)}
                 </span>
               </div>
@@ -594,7 +608,7 @@ function PlayerStatusOverview({ players }: { players: Player[] }) {
           ))}
           {visiblePlayers.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/10 bg-slate-950/30 px-3 py-5 text-center text-xs font-medium text-slate-500 sm:col-span-2">
-              Chưa có người chơi đang chờ.
+              Chưa có người chơi trong ca.
             </div>
           ) : null}
         </div>
@@ -630,7 +644,7 @@ function getAutoMatchBlockReason(players: Player[], mode: SuggestionMode, schedu
   if (schedulingDisabledReason) return schedulingDisabledReason;
   if (players.length === 0) return 'Chưa có người chơi trong ca.';
 
-  const eligiblePlayers = players.filter(isEligibleForAutoMatchNotice);
+  const eligiblePlayers = players.filter((player) => isPlayerEligibleForAutoSuggestion(player));
   const arrivedLikeCount = players.filter((player) => {
     const tags = normalizePlayerTags(player.playerTags);
     return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
@@ -658,12 +672,4 @@ function getAutoMatchBlockReason(players: Player[], mode: SuggestionMode, schedu
   }
 
   return null;
-}
-
-function isEligibleForAutoMatchNotice(player: Player): boolean {
-  if (player.status !== 'WAITING' && player.status !== 'JUST_FINISHED') return false;
-  const tags = normalizePlayerTags(player.playerTags);
-  if (tags.includes('INJURED') || tags.includes('LEFT_EARLY')) return false;
-  if (tags.includes('NOT_ARRIVED') && !tags.includes('PRIORITY') && !tags.includes('HOST')) return false;
-  return tags.includes('ARRIVED') || tags.includes('PRIORITY') || tags.includes('HOST');
 }
