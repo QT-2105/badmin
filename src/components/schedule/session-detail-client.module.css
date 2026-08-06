@@ -1,0 +1,146 @@
+.completionSection {
+  container: session-completion / inline-size;
+}
+
+.completionGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.completionDetails {
+  grid-column: 1 / -1;
+}
+
+@container session-completion (min-width: 560px) {
+  .completionGrid {
+    grid-template-columns: minmax(152px, 180px) minmax(220px, 360px) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .completionCourtCost {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .completionProduct {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .completionUsage {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .completionUpdate {
+    grid-column: 2;
+    grid-row: 2;
+    width: 148px;
+    justify-self: start;
+  }
+
+  .completionDetails {
+    grid-row: 3;
+  }
+}
+
+@container session-completion (min-width: 720px) {
+  .completionGrid {
+    grid-template-columns: minmax(144px, 180px) minmax(240px, 360px) minmax(108px, 136px) 148px minmax(0, 1fr);
+  }
+
+  .completionCourtCost,
+  .completionProduct,
+  .completionUsage,
+  .completionUpdate {
+    grid-row: 1;
+  }
+
+  .completionUsage {
+    grid-column: 3;
+  }
+
+  .completionUpdate {
+    grid-column: 4;
+    place-self: center;
+  }
+
+  .completionDetails {
+    grid-row: 2;
+  }
+}
+
+@container session-completion (min-width: 860px) {
+  .completionHeader {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@container session-completion (min-width: 1100px) {
+  .completionGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .completionUpdate {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
+.playerList {
+  container: player-list / inline-size;
+}
+
+.mobileListHeader {
+  display: flex;
+}
+
+.desktopListHeader {
+  display: none;
+}
+
+.playerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.playerIdentity,
+.playerActions {
+  grid-column: 1 / -1;
+}
+
+.playerNote {
+  justify-self: end;
+}
+
+@container player-list (min-width: 760px) {
+  .mobileListHeader {
+    display: none;
+  }
+
+  .desktopListHeader,
+  .playerRow {
+    display: grid;
+    grid-template-columns: minmax(170px, 1fr) 64px 90px 112px 112px 136px;
+    align-items: center;
+  }
+
+  .playerIdentity,
+  .playerActions {
+    grid-column: auto;
+  }
+
+  .playerFee,
+  .playerNote {
+    text-align: left;
+  }
+
+  .playerNote {
+    justify-self: start;
+  }
+
+  .mobileNoteLabel {
+    display: none;
+  }
+}

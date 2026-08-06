@@ -62,7 +62,7 @@ export function PlayerQuickView({
       {player.note ? (
         <Surface variant="subtle" padding="sm">
           <div className="text-xs text-muted-foreground">Ghi chú</div>
-          <div className="mt-1 text-sm text-foreground">{player.note}</div>
+          <div className="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">{player.note}</div>
         </Surface>
       ) : null}
     </Dialog>
