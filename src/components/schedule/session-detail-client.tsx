@@ -21,10 +21,13 @@ import { useShuttlecockProductOptions } from '@/hooks/use-inventory';
 import { usePlaySession, useScheduleMutations } from '@/hooks/use-play-dates';
 import { useSessionPlayerMutations, useSessionPlayers } from '@/hooks/use-session-players';
 import { hasPermission } from '@/lib/auth/permissions';
+import { preparePlayerAvatarForUpload } from '@/lib/client-image-upload';
 import { formatCurrency } from '@/lib/date-format';
 import { getLevelLabel, LEVEL_OPTIONS } from '@/lib/player-labels';
 import { getSessionStatusLabel, normalizeSessionStatus } from '@/lib/session-status';
 import type { SessionPlayerPayload } from '@/services/session-players-service';
+
+import styles from './session-detail-client.module.css';
 
 export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const { data: session, isLoading, error } = usePlaySession(sessionId);
@@ -40,6 +43,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const [formAvatarFile, setFormAvatarFile] = useState<File | null>(null);
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+  const [isPreparingAvatar, setIsPreparingAvatar] = useState(false);
   const [quickViewPlayer, setQuickViewPlayer] = useState<QuickViewPlayer | null>(null);
   const [courtCost, setCourtCost] = useState('');
   const [shuttlecockProductId, setShuttlecockProductId] = useState('');
@@ -186,15 +190,19 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     if (!payload.fullName) return;
 
     try {
+      setIsPreparingAvatar(Boolean(formAvatarFile));
+      const avatarFile = formAvatarFile ? await preparePlayerAvatarForUpload(formAvatarFile) : null;
       const created = await createPlayer.mutateAsync(payload);
-      if (formAvatarFile) {
-        await uploadAvatar.mutateAsync({ id: created.id, file: formAvatarFile });
+      if (avatarFile) {
+        await uploadAvatar.mutateAsync({ id: created.id, file: avatarFile });
       }
       setForm(emptyPlayerForm);
       setFormAvatarFile(null);
       setAddPlayerDetailsExpanded(false);
     } catch (caught) {
       setPlayerActionError(caught instanceof Error ? caught.message : 'Không thể thêm người chơi');
+    } finally {
+      setIsPreparingAvatar(false);
     }
   }
 
@@ -227,13 +235,17 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
     if (!payload.fullName) return;
     setPlayerActionError(null);
     try {
+      setIsPreparingAvatar(Boolean(editAvatarFile));
+      const avatarFile = editAvatarFile ? await preparePlayerAvatarForUpload(editAvatarFile) : null;
       await updatePlayer.mutateAsync({ id: editingId, payload });
-      if (editAvatarFile) {
-        await uploadAvatar.mutateAsync({ id: editingId, file: editAvatarFile });
+      if (avatarFile) {
+        await uploadAvatar.mutateAsync({ id: editingId, file: avatarFile });
       }
       cancelEdit();
     } catch (caught) {
       setPlayerActionError(caught instanceof Error ? caught.message : 'Không thể cập nhật người chơi');
+    } finally {
+      setIsPreparingAvatar(false);
     }
   }
 
@@ -416,8 +428,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         </PageSummaryGrid>
       ) : null}
 
-      <Surface padding="md" className="space-y-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <Surface padding="md" className={`${styles.completionSection} space-y-3`}>
+        <div className={`${styles.completionHeader} flex flex-col gap-2`}>
           <div>
             <h2 className="text-section-title">Thông tin hoàn tất ca</h2>
             <p className="text-sm text-muted-foreground">Lưu chi phí sân, cầu hao, phát sinh và ghi chú trước khi hoàn tất ca.</p>
@@ -441,8 +453,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {completionExpanded ? (
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(152px,172px)_minmax(280px,1fr)] lg:grid-cols-[minmax(144px,200px)_minmax(280px,1fr)_minmax(108px,136px)_148px] lg:items-center">
-          <Surface variant="subtle" padding="sm" className="min-w-0 border-info/20 bg-info-soft/40 md:p-3">
+        <div className={`${styles.completionGrid} grid min-w-0 gap-3`}>
+          <Surface variant="subtle" padding="sm" className={`${styles.completionCourtCost} min-w-0 border-info/20 bg-info-soft/40 md:p-3`}>
             <label className="block">
               <span className={formLabelClass}>Chi phí sân</span>
               <input
@@ -456,7 +468,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               />
             </label>
           </Surface>
-          <Surface variant="subtle" padding="sm" className="min-w-0 border-warning/20 bg-warning-soft/30 md:p-3">
+          <Surface variant="subtle" padding="sm" className={`${styles.completionProduct} min-w-0 border-warning/20 bg-warning-soft/30 md:p-3`}>
             <label className="block">
               <span className={formLabelClass}>Loại cầu hao</span>
               <select value={shuttlecockProductId} onChange={(event) => { setShuttlecockProductId(event.target.value); setCompletionDraftSaved(false); setPreviewProfit(null); }} disabled={runtimeLocked || !canCompleteSession} className={`${formInputClass} h-11`}>
@@ -467,7 +479,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               </select>
             </label>
           </Surface>
-          <Surface variant="subtle" padding="sm" className="min-w-0 border-warning/20 bg-warning-soft/30 md:p-3">
+          <Surface variant="subtle" padding="sm" className={`${styles.completionUsage} min-w-0 border-warning/20 bg-warning-soft/30 md:p-3`}>
             <label className="block">
               <span className={formLabelClass}>Cầu hao</span>
               <input
@@ -481,11 +493,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               />
             </label>
           </Surface>
-          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className="h-11 w-full justify-center hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50 sm:w-[148px] sm:justify-self-start lg:place-self-center">
+          <Button type="button" variant="secondary" onClick={() => void updateCompletionDraft()} disabled={runtimeLocked || !canCompleteSession || updatePlaySession.isPending} className={`${styles.completionUpdate} h-11 w-full justify-center hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50`}>
             {updatePlaySession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Cập nhật
           </Button>
-          <Surface variant="subtle" padding="sm" className="min-w-0 sm:col-span-2 lg:col-span-4">
+          <Surface variant="subtle" padding="sm" className={`${styles.completionDetails} min-w-0`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Phát sinh và ghi chú</div>
@@ -654,7 +666,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 <span className={formLabelClass}>Ảnh</span>
                 <span
                   className="mt-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-info outline-none transition hover:border-inputHover hover:bg-surface-hover focus-within:ring-2 focus-within:ring-focus/15"
-                  title="Chọn hoặc chụp ảnh người chơi"
+                  title="JPG, PNG hoặc WEBP tối đa 25MB · tự động tối ưu trước khi tải lên"
                 >
                   <ImageUp className={`h-5 w-5 ${formAvatarFile ? 'text-info' : ''}`} />
                 </span>
@@ -678,8 +690,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 >
                   <ChevronDown className={`h-4 w-4 transition-transform ${addPlayerDetailsExpanded ? 'rotate-180' : ''}`} />
                 </Button>
-                <Button type="submit" size="sm" disabled={runtimeLocked || createPlayer.isPending || uploadAvatar.isPending} className="h-9 w-full min-w-[84px] rounded-lg px-2.5 hover:bg-primary-hover hover:ring-2 hover:ring-primary/20 focus-visible:ring-focus/50">
-                  {createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <Button type="submit" size="sm" disabled={runtimeLocked || isPreparingAvatar || createPlayer.isPending || uploadAvatar.isPending} className="h-9 w-full min-w-[84px] rounded-lg px-2.5 hover:bg-primary-hover hover:ring-2 hover:ring-primary/20 focus-visible:ring-focus/50">
+                  {isPreparingAvatar || createPlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   Thêm
                 </Button>
               </div>
@@ -707,17 +719,17 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           </PageFeedbackStack>
         ) : null}
 
-        <div aria-label="Danh sách người chơi trong ca" className="space-y-1.5">
+        <div aria-label="Danh sách người chơi trong ca" className={`${styles.playerList} space-y-1.5`}>
           {players.length > 0 ? (
             <>
-              <Surface variant="subtle" padding="sm" className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:hidden">
+              <Surface variant="subtle" padding="sm" className={`${styles.mobileListHeader} items-center justify-between gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground`}>
                 <span>Danh sách</span>
-                <label className="flex items-center gap-2">
+                <label className="flex min-w-0 items-center">
                   <span className="sr-only">Sắp xếp danh sách người chơi</span>
                   <select
                     value={playerSort}
                     onChange={(event) => setPlayerSort(event.target.value as PlayerSortValue)}
-                    className="h-8 w-[148px] rounded-lg border border-input bg-background px-2 text-xs font-semibold normal-case tracking-normal text-foreground outline-none transition-colors hover:border-primary/40 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/30"
+                    className="h-8 w-auto max-w-[min(64vw,11rem)] rounded-lg border border-input bg-background px-2 text-xs font-semibold normal-case tracking-normal text-foreground outline-none transition-colors hover:border-primary/40 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/30"
                     aria-label="Sắp xếp danh sách người chơi"
                   >
                     <option value="DEFAULT">Mặc định</option>
@@ -730,17 +742,18 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                   </select>
                 </label>
               </Surface>
-              <Surface variant="subtle" padding="sm" className="hidden gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[minmax(260px,1fr)_112px_132px_160px_160px] lg:items-center">
+              <Surface variant="subtle" padding="sm" className={`${styles.desktopListHeader} gap-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground`}>
                 <div>Tên người chơi</div>
                 <div>Tổng set</div>
                 <div>Phí</div>
                 <div>Thanh toán</div>
+                <div>Ghi chú</div>
                 <label className="flex items-center justify-end">
                   <span className="sr-only">Sắp xếp danh sách người chơi</span>
                   <select
                     value={playerSort}
                     onChange={(event) => setPlayerSort(event.target.value as PlayerSortValue)}
-                    className="h-8 w-[148px] rounded-lg border border-input bg-background px-2 text-xs font-semibold normal-case tracking-normal text-foreground outline-none transition-colors hover:border-primary/40 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/30"
+                    className="h-8 w-auto max-w-full rounded-lg border border-input bg-background px-2 text-xs font-semibold normal-case tracking-normal text-foreground outline-none transition-colors hover:border-primary/40 hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/30"
                     aria-label="Sắp xếp danh sách người chơi"
                   >
                     <option value="DEFAULT">Mặc định</option>
@@ -764,7 +777,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                 <Surface key={player.id} variant="subtle" padding="sm" className="border-info/25 bg-info-soft/60 text-sm">
                   <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[auto_2fr_repeat(5,minmax(0,1fr))] xl:items-end">
                     <div className="flex items-center gap-2">
-                      <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-border transition hover:ring-info/40 focus-within:ring-2 focus-within:ring-focus/25" title="Đổi ảnh người chơi">
+                      <label className="inline-flex cursor-pointer items-center rounded-full ring-2 ring-border transition hover:ring-info/40 focus-within:ring-2 focus-within:ring-focus/25" title="JPG, PNG hoặc WEBP tối đa 25MB · tự động tối ưu trước khi tải lên">
                         <PlayerAvatar name={editForm.fullName || player.fullName} gender={editForm.gender} avatarUrl={editAvatarPreview ?? player.avatarUrl} size="lg" />
                         <input
                           type="file"
@@ -829,8 +842,8 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                           Xóa ảnh
                         </Button>
                       ) : null}
-                      <Button type="button" variant="secondary" disabled={updatePlayer.isPending} onClick={() => void saveInlineEdit()} className="h-10 px-3 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50" aria-label={`Lưu chỉnh sửa ${editForm.fullName || player.fullName}`}>
-                        {updatePlayer.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      <Button type="button" variant="secondary" disabled={isPreparingAvatar || updatePlayer.isPending || uploadAvatar.isPending} onClick={() => void saveInlineEdit()} className="h-10 px-3 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50" aria-label={`Lưu chỉnh sửa ${editForm.fullName || player.fullName}`}>
+                        {isPreparingAvatar || updatePlayer.isPending || uploadAvatar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                       </Button>
                       <Button type="button" variant="ghost" onClick={cancelEdit} className="h-10 px-3 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50" aria-label={`Hủy chỉnh sửa ${editForm.fullName || player.fullName}`}>
                         <X className="h-4 w-4" />
@@ -844,14 +857,14 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
               <Surface
                 key={player.id}
                 padding="sm"
-                className="grid gap-2 px-3 py-1.5 text-sm lg:grid-cols-[minmax(260px,1fr)_112px_132px_160px_160px] lg:items-center"
+                className={`${styles.playerRow} gap-x-3 gap-y-1.5 px-3 py-2 text-sm`}
               >
                 <button
                   type="button"
                   aria-label={`Xem nhanh người chơi ${player.fullName}`}
                   onClick={() => setQuickViewPlayer(toQuickViewPlayer(player))}
                   title={player.fullName}
-                  className="flex min-w-0 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  className={`${styles.playerIdentity} flex min-w-0 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-focus/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface`}
                 >
                   <PlayerAvatar name={player.fullName} gender={player.gender} avatarUrl={player.avatarUrl} size="sm" />
                   <div className="min-w-0 max-w-[30ch]">
@@ -859,10 +872,23 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                     <div className="text-xs text-muted-foreground">{player.gender || 'Không rõ'} · {getLevelLabel(player.level)}</div>
                   </div>
                 </button>
-                <div className="text-text-secondary lg:text-left">{player.totalMatches} trận</div>
-                <div className="font-mono tabular-nums text-foreground lg:text-left">{formatCurrency(payable)}đ</div>
+                <div className="text-text-secondary">{player.totalMatches} trận</div>
+                <div className={`${styles.playerFee} text-right font-mono tabular-nums text-foreground`}>{formatCurrency(payable)}đ</div>
                 <PaymentBadge status={player.paymentStatus} method={player.paymentMethod} />
-                <div className="flex flex-wrap gap-2 lg:justify-end">
+                {player.note ? (
+                  <button
+                    type="button"
+                    onClick={() => setQuickViewPlayer(toQuickViewPlayer(player))}
+                    className={`${styles.playerNote} block w-full min-w-0 max-w-56 truncate rounded-md text-right text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-focus/25`}
+                    aria-label={`Xem đầy đủ ghi chú của ${player.fullName}`}
+                  >
+                    <span className={styles.mobileNoteLabel}>Ghi chú: </span>
+                    {player.note}
+                  </button>
+                ) : (
+                  <span className={`${styles.playerNote} text-right text-xs text-muted-foreground`}>—</span>
+                )}
+                <div className={`${styles.playerActions} flex flex-wrap justify-end gap-2`}>
                   {canOperateSession ? (
                   <Button type="button" variant="secondary" iconOnly disabled={runtimeLocked} onClick={() => beginEdit(player.id)} className="h-9 w-9 hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:ring-focus/50" aria-label={`Chỉnh sửa ${player.fullName}`}>
                     <Pencil className="h-4 w-4" />
