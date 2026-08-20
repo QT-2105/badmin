@@ -1,11 +1,12 @@
 # AI Escalation Rules
 
-Version: 2026-06-09
+Version: 2026-08-13
 
 Ask the owner before changing:
 
 - runtime status lifecycle
-- `JUST_FINISHED` cooldown semantics
+- immediate post-match return and soft `lastFinishedAt` semantics
+- late-arrival fairness, wait protection, `Trận kế`, `End-Game`, Couple, and exact-quartet semantics
 - next-match scoring philosophy
 - eligibility rules
 - court lifecycle

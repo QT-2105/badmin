@@ -59,7 +59,8 @@ export async function getRuntimeSession(sessionId?: string): Promise<RuntimeSess
     startTime: session.start_time.toISOString(),
     endTime: session.end_time.toISOString(),
     courtCount: session.court_count,
-    status: session.status
+    status: session.status,
+    runtimeVersion: session.runtime_version
   };
 }
 
@@ -85,6 +86,19 @@ export async function listSessionPlayers(sessionId: string): Promise<RuntimeSess
     playerTags: normalizePlayerTags(row.player_tags),
     avatarUrl: row.avatar_url ?? null,
     avatarS3Key: row.avatar_s3_key ?? null,
-    joinedAt: parseDateValue(row.joined_at)
+    joinedAt: parseDateValue(row.joined_at),
+    firstArrivedAt: parseDateValue(row.first_arrived_at),
+    arrivalBaselineMatches: row.arrival_baseline_matches,
+    fairnessOffset: row.fairness_offset,
+    deferredRounds: row.deferred_rounds,
+    waitingSince: parseDateValue(row.waiting_since),
+    entryPriorityConsumedAt: parseDateValue(row.entry_priority_consumed_at),
+    lastFinishedAt: parseDateValue(row.last_finished_at),
+    nextMatchRequestedAt: parseDateValue(row.next_match_requested_at),
+    nextMatchRequestMode: row.next_match_request_mode as RuntimeSessionPlayer['nextMatchRequestMode'],
+    endGameAt: parseDateValue(row.end_game_at),
+    endGameAfterMatch: row.end_game_after_match,
+    coupleNumber: row.couple_number,
+    coupleMatchMode: row.couple_match_mode as RuntimeSessionPlayer['coupleMatchMode']
   }));
 }

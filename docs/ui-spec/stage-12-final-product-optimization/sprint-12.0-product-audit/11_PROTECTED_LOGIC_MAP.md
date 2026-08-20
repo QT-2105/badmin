@@ -20,7 +20,7 @@ Do not edit without separate approval:
 
 - runtime hydration and synchronization
 - queue source and ordering
-- player lifecycle: `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING`
+- player lifecycle at audit time: `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING` (historical; superseded 2026-08-13)
 - pairing and replacement logic
 - apply/start/end/cancel/swap behavior
 - court assignment and current match references
@@ -64,4 +64,3 @@ git diff --name-only -- src/app/api src/repositories src/services src/hooks src/
 Expected result:
 
 - no output
-

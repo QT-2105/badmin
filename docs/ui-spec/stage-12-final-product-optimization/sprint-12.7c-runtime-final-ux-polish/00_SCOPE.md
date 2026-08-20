@@ -15,7 +15,7 @@ Final Runtime presentation polish before RC, focused on court readability, playe
 
 - Waiting queue ordering.
 - `PRIORITY` / `WAITING` ordering.
-- `JUST_FINISHED` behavior.
+- then-current `JUST_FINISHED` behavior (historical scope; superseded 2026-08-13).
 - Pairing algorithm.
 - Court assignment.
 - Next-match generation.
@@ -33,4 +33,3 @@ The runtime operational flow remains:
 3. Waiting Queue.
 
 No runtime section was moved in this sprint.
-

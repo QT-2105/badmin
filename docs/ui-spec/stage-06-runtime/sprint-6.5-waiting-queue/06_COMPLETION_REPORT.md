@@ -38,7 +38,7 @@ Sprint 6.5 refined the Runtime waiting queue presentation only:
 
 The requested canonical display order says:
 
-`PRIORITY / WAITING -> JUST_FINISHED -> PLAYING -> RESTING`
+`PRIORITY / WAITING -> JUST_FINISHED -> PLAYING -> RESTING` (historical behavior at Sprint 6.5; superseded by the 2026-08-13 immediate post-match return semantics)
 
 The current source ranks `PRIORITY` after `PLAYING` inside `PlayerStatusOverview`. Sprint 6.5 is presentation-only and explicitly forbids queue sorting changes, so this was not changed. If the owner wants `PRIORITY` moved before `WAITING`, that must be handled as a separate runtime behavior task with explicit approval.
 

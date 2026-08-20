@@ -1,4 +1,4 @@
-version: "2026-06-30"
+version: "2026-08-13"
 name: scheduling-constraints
 scope: scheduling-runtime
 
@@ -13,15 +13,39 @@ constraints:
 
   - id: minimum_players
     severity: high
-    rule: "Runtime scheduling requires at least court_count * 6 players."
+    rule: "A manual or automatic match requires four eligible players for its format; inability to fill every court must not disable a valid single-court action."
+
+  - id: maximize_valid_suggestion_count
+    severity: high
+    rule: "Auto suggestion must maximize the number of disjoint valid matches up to play_sessions.court_count before optimizing softer scores; when at least four times the court count can be scheduled under hard constraints, return that court count."
+
+  - id: refresh_produces_alternative
+    severity: medium
+    rule: "Auto gợi ý should avoid the current unlocked preview quartets when acceptable alternatives exist. Locked previews remain exact, and preview refresh must not be recorded as match history or skipped rounds."
+
+  - id: preview_queue_auto_top_up
+    severity: high
+    rule: "Applying a preview must preserve every other valid preview in FIFO order, compact remaining previews toward the front, and append regenerated slots at the tail in the same optimistic state transition. Consuming the last preview must automatically create the next batch when eligible players remain."
+
+  - id: cancel_ready_restores_locked_preview
+    severity: high
+    rule: "Cancelling a READY court must restore its exact roster and team split at the front of the preview queue as a Lock. Evict the newest unlocked tail first when capacity is full; never silently discard operator Locks, and allow temporary overflow only when all retained previews are locked."
+
+  - id: host_is_minimum_fallback
+    severity: high
+    rule: "First try to fill the complete batch with ordinary players. Consider the minimum number of Host players only when doing so increases the achievable valid match count. Host does not receive automatic wait protection, late-arrival assistance, or Trận kế priority; manual operator placement remains allowed."
+
+  - id: lock_protects_from_auto_only
+    severity: critical
+    rule: "Lock preserves a preview against Auto refresh/top-up, but never blocks an explicit manual operator edit. A manual cross-Lock swap must retain every Lock, update all affected previews atomically, and revalidate global uniqueness and hard safety."
 
   - id: start_requires_ready_full_court
     severity: high
     rule: "A match can start only from READY court with four filled slots."
 
-  - id: end_match_sets_just_finished
+  - id: end_match_returns_waiting
     severity: critical
-    rule: "Ending a playing match must increment matches, set involved players to JUST_FINISHED, set justFinishedAt, and clear the court."
+    rule: "Ending a playing match must increment real matches, set lastFinishedAt, return involved players to WAITING immediately, and clear the court. lastFinishedAt must not become a mandatory cooldown."
 
   - id: cancel_ready_returns_waiting
     severity: high
@@ -53,7 +77,7 @@ constraints:
 
   - id: attendance_tags_for_auto_suggestion
     severity: high
-    rule: "Auto suggestions require attendance-positive tags: Đã tới, Ưu tiên, or Host. Chưa tới players are not eligible unless also Ưu tiên or Host. Chấn thương and Về sớm are excluded."
+    rule: "Auto suggestions require Đã tới and must exclude Chưa tới or End-Game players. Legacy Chấn thương and Về sớm normalize to End-Game. Selecting Host must also mark Đã tới and clear Chưa tới; Trận kế is a request, not an attendance override."
 
   - id: avoid_meaningless_auto_commit
     severity: high
@@ -61,11 +85,27 @@ constraints:
 
   - id: fewer_matches_priority
     severity: medium
-    rule: "Players with fewer matches should be prioritized by suggestion scoring."
+    rule: "Use adjusted match fairness and waiting age. A late arrival receives limited entry assistance but is not owed every match played before arrival, and earlier arrivals must not be skipped repeatedly."
 
-  - id: anti_repeat_variety
+  - id: wait_protection
+    severity: high
+    rule: "Refresh alone must not count as a skipped round. A compatible eligible player skipped by an applied/started generation gains protection over ordinary late-arrival assistance."
+
+  - id: next_match_request
+    severity: high
+    rule: "Trận kế is a one-shot individual or Couple request consumed only when the requested match starts. Refresh/cancel preserves it, and it cannot override eligibility, format, duplicate-player, or acceptable balance constraints."
+
+  - id: couple_registered_format
+    severity: high
+    rule: "A Couple is fixed teammates only in its registered match format and independent in other formats. Automatic scheduling must not split an eligible Couple in that format or let Couple override acceptable team balance."
+
+  - id: exact_quartet_anti_repeat
     severity: medium
-    rule: "Recent pair and roster repetition must be penalized so future suggestions rotate partners and opponents while preserving level balance."
+    rule: "Avoid only the exact recent quartet of four session-player IDs when an acceptable alternative exists. Do not penalize court, ordinary partner, or ordinary opponent repetition; allow fallback with a warning."
+
+  - id: stale_suggestion_revalidation
+    severity: critical
+    rule: "Before apply/start, revalidate four unique eligible players, court exclusivity, attendance, End-Game, and session revision. Couple split, level imbalance, repeat, Host use, and manual format override are advisory warnings and do not block explicit operator placement."
 
   - id: completed_runtime_readonly
     severity: critical

@@ -2,12 +2,14 @@ export type AppSettings = {
   autoCreateCourtFeeTransaction: boolean;
   autoCreateShuttlecockUsageTransaction: boolean;
   maxCourtCountPerSession: number;
+  defaultPaymentBankAccountId: string | null;
 };
 
 export const defaultAppSettings: AppSettings = {
   autoCreateCourtFeeTransaction: false,
   autoCreateShuttlecockUsageTransaction: true,
-  maxCourtCountPerSession: 3
+  maxCourtCountPerSession: 3,
+  defaultPaymentBankAccountId: null
 };
 
 export const appSettingsStorageKey = 'badmin_app_settings';
@@ -22,7 +24,8 @@ export function readAppSettings(): AppSettings {
     return {
       autoCreateCourtFeeTransaction: parsed.autoCreateCourtFeeTransaction ?? defaultAppSettings.autoCreateCourtFeeTransaction,
       autoCreateShuttlecockUsageTransaction: parsed.autoCreateShuttlecockUsageTransaction ?? defaultAppSettings.autoCreateShuttlecockUsageTransaction,
-      maxCourtCountPerSession: normalizeMaxCourtCount(parsed.maxCourtCountPerSession)
+      maxCourtCountPerSession: normalizeMaxCourtCount(parsed.maxCourtCountPerSession),
+      defaultPaymentBankAccountId: normalizeOptionalId(parsed.defaultPaymentBankAccountId)
     };
   } catch {
     return defaultAppSettings;
@@ -32,7 +35,8 @@ export function readAppSettings(): AppSettings {
 export function writeAppSettings(settings: AppSettings): void {
   window.localStorage.setItem(appSettingsStorageKey, JSON.stringify({
     ...settings,
-    maxCourtCountPerSession: normalizeMaxCourtCount(settings.maxCourtCountPerSession)
+    maxCourtCountPerSession: normalizeMaxCourtCount(settings.maxCourtCountPerSession),
+    defaultPaymentBankAccountId: normalizeOptionalId(settings.defaultPaymentBankAccountId)
   }));
 }
 
@@ -40,4 +44,9 @@ export function normalizeMaxCourtCount(value: unknown): number {
   const numberValue = Math.floor(Number(value));
   if (!Number.isFinite(numberValue)) return defaultAppSettings.maxCourtCountPerSession;
   return Math.max(1, Math.min(12, numberValue));
+}
+
+export function normalizeOptionalId(value: unknown): string | null {
+  const normalized = String(value ?? '').trim();
+  return normalized || null;
 }

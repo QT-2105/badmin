@@ -266,7 +266,7 @@ Protected:
 
 - waiting queue ordering
 - `PRIORITY` / `WAITING` ordering
-- `JUST_FINISHED` behavior
+- then-current `JUST_FINISHED` behavior (historical plan; superseded 2026-08-13)
 - pairing algorithm
 - court assignment
 - next-match generation

@@ -1,5 +1,7 @@
 export type RuntimePlayerStatus = 'WAITING' | 'JUST_FINISHED' | 'PLAYING' | 'RESTING' | 'PRIORITY' | 'FINISHED';
 export type RuntimeGender = 'Nam' | 'Nữ';
+export type RuntimeMatchFormat = 'AUTO' | 'MEN' | 'WOMEN' | 'MIXED';
+export type RuntimeNextMatchRequestMode = 'ANY' | 'MEN' | 'WOMEN' | 'MIXED';
 
 export type RuntimePlayer = {
   id: string;
@@ -20,6 +22,7 @@ export type RuntimeSession = {
   endTime: string;
   courtCount: number;
   status: string;
+  runtimeVersion: number;
 };
 
 export type RuntimeSessionPlayer = {
@@ -39,6 +42,19 @@ export type RuntimeSessionPlayer = {
   avatarUrl: string | null;
   avatarS3Key: string | null;
   joinedAt: number | null;
+  firstArrivedAt: number | null;
+  arrivalBaselineMatches: number | null;
+  fairnessOffset: number;
+  deferredRounds: number;
+  waitingSince: number | null;
+  entryPriorityConsumedAt: number | null;
+  lastFinishedAt: number | null;
+  nextMatchRequestedAt: number | null;
+  nextMatchRequestMode: RuntimeNextMatchRequestMode | null;
+  endGameAt: number | null;
+  endGameAfterMatch: boolean;
+  coupleNumber: number | null;
+  coupleMatchMode: Exclude<RuntimeMatchFormat, 'AUTO'> | null;
 };
 
 export type RuntimeCourtStatus = 'EMPTY' | 'READY' | 'PLAYING';
@@ -54,6 +70,12 @@ export type RuntimeCourt = {
   updatedAt: number | null;
 };
 
+export type RuntimeRecentQuartet = {
+  matchId: string;
+  playerIds: string[];
+  endedAt: number;
+};
+
 export type RuntimeMatch = {
   id: string;
   sessionId: string;
@@ -65,6 +87,11 @@ export type RuntimeMatch = {
   teamB: string[];
   createdAt: number | null;
   updatedAt: number | null;
+  locked: boolean;
+  matchFormat: RuntimeMatchFormat | null;
+  generation: number;
+  manualEdited: boolean;
+  sourceRevision: number | null;
 };
 
 export type RuntimeSnapshot = {
@@ -72,6 +99,8 @@ export type RuntimeSnapshot = {
   players: RuntimeSessionPlayer[];
   courts: RuntimeCourt[];
   matches: RuntimeMatch[];
+  recentQuartets: RuntimeRecentQuartet[];
+  version: number;
 };
 
 export type RuntimeSyncPlayer = {
@@ -79,6 +108,20 @@ export type RuntimeSyncPlayer = {
   status: RuntimePlayerStatus;
   matchesPlayed: number;
   lastCourtNumber: number | null;
+  playerTags?: string[];
+  firstArrivedAt?: number | null;
+  arrivalBaselineMatches?: number | null;
+  fairnessOffset?: number;
+  deferredRounds?: number;
+  waitingSince?: number | null;
+  entryPriorityConsumedAt?: number | null;
+  lastFinishedAt?: number | null;
+  nextMatchRequestedAt?: number | null;
+  nextMatchRequestMode?: RuntimeNextMatchRequestMode | null;
+  endGameAt?: number | null;
+  endGameAfterMatch?: boolean;
+  coupleNumber?: number | null;
+  coupleMatchMode?: Exclude<RuntimeMatchFormat, 'AUTO'> | null;
 };
 
 export type RuntimeSyncCourt = {
@@ -89,16 +132,30 @@ export type RuntimeSyncCourt = {
 };
 
 export type RuntimeSyncMatch = {
+  id?: string;
   queueOrder: number;
   roster: Array<string | null>;
   score?: number | null;
+  locked?: boolean;
+  matchFormat?: RuntimeMatchFormat | null;
+  generation?: number;
+  manualEdited?: boolean;
+  sourceRevision?: number | null;
 };
 
 export type RuntimeSyncPayload = {
   sessionId: string;
+  expectedVersion?: number;
+  mode?: 'FULL' | 'DELTA';
   players: RuntimeSyncPlayer[];
   courts: RuntimeSyncCourt[];
   nextMatches: RuntimeSyncMatch[];
+  deletedQueueOrders?: number[];
+};
+
+export type RuntimeSyncResponse = {
+  ok: true;
+  version: number;
 };
 
 export type RuntimeSnapshotResponse = RuntimeSnapshot;

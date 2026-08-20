@@ -1,14 +1,16 @@
 # Runtime Safety Contract
 
-Status: Required for all Stage 06 work
+Status: Required for all Stage 06 work; runtime semantics updated 2026-08-13
 
 ## Protected Behavior
 
 The following behavior is protected and must remain unchanged:
 
-- `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING`
+- `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> WAITING`, with soft `lastFinishedAt` metadata and no cooldown lock
 - advisory-only next match suggestions
 - operator-first manual override
+- limited late-arrival assistance and wait protection
+- one-shot `Trận kế`, `End-Game`, registered-format Couple, and exact-quartet semantics
 - lock suggestion behavior
 - replace player behavior
 - apply match behavior

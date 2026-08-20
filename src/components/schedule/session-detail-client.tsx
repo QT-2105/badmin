@@ -65,7 +65,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const extraExpenseTransactionHintId = useId();
   const normalizedStatus = normalizeSessionStatus(session?.status);
   const runtimeLocked = normalizedStatus === 'COMPLETED' || normalizedStatus === 'CANCELLED';
-  const requiredPlayers = (session?.courtCount ?? 1) * 6;
+  const requiredPlayers = 4;
   const canStartSession = players.length >= requiredPlayers;
   const canOperateSession = hasPermission(currentUser ?? null, 'session.operate');
   const canCompleteSession = hasPermission(currentUser ?? null, 'session.complete');
@@ -392,7 +392,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
           {!canStartSession && normalizedStatus === 'PENDING' && session ? (
             <NoticeCard tone="warning" className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Cần ít nhất {requiredPlayers} người chơi cho {session.courtCount} sân trước khi bắt đầu ca. Hiện có {players.length} người.</span>
+              <span>Cần ít nhất {requiredPlayers} người chơi để bắt đầu ca. Số gợi ý sẽ tự điều chỉnh theo số người hợp lệ và số sân trống. Hiện có {players.length} người.</span>
             </NoticeCard>
           ) : null}
         </PageFeedbackStack>
@@ -895,7 +895,11 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
                   </Button>
                   ) : null}
                   {canOperateSession ? (
-                  <Button type="button" variant="danger" iconOnly disabled={runtimeLocked || deletePlayer.isPending} onClick={() => deletePlayer.mutate(player.id)} className="h-9 w-9 hover:ring-2 hover:ring-danger/25 focus-visible:ring-danger/50" aria-label={`Xóa ${player.fullName}`}>
+                  <Button type="button" variant="danger" iconOnly disabled={runtimeLocked || deletePlayer.isPending} onClick={() => {
+                    void deletePlayer.mutateAsync(player.id)
+                      .then(() => setPlayerActionError(null))
+                      .catch((caught) => setPlayerActionError(caught instanceof Error ? caught.message : 'Không thể xóa người chơi'));
+                  }} className="h-9 w-9 hover:ring-2 hover:ring-danger/25 focus-visible:ring-danger/50" aria-label={`Xóa ${player.fullName}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   ) : null}

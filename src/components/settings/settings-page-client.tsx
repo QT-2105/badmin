@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useBranding, useBrandingMutations } from '@/hooks/use-branding';
+import { usePaymentBankAccountMutations, usePaymentBankAccounts } from '@/hooks/use-payment-bank-accounts';
 import { normalizeMaxCourtCount } from '@/lib/app-settings';
 import { deleteAllPlayerImages, resetMatchHistory } from '@/services/settings-service';
 
@@ -19,6 +20,7 @@ import {
 
 const initialExpandedSections: ExpandedSettingsSections = {
   branding: false,
+  payment: false,
   finance: false,
   appearance: false,
   schedule: false,
@@ -29,8 +31,15 @@ const initialExpandedSections: ExpandedSettingsSections = {
 export function SettingsPageClient() {
   const { settings, setSetting } = useAppSettings();
   const { data: branding } = useBranding();
+  const { data: paymentBankAccounts = [] } = usePaymentBankAccounts();
   const brandingMutations = useBrandingMutations();
+  const paymentBankAccountMutations = usePaymentBankAccountMutations();
   const [clubName, setClubName] = useState('');
+  const [paymentAccountName, setPaymentAccountName] = useState('');
+  const [paymentBankName, setPaymentBankName] = useState('');
+  const [paymentQrFile, setPaymentQrFile] = useState<File | null>(null);
+  const [paymentFormKey, setPaymentFormKey] = useState(0);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [resetState, setResetState] = useState<ResetState>('idle');
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [imageResetState, setImageResetState] = useState<ResetState>('idle');
@@ -91,6 +100,38 @@ export function SettingsPageClient() {
   async function handleUploadLogo(file: File | undefined) {
     if (!file) return;
     await brandingMutations.uploadLogo.mutateAsync(file);
+  }
+
+  async function handleCreatePaymentBankAccount() {
+    if (!paymentQrFile) {
+      setPaymentMessage('Vui lòng chọn ảnh QR thanh toán.');
+      return;
+    }
+    setPaymentMessage(null);
+    try {
+      await paymentBankAccountMutations.createAccount.mutateAsync({
+        accountName: paymentAccountName,
+        bankName: paymentBankName,
+        qrImage: paymentQrFile
+      });
+      setPaymentAccountName('');
+      setPaymentBankName('');
+      setPaymentQrFile(null);
+      setPaymentFormKey((key) => key + 1);
+      setPaymentMessage('Đã thêm tài khoản thanh toán.');
+    } catch (caught) {
+      setPaymentMessage(caught instanceof Error ? caught.message : 'Không thể thêm tài khoản thanh toán.');
+    }
+  }
+
+  async function handleDeletePaymentBankAccount(accountId: string) {
+    setPaymentMessage(null);
+    try {
+      await paymentBankAccountMutations.deleteAccount.mutateAsync(accountId);
+      setPaymentMessage('Đã xóa tài khoản thanh toán.');
+    } catch (caught) {
+      setPaymentMessage(caught instanceof Error ? caught.message : 'Không thể xóa tài khoản thanh toán.');
+    }
   }
 
   async function handleResetMatchHistory() {
@@ -155,7 +196,13 @@ export function SettingsPageClient() {
     <SettingsPageView
       settings={settings}
       branding={branding}
+      paymentBankAccounts={paymentBankAccounts}
       clubName={clubName}
+      paymentAccountName={paymentAccountName}
+      paymentBankName={paymentBankName}
+      paymentQrFileName={paymentQrFile?.name ?? null}
+      paymentFormKey={paymentFormKey}
+      paymentMessage={paymentMessage}
       isClubNameDirty={isClubNameDirty}
       brandingSaveState={brandingSaveState}
       brandingSaveMessage={brandingSaveMessage}
@@ -170,6 +217,8 @@ export function SettingsPageClient() {
       updateNamePending={brandingMutations.updateName.isPending}
       uploadLogoPending={brandingMutations.uploadLogo.isPending}
       deleteLogoPending={brandingMutations.deleteLogo.isPending}
+      createPaymentAccountPending={paymentBankAccountMutations.createAccount.isPending}
+      deletePaymentAccountPending={paymentBankAccountMutations.deleteAccount.isPending}
       onNavigateSection={handleNavigateSection}
       onToggleSection={handleToggleSection}
       onClubNameChange={handleClubNameChange}
@@ -177,6 +226,21 @@ export function SettingsPageClient() {
       onSaveBrandingName={() => void handleSaveBrandingName()}
       onUploadLogo={(file) => void handleUploadLogo(file)}
       onDeleteLogo={() => void brandingMutations.deleteLogo.mutateAsync()}
+      onPaymentAccountNameChange={(value) => {
+        setPaymentAccountName(value);
+        setPaymentMessage(null);
+      }}
+      onPaymentBankNameChange={(value) => {
+        setPaymentBankName(value);
+        setPaymentMessage(null);
+      }}
+      onPaymentQrFileChange={(file) => {
+        setPaymentQrFile(file ?? null);
+        setPaymentMessage(null);
+      }}
+      onCreatePaymentBankAccount={() => void handleCreatePaymentBankAccount()}
+      onDeletePaymentBankAccount={(accountId) => void handleDeletePaymentBankAccount(accountId)}
+      onDefaultPaymentBankAccountChange={(accountId) => setSetting('defaultPaymentBankAccountId', accountId)}
       onCourtFeeTransactionChange={(checked) => setSetting('autoCreateCourtFeeTransaction', checked)}
       onShuttlecockUsageTransactionChange={(checked) => setSetting('autoCreateShuttlecockUsageTransaction', checked)}
       onMaxCourtCountChange={(value) => setSetting('maxCourtCountPerSession', normalizeMaxCourtCount(value))}

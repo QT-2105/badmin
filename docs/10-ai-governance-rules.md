@@ -1,6 +1,6 @@
 # AI Governance Rules
 
-Version: 2026-06-09
+Version: 2026-08-13
 
 ## Required Reading
 
@@ -22,7 +22,8 @@ Governance must describe the current implementation. If project behavior changes
 - current-state runtime persistence
 - operator-first scheduling
 - explicit DB commits for runtime
-- `JUST_FINISHED` cooldown semantics
+- immediate post-match return with soft `lastFinishedAt` metadata
+- late-arrival fairness, wait protection, `Trận kế`, `End-Game`, Couple, and exact-quartet semantics
 - tablet/mobile runtime ergonomics
 - lightweight finance and inventory
 - Play Session as the runtime boundary

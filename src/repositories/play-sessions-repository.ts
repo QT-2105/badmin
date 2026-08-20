@@ -159,9 +159,9 @@ export async function updatePlaySession(sessionId: string, input: {
         throw new AppError('Ngày chơi đã thuộc quá khứ, không thể bắt đầu điều phối ca.');
       }
       const playerCount = await tx.session_players.count({ where: { session_id: sessionId } });
-      const requiredPlayers = existing.court_count * 6;
+      const requiredPlayers = 4;
       if (playerCount < requiredPlayers) {
-        throw new Error(`Cần ít nhất ${requiredPlayers} người chơi để bắt đầu ca ${existing.court_count} sân`);
+        throw new Error(`Cần ít nhất ${requiredPlayers} người chơi để bắt đầu ca`);
       }
     }
 

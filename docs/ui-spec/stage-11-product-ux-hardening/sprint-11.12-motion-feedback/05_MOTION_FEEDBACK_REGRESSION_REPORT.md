@@ -26,7 +26,7 @@ Unchanged:
 - Runtime refresh behavior.
 - Retry interval/configuration.
 - Query retry behavior.
-- Runtime cooldown timing.
+- then-current runtime cooldown timing (historical result; superseded 2026-08-13).
 
 Static timing search was reviewed. Sprint 11.12 only introduced CSS presentation durations through design tokens and did not modify timer functions or interval values.
 
@@ -44,4 +44,3 @@ Static timing search was reviewed. Sprint 11.12 only introduced CSS presentation
 - Browser verification of actual `prefers-reduced-motion` behavior remains deferred.
 - Browser/device visual QA for dialog/drawer entry motion remains deferred.
 - Toast UX remains Future Scope until a real toast provider exists.
-

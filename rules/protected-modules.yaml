@@ -1,4 +1,4 @@
-version: "2026-06-09"
+version: "2026-08-13"
 name: protected-modules
 scope: repository
 
@@ -14,7 +14,9 @@ protected_modules:
       - replacement candidate behavior
       - ready-court cancellation
       - match start/end
-      - cooldown transitions
+      - immediate post-match return and soft last-finished metadata
+      - late-arrival fairness and wait protection
+      - Trận kế, End-Game, Couple, and exact-quartet semantics
       - hydration mapping
 
   - id: runtime_screen

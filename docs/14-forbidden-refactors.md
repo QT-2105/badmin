@@ -1,6 +1,6 @@
 # Forbidden Refactors
 
-Version: 2026-06-09
+Version: 2026-08-13
 
 Future AI models must not autonomously:
 
@@ -12,7 +12,10 @@ Future AI models must not autonomously:
 - introduce CQRS
 - rewrite `badminton-store.ts` for abstraction purity
 - remove operator override controls
-- remove `JUST_FINISHED`
+- reintroduce a mandatory post-match cooldown or hidden time-based scheduling lock
+- turn `End-Game`, `Trận kế`, or Couple into global player/account state outside the Play Session
+- make Couple override eligibility or acceptable team balance
+- compensate late arrivals for every match played before they arrived
 - make suggestions auto-apply without operator action
 - block runtime UI on DB writes
 - turn finance into accounting ERP

@@ -6,6 +6,7 @@ import { ArrowRightLeft, Clock, Play, Square, Users, X } from 'lucide-react';
 import { useBadmintonStore, type Court } from '@/lib/badminton-store';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
 import { cn } from '@/lib/utils';
+import { getRuntimeValidationMessage } from '@/lib/runtime-roster-validation';
 import { PlayerTeam } from './player-team';
 
 const courtStatusConfig = {
@@ -68,6 +69,8 @@ export function CourtCard({
   const applyNextMatch = useBadmintonStore((state) => state.applyNextMatch);
   const cancelReadyCourt = useBadmintonStore((state) => state.cancelReadyCourt);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isEnding, setIsEnding] = useState(false);
 
   const status = courtStatusConfig[court.status];
   const courtPlayers = court.slots
@@ -205,7 +208,12 @@ export function CourtCard({
           <motion.button
             onClick={() => {
               if (!canAutoAssign) return;
-              applyNextMatch(nextMatches[0].id, court.id);
+              const result = applyNextMatch(nextMatches[0].id, court.id);
+              if (!result.changed) {
+                setActionError(getRuntimeValidationMessage(result));
+                return;
+              }
+              setActionError(null);
               void onCommitRuntime?.();
             }}
             whileHover={{ scale: 1.02 }}
@@ -239,7 +247,12 @@ export function CourtCard({
             </motion.button>
             <motion.button
               onClick={() => {
-                startMatch(court.id);
+                const result = startMatch(court.id);
+                if (!result.changed) {
+                  setActionError(getRuntimeValidationMessage(result));
+                  return;
+                }
+                setActionError(null);
                 void onCommitRuntime?.();
               }}
               whileHover={{ scale: 1.02 }}
@@ -258,28 +271,41 @@ export function CourtCard({
         {court.status === 'PLAYING' && (
           <motion.button
             onClick={() => {
-              if (schedulingDisabled) return;
+              if (schedulingDisabled || isEnding) return;
+              setIsEnding(true);
               const historyPayload = buildMatchHistoryPayload();
               endMatch(court.id);
               void (async () => {
-                const committed = (await onCommitRuntime?.()) ?? true;
-                if (committed && historyPayload) {
-                  await onRecordMatch?.(historyPayload);
+                try {
+                  const committed = (await onCommitRuntime?.()) ?? true;
+                  if (!committed) {
+                    setActionError('Không thể lưu trạng thái kết thúc trận. Vui lòng đồng bộ lại dữ liệu trước khi thao tác tiếp.');
+                    return;
+                  }
+                  if (historyPayload) {
+                    await onRecordMatch?.(historyPayload);
+                  }
+                  setActionError(null);
+                } catch (error) {
+                  setActionError(error instanceof Error ? error.message : 'Đã kết thúc trận nhưng chưa thể lưu lịch sử. Vui lòng thử lại.');
+                } finally {
+                  setIsEnding(false);
                 }
               })();
             }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={schedulingDisabled}
+            disabled={schedulingDisabled || isEnding}
             title={disabledReason || undefined}
             aria-label={`Kết thúc trận trên ${court.name}`}
             className="flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-300/20 bg-rose-400/15 px-2.5 py-1.5 text-xs font-semibold text-rose-100 transition-colors hover:border-rose-200/35 hover:bg-rose-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/35 disabled:text-slate-500"
           >
             <Square className="h-3.5 w-3.5" />
-            Kết thúc
-          </motion.button>
+              {isEnding ? 'Đang lưu' : 'Kết thúc'}
+            </motion.button>
         )}
       </div>
+      {actionError ? <div role="alert" className="relative z-10 mt-1 text-[10px] font-medium text-rose-100">{actionError}</div> : null}
     </div>
   );
 }

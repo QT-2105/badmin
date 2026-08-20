@@ -38,5 +38,4 @@ Must remain unchanged:
 - pairing
 - court assignment
 - match lifecycle
-- `JUST_FINISHED` semantics
-
+- then-current `JUST_FINISHED` semantics (historical; superseded 2026-08-13)

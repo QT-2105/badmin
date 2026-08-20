@@ -35,7 +35,7 @@ Confirmed unchanged:
 
 - Waiting queue ordering.
 - `PRIORITY` / `WAITING` ordering.
-- `JUST_FINISHED` behavior.
+- then-current `JUST_FINISHED` behavior (historical; superseded 2026-08-13).
 - Pairing algorithm.
 - Court assignment.
 - Next-match generation.
@@ -74,7 +74,7 @@ Protected diff command checked clean for:
 
 - Waiting queue ordering: PASS
 - `PRIORITY` / `WAITING` ordering: PASS
-- `JUST_FINISHED` behavior: PASS
+- then-current `JUST_FINISHED` behavior: PASS (historical; superseded 2026-08-13)
 - Pairing algorithm: PASS
 - Court assignment: PASS
 - Next-match generation: PASS

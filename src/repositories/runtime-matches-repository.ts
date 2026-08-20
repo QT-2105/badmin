@@ -61,6 +61,11 @@ export async function listRuntimeMatches(sessionId?: string): Promise<RuntimeMat
     teamA: parseTeam(row.team_a),
     teamB: parseTeam(row.team_b),
     createdAt: parseDateValue(row.created_at),
-    updatedAt: parseDateValue(row.updated_at)
+    updatedAt: parseDateValue(row.updated_at),
+    locked: row.locked,
+    matchFormat: row.match_format as RuntimeMatch['matchFormat'],
+    generation: row.generation,
+    manualEdited: row.manual_edited,
+    sourceRevision: row.source_revision
   }));
 }

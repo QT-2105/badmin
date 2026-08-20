@@ -1,6 +1,6 @@
 # Glossary
 
-Version: 2026-06-30
+Version: 2026-08-13
 
 ## Dashboard
 
@@ -38,13 +38,37 @@ Suggested roster for an upcoming match.
 
 Runtime status for players selected/prepared in upcoming or ready matches.
 
-## JUST_FINISHED
+## Last Finished At
 
-Cooldown state after a match. Protected fairness mechanic.
+Soft timestamp recorded when a player finishes a match. It may explain or rank otherwise-equivalent suggestions but never creates a mandatory cooldown.
 
 ## Player Tags
 
-Attendance and operational tags on a session-scoped player. Current tags are `Đã tới`, `Chưa tới`, `Host`, `Chấn thương`, `Về sớm`, and `Ưu tiên`.
+Attendance and operational state on a session-scoped player. Current visible values are `Đã tới`, `Chưa tới`, `Host`, `End-Game`, and `Trận kế`. Legacy `Chấn thương` and `Về sớm` values normalize to `End-Game`.
+
+## End-Game
+
+Session-scoped availability state meaning the player has ended play for the current session and must not enter new suggestions or replacement lists. It does not remove Host, fee, match-count, or Couple data.
+
+## Trận kế
+
+One-shot request for the next acceptable match. It is consumed only when the player or requested Couple starts a match and does not bypass attendance, availability, duplicate-player, format, or balance constraints.
+
+## Couple
+
+Session-scoped relationship between two players who ordered a fixed partner in one registered format. Both player rows store the same `couple_number` and `couple_match_mode`; no separate Couple entity is required. They must remain teammates in automatic suggestions for that format and behave as ordinary independent players in other formats.
+
+## Entry Assistance
+
+Limited one-time scheduling support for a player arriving late. It helps the player enter the rotation but does not compensate every match played before arrival.
+
+## Wait Protection
+
+Fairness metadata that prevents a compatible earlier-arriving player from being skipped repeatedly. Refreshing suggestions alone does not count as a skipped round.
+
+## Exact Quartet
+
+Unordered set of four session-player IDs. Recent exact quartets may be avoided when another acceptable option exists; ordinary court, partner, or opponent repetition is not penalized.
 
 ## Effective Level
 
@@ -78,6 +102,10 @@ Weighted average inventory cost per shuttlecock.
 
 Weighted average suggested usage/sale price per shuttlecock used for play usage cost.
 
-## Browser-Local Settings
+## Operational Settings
 
-Settings stored in localStorage, currently used for auto finance voucher behavior and max court count.
+Shared settings stored in `app_settings`, including max court count, completion voucher toggles, and the default payment bank account.
+
+## Browser-Local Preferences
+
+Personal UI preferences stored in localStorage, such as theme or sidebar state.

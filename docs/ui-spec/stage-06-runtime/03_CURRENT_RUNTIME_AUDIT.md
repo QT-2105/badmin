@@ -99,7 +99,7 @@ Toolbar behavior is split across:
 
 - desktop/tablet header stats and buttons;
 - `SuggestionModePicker`;
-- `Auto xếp cặp` trigger;
+- `Tạo gợi ý` / `Tạo phương án khác` trigger (renamed from the historical `Auto xếp cặp` label);
 - history/player overlay buttons;
 - mobile bottom next-match control.
 

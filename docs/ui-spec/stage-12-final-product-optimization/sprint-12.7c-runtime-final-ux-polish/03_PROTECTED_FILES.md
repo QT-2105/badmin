@@ -15,7 +15,7 @@
 ## Protected Contracts
 
 - Waiting queue source and ordering.
-- `PRIORITY`, `WAITING`, `JUST_FINISHED`, `PLAYING`, `RESTING` status semantics.
+- then-current `PRIORITY`, `WAITING`, `JUST_FINISHED`, `PLAYING`, `RESTING` status semantics (historical; superseded where noted by current governance).
 - Pairing algorithm and next-match generation.
 - Court assignment and current match references.
 - Apply, start match, end match and swap pair callbacks.
@@ -35,4 +35,3 @@
 - `cancelReadyCourt`.
 - `commitRuntimeSnapshot`.
 - `onRecordMatch`.
-

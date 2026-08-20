@@ -51,12 +51,60 @@ export type SessionPlayerSummary = {
   avatarUrl: string | null;
   avatarS3Key: string | null;
   joinedAt: string | null;
+  firstArrivedAt: string | null;
+  arrivalBaselineMatches: number | null;
+  fairnessOffset: number;
+  deferredRounds: number;
+  waitingSince: string | null;
+  entryPriorityConsumedAt: string | null;
+  lastFinishedAt: string | null;
+  nextMatchRequestedAt: string | null;
+  nextMatchRequestMode: SessionPlayerNextMatchMode | null;
+  endGameAt: string | null;
+  endGameAfterMatch: boolean;
+  coupleNumber: number | null;
+  coupleMatchMode: SessionCoupleMatchMode | null;
+};
+
+export type SessionPlayerNextMatchMode = 'ANY' | 'MEN' | 'WOMEN' | 'MIXED';
+
+export type SessionCoupleMatchMode = 'MEN' | 'WOMEN' | 'MIXED';
+
+export type SessionCoupleMember = {
+  playerId: string;
+  fullName: string;
+  gender: string | null;
+  level: number;
+};
+
+export type SessionCoupleSummary = {
+  id: string;
+  sessionId: string;
+  displayNumber: number;
+  matchMode: SessionCoupleMatchMode;
+  active: boolean;
+  nextMatchRequestedAt: string | null;
+  members: [SessionCoupleMember, SessionCoupleMember];
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type BrandingSettings = {
   clubName: string;
   logoUrl: string | null;
   logoS3Key: string | null;
+};
+
+export type PaymentBankAccount = {
+  id: string;
+  accountName: string;
+  bankName: string;
+  qrUrl: string;
+  qrS3Key: string;
+  displayOrder: number;
+  active: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type DashboardSummary = {

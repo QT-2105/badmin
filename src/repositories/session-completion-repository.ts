@@ -58,11 +58,18 @@ export async function completePlaySession(input: {
   await prisma.$transaction(async (tx) => {
     const session = await tx.play_sessions.findUnique({
       where: { id: input.sessionId },
-      include: { session_players: true, play_dates: true }
+      include: { session_players: true, play_dates: true, runtime_courts: true }
     });
     if (!session) throw new Error('Session not found');
     if (session.status === 'FINISHED') throw new Error('Ca chơi đã hoàn tất');
     if (session.status !== 'LIVE') throw new Error('Chỉ có thể hoàn tất ca đang hoạt động');
+    const activeCourts = session.runtime_courts.filter((court) => court.status === 'READY' || court.status === 'PLAYING');
+    if (activeCourts.length > 0) {
+      const labels = activeCourts
+        .sort((left, right) => left.court_number - right.court_number)
+        .map((court) => `Sân ${court.court_number} ${court.status === 'PLAYING' ? 'đang thi đấu' : 'đang chờ bắt đầu'}`);
+      throw new Error(`Chưa thể hoàn tất ca: ${labels.join(', ')}.`);
+    }
 
     const product = await tx.shuttlecock_products.findUnique({
       where: { id: input.shuttlecockProductId },
