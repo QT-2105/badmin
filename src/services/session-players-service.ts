@@ -1,4 +1,4 @@
-import type { SessionPlayerSummary } from '@/types/domain';
+import type { SessionPlayerNextMatchMode, SessionPlayerSummary } from '@/types/domain';
 
 async function readJson<T>(res: Response, fallback: string): Promise<T> {
   if (!res.ok) {
@@ -19,6 +19,17 @@ export type SessionPlayerPayload = {
   paymentStatus?: string;
   note?: string | null;
   playerTags?: string[];
+  firstArrivedAt?: string | null;
+  arrivalBaselineMatches?: number | null;
+  fairnessOffset?: number;
+  deferredRounds?: number;
+  waitingSince?: string | null;
+  entryPriorityConsumedAt?: string | null;
+  lastFinishedAt?: string | null;
+  nextMatchRequestedAt?: string | null;
+  nextMatchRequestMode?: SessionPlayerNextMatchMode | null;
+  endGameAt?: string | null;
+  endGameAfterMatch?: boolean;
 };
 
 export async function fetchSessionPlayers(sessionId: string, signal?: AbortSignal): Promise<SessionPlayerSummary[]> {

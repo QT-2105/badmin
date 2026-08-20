@@ -1,6 +1,6 @@
 # Badmin System Constitution
 
-Version: 2026-06-30
+Version: 2026-08-13
 Status: Current architecture constitution
 Scope: Entire repository
 
@@ -56,9 +56,9 @@ The runtime belongs to a Play Session. Dashboard can summarize operation, but it
 
 The protected runtime lifecycle is:
 
-`WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING`
+`WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> WAITING`
 
-`JUST_FINISHED` is a fairness, cooldown, fatigue, anti-repeat, and queue-continuity mechanic. It is not cosmetic UI state.
+Ending a match returns players to `WAITING` immediately. `lastFinishedAt` is soft scheduling metadata only: it may explain or rank otherwise-equivalent suggestions, but it must never block manual consecutive matches or recreate a hidden cooldown.
 
 ## Ownership
 
@@ -72,7 +72,7 @@ Zustand owns immediate live runtime behavior:
 - player replacement
 - ready court cancellation
 - match start/end
-- cooldown transitions
+- arrival, waiting, request, and last-finished fairness metadata
 
 The database owns durable current state:
 
@@ -93,13 +93,17 @@ Current source-level philosophy:
 
 - player attendance tags determine suggestion eligibility
 - `Chưa tới` is the default and is not auto-eligible
-- `Đã tới` and `Ưu tiên` make players available for auto-suggestion
-- `Host` is avoided when enough non-host players exist
-- `Chấn thương` and `Về sớm` exclude players
+- `Đã tới` makes players available for auto-suggestion
+- `Trận kế` is a one-shot request consumed only when the requested player or Couple actually starts a match
+- selecting `Host` also marks the player as `Đã tới`, but Host remains an operational fallback and is avoided when enough non-host players exist
+- `End-Game` excludes a player from new suggestions while preserving role, fee, match count, and Couple information
+- legacy `Chấn thương` and `Về sớm` values are read as `End-Game` during migration
+- a late arrival receives limited entry assistance, not compensation for all matches played before arrival; wait protection prevents earlier arrivals from being skipped repeatedly
+- a Couple is a fixed partner only in its registered match format and behaves as independent players in other formats
 - female players use one-lower effective level for internal balancing
 - same-format matchups are preferred when level balance is acceptable
 - mixed-format matchups are allowed only as practical fallbacks
-- recent pair and roster repetition must be penalized for variety
+- only an exact recently repeated quartet is avoided; court, ordinary partner, and ordinary opponent repetition are not scheduling constraints
 - blocked auto-suggestion must explain why and must not commit an empty runtime snapshot
 
 ## Protected Areas
@@ -109,7 +113,8 @@ Future AI models must not autonomously redesign:
 - `src/lib/badminton-store.ts`
 - live court lifecycle
 - next-match suggestion and replacement flow
-- `JUST_FINISHED` semantics
+- immediate post-match return and soft `lastFinishedAt` semantics
+- late-arrival fairness, wait protection, `Trận kế`, `End-Game`, and Couple semantics
 - operator-first override behavior
 - tablet/mobile runtime layout
 - current-state runtime persistence

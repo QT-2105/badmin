@@ -99,7 +99,7 @@ Confirmed unchanged:
 - Runtime status transitions
 - Waiting queue ordering
 - `PRIORITY` / `WAITING` behavior
-- `JUST_FINISHED` semantics
+- then-current `JUST_FINISHED` semantics (historical acceptance item; superseded 2026-08-13)
 - Pairing
 - Court assignment
 - Match lifecycle

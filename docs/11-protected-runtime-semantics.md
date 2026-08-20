@@ -1,6 +1,6 @@
 # Protected Runtime Semantics
 
-Version: 2026-06-30
+Version: 2026-08-13
 
 ## Player Statuses
 
@@ -18,12 +18,6 @@ Version: 2026-06-30
 
 - currently on court
 - must not be suggested or used as replacement candidate
-
-`JUST_FINISHED`
-
-- recently ended a match
-- protected cooldown/fairness state
-- may return to `WAITING` through cooldown logic
 
 `RESTING`
 
@@ -55,8 +49,10 @@ Version: 2026-06-30
 ## Protected Transitions
 
 - applying suggestion: players become prepared/priority and court becomes ready
+- applying suggestion: remaining previews keep FIFO order and newly generated top-up previews are appended at the queue tail
+- cancelling a ready court: the exact roster/team split returns to the front of the preview queue as a locked suggestion for operator adjustment
 - starting match: court and players become playing
-- ending match: players become just-finished, matches increment, court becomes empty
+- ending match: real match counts increment, `lastFinishedAt` is recorded, players return to waiting immediately, and court becomes empty
 - ending match: a post-match history record may be created for lookup
 - completing session: players become finished, courts empty, runtime matches removed
 
@@ -70,17 +66,18 @@ Runtime scheduling controls are disabled unless:
 
 - session is active
 - session is not completed/cancelled
-- player count is at least `court_count * 6`
+- at least four eligible players exist for the requested action/format
 
 The player list may remain visible even when scheduling controls are disabled.
 
 Auto-suggestion eligibility is stricter than the global player-count rule:
 
-- player status must be `WAITING` or `JUST_FINISHED`
+- player status must be `WAITING`
 - `PLAYING`, `RESTING`, and `FINISHED` players are not eligible
-- `Chưa tới` players are not eligible unless marked `Ưu tiên` or `Host`
-- `Đã tới`, `Ưu tiên`, and `Host` are attendance-positive tags
-- `Chấn thương` and `Về sớm` exclude a player from auto-suggestion
+- `Chưa tới` players are not eligible
+- `Đã tới` is the attendance-positive state
+- `Trận kế` is a one-shot request and does not independently override attendance or availability
+- `End-Game` excludes a player; legacy `Chấn thương` and `Về sớm` normalize to `End-Game`
 - `Host` should be avoided when at least four non-host eligible players exist
 
 Mode-specific auto-suggestion requires:
@@ -93,17 +90,25 @@ If these requirements fail, the UI must show a direct operator-facing reason and
 
 ## Auto-Suggestion Scoring
 
-Current scoring must preserve these priorities:
+Suggestion selection must preserve these ordered priorities:
 
-- fairness by match count remains important
-- team level balance is stronger than weak gender-format preference
+- hard eligibility, format, no-duplicate, and Couple constraints
+- team level balance is a quality gate stronger than request, Couple, late-arrival, and weak gender preferences
+- wait protection and valid one-shot `Trận kế` requests
+- limited late-arrival entry assistance without catch-up for matches before arrival
+- adjusted match fairness and waiting duration
 - female players use one-lower effective level when balancing against male players
 - same-format matchups are preferred when level balance is acceptable
-- recent pair and roster repetition are penalized to keep future matches fresh
+- Couple partners are fixed only in their registered format and independent in other formats
+- only exact recent quartet repetition is avoided; do not penalize court or ordinary pair/opponent repetition
+- `lastFinishedAt` is a soft tie-break only and cannot block consecutive manual scheduling
 - `Host` is penalized unless needed to fill a match
-- `Ưu tiên` is boosted
 
 Future changes to scoring weights must preserve operator override and must not make suggestions mandatory.
+
+## Suggestion Validity
+
+Before apply/start, runtime must revalidate that all four unique players are eligible, not on another court, not `End-Game`, and still satisfy the active Couple/format invariants. A kept/locked suggestion does not bypass these rules. Invalid suggestions become stale and must be repaired or regenerated.
 
 ## Session Lock Rule
 

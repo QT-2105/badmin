@@ -36,7 +36,6 @@ The following files may receive only presentation-safe changes after audit:
 Do not change call order, arguments, or timing for:
 
 - `setRuntimeSessionId`
-- `updateCooldowns`
 - `refreshNextMatches`
 - `applyNextMatch`
 - `replaceNextMatchPlayer`
@@ -94,7 +93,8 @@ Presentation-only edits may touch JSX classes, semantic wrappers, labels, ARIA l
 
 ## Protected Concepts
 
-- `JUST_FINISHED` is cooldown/fairness state, not cosmetic.
+- Ending a match returns the player to `WAITING`; `lastFinishedAt` is soft fairness metadata and must not become a cooldown lock.
+- Late-arrival assistance, wait protection, `Trận kế`, `End-Game`, registered-format Couple, and exact-quartet behavior are protected semantics.
 - Next-match suggestions are advisory.
 - Operator controls are authoritative.
 - Runtime DB writes happen only on meaningful operator actions.

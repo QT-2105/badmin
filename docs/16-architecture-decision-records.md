@@ -48,10 +48,10 @@ Rationale: Current stock must be fast to read, while movements provide source re
 
 Decision: Per-session profit always subtracts court cost and shuttlecock usage cost.
 
-Rationale: Settings only control whether finance vouchers are auto-created. They do not change real session economics.
+Rationale: Settings control small operational defaults shared across devices. They do not change real session economics or turn configuration into an ERP/admin platform.
 
-## ADR-009: Settings Are Browser-Local
+## ADR-009: Settings Storage Boundaries
 
-Decision: Current settings are stored in localStorage.
+Decision: Shared operational settings are stored in the DB singleton `app_settings`. Collection-style settings use dedicated tables. Browser-local storage is reserved for personal UI preferences.
 
-Rationale: Settings are simple operational preferences, not enterprise configuration.
+Rationale: Operational settings must be consistent across devices, while payment bank accounts require independent rows for QR storage, ordering, and deletion. This keeps Settings small without treating configuration as an ERP module.

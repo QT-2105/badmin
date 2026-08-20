@@ -36,9 +36,11 @@ Do not change:
 Runtime must preserve:
 
 - contextual route `/sessions/[sessionId]/runtime`
-- `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING`
+- `WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> WAITING`, with soft `lastFinishedAt` metadata and no cooldown lock
 - advisory suggestions only
 - operator final authority
+- limited late-arrival assistance and wait protection
+- one-shot `Trận kế`, `End-Game`, registered-format Couple, and exact-quartet semantics
 - no PLAYING player replacement
 - no duplicate suggestion players
 - court lifecycle `EMPTY -> READY -> PLAYING -> EMPTY`

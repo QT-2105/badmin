@@ -5,6 +5,7 @@ import { Zap } from 'lucide-react';
 import { useState } from 'react';
 import { useBadmintonStore } from '@/lib/badminton-store';
 import { NextMatchCard } from '../cards/next-match-card';
+import { getRuntimeValidationMessage } from '@/lib/runtime-roster-validation';
 
 export function NextMatchQueue({
   showHeader = true,
@@ -18,12 +19,9 @@ export function NextMatchQueue({
   onCommitRuntime?: () => Promise<boolean>;
 }) {
   const nextMatches = useBadmintonStore((state) => state.nextMatches);
-  const courts = useBadmintonStore((state) => state.courts);
   const refreshNextMatches = useBadmintonStore((state) => state.refreshNextMatches);
-  const applyNextMatch = useBadmintonStore((state) => state.applyNextMatch);
   const [activeReplaceMatchId, setActiveReplaceMatchId] = useState<string | null>(null);
-  const emptyCourts = courts.filter((c) => c.status === 'EMPTY');
-  const canAutoAssign = !schedulingDisabled && emptyCourts.length > 0 && nextMatches.length > 0;
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   return (
     <motion.div
@@ -44,15 +42,20 @@ export function NextMatchQueue({
           <motion.button
             onClick={() => {
               if (schedulingDisabled) return;
-              refreshNextMatches();
+              const result = refreshNextMatches();
+              if (!result.changed) {
+                setRefreshError(getRuntimeValidationMessage(result));
+                return;
+              }
+              setRefreshError(null);
               void onCommitRuntime?.();
             }}
             disabled={schedulingDisabled}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title="Auto xếp cặp"
-            aria-label="Auto xếp cặp trận tiếp theo"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 transition-colors hover:border-cyan-200/35 hover:bg-cyan-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
+            title="Auto gợi ý"
+            aria-label="Auto gợi ý trận tiếp theo"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 transition-colors hover:border-cyan-200/35 hover:bg-cyan-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
           >
             <Zap className="h-3.5 w-3.5" />
           </motion.button>
@@ -61,6 +64,7 @@ export function NextMatchQueue({
 
       {/* MATCHES LIST */}
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1" role="list" aria-label="Danh sách gợi ý trận tiếp theo">
+        {refreshError ? <div role="alert" className="rounded-xl border border-rose-300/20 bg-rose-400/10 p-2 text-xs font-medium text-rose-100">{refreshError}</div> : null}
         {schedulingDisabled && disabledReason ? (
           <div className="rounded-xl border border-amber-300/25 bg-amber-400/[0.12] p-3 text-sm font-medium text-amber-100">
             {disabledReason}
@@ -89,22 +93,6 @@ export function NextMatchQueue({
         ) : null}
       </div>
 
-      {/* AUTO MATCHMAKING BUTTON */}
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => {
-          if (!canAutoAssign) return;
-          applyNextMatch(nextMatches[0].id);
-          void onCommitRuntime?.();
-        }}
-        disabled={!canAutoAssign}
-        aria-label="Xếp gợi ý đầu tiên vào sân trống"
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/[0.12] px-3 py-2 text-sm font-bold text-cyan-100 transition-colors hover:border-cyan-200/40 hover:bg-cyan-400/[0.18] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:cursor-not-allowed disabled:border-slate-700/70 disabled:bg-slate-800/45 disabled:text-slate-500"
-      >
-        <Zap className="h-3.5 w-3.5" />
-        Xếp vào sân trống
-      </motion.button>
     </motion.div>
   );
 }

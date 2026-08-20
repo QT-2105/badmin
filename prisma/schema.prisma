@@ -37,6 +37,8 @@ model play_sessions {
   total_income             Decimal?               @default(0) @db.Decimal(12, 2)
   total_expense            Decimal?               @default(0) @db.Decimal(12, 2)
   total_profit             Decimal?               @default(0) @db.Decimal(12, 2)
+  runtime_version          Int                    @default(0)
+  next_couple_number       Int                    @default(1)
   created_at               DateTime?              @default(now()) @db.Timestamp(6)
   updated_at               DateTime?              @default(now()) @db.Timestamp(6)
   play_dates               play_dates             @relation(fields: [play_date_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -62,59 +64,99 @@ model runtime_courts {
   runtime_matches  runtime_matches? @relation(fields: [runtime_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   play_sessions    play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@unique([session_id, court_number], map: "uq_runtime_courts_session_number")
   @@index([session_id], map: "idx_runtime_courts_session_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model runtime_matches {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  session_id     String           @db.Uuid
-  queue_order    Int?
-  court_number   Int?
-  status         String           @db.VarChar(20)
-  fairness_score Int?
-  team_a         Json
-  team_b         Json
-  created_at     DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
-  runtime_courts runtime_courts[]
-  play_sessions  play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id      String           @db.Uuid
+  queue_order     Int?
+  court_number    Int?
+  status          String           @db.VarChar(20)
+  fairness_score  Int?
+  team_a          Json
+  team_b          Json
+  created_at      DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?        @default(now()) @db.Timestamp(6)
+  locked          Boolean          @default(false)
+  match_format    String?          @db.VarChar(20)
+  generation      Int              @default(0)
+  manual_edited   Boolean          @default(false)
+  source_revision Int?
+  runtime_courts  runtime_courts[]
+  play_sessions   play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@unique([session_id, queue_order], map: "uq_runtime_matches_session_queue")
+  @@unique([session_id, court_number], map: "uq_runtime_matches_session_court")
   @@index([session_id], map: "idx_runtime_matches_session_id")
 }
 
 model session_players {
-  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  session_id        String        @db.Uuid
-  full_name         String        @db.VarChar(255)
-  gender            String?       @db.VarChar(10)
-  level             Int           @default(1)
-  total_matches     Int           @default(0)
-  payment_amount    Decimal       @default(0) @db.Decimal(12, 2)
-  discount          Decimal       @default(0) @db.Decimal(5, 2)
-  payment_method    String?       @db.VarChar(10)
-  payment_status    String        @default("UNPAID") @db.VarChar(20)
-  runtime_status    String?       @default("WAITING") @db.VarChar(20)
-  last_court_number Int?
-  note              String?
-  player_tags       String[]      @default(["NOT_ARRIVED"])
-  avatar_s3_key     String?       @db.VarChar(500)
-  avatar_url        String?       @db.VarChar(1000)
-  avatar_updated_at DateTime?     @db.Timestamp(6)
-  joined_at         DateTime?     @default(now()) @db.Timestamp(6)
-  match_history_players match_history_players[]
-  play_sessions     play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  session_player_images session_player_images[]
+  id                         String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id                 String                  @db.Uuid
+  full_name                  String                  @db.VarChar(255)
+  gender                     String?                 @db.VarChar(10)
+  level                      Int                     @default(1)
+  total_matches              Int                     @default(0)
+  payment_amount             Decimal                 @default(0) @db.Decimal(12, 2)
+  discount                   Decimal                 @default(0) @db.Decimal(5, 2)
+  payment_method             String?                 @db.VarChar(10)
+  payment_status             String                  @default("UNPAID") @db.VarChar(20)
+  runtime_status             String?                 @default("WAITING") @db.VarChar(20)
+  last_court_number          Int?
+  note                       String?
+  player_tags                String[]                @default(["NOT_ARRIVED"])
+  avatar_s3_key              String?                 @db.VarChar(500)
+  avatar_url                 String?                 @db.VarChar(1000)
+  avatar_updated_at          DateTime?               @db.Timestamp(6)
+  joined_at                  DateTime?               @default(now()) @db.Timestamp(6)
+  first_arrived_at           DateTime?               @db.Timestamp(6)
+  arrival_baseline_matches   Int?
+  fairness_offset            Int                     @default(0)
+  deferred_rounds            Int                     @default(0)
+  waiting_since              DateTime?               @db.Timestamp(6)
+  entry_priority_consumed_at DateTime?               @db.Timestamp(6)
+  last_finished_at           DateTime?               @db.Timestamp(6)
+  next_match_requested_at    DateTime?               @db.Timestamp(6)
+  next_match_request_mode    String?                 @db.VarChar(20)
+  end_game_at                DateTime?               @db.Timestamp(6)
+  end_game_after_match       Boolean                 @default(false)
+  couple_number              Int?
+  couple_match_mode          String?                 @db.VarChar(20)
+  match_history_players      match_history_players[]
+  play_sessions              play_sessions           @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  session_player_images      session_player_images[]
 
   @@index([session_id], map: "idx_session_players_session_id")
+  @@index([session_id, couple_number], map: "idx_session_players_couple")
 }
 
 model app_settings {
-  id          String    @id @default("default") @db.VarChar(50)
-  club_name   String    @default("Badmin") @db.VarChar(255)
-  logo_s3_key String?   @db.VarChar(500)
-  logo_url    String?   @db.VarChar(1000)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  id                                        String    @id @default("default") @db.VarChar(50)
+  club_name                                 String    @default("Badmin") @db.VarChar(255)
+  logo_s3_key                               String?   @db.VarChar(500)
+  logo_url                                  String?   @db.VarChar(1000)
+  max_court_count_per_session               Int       @default(3)
+  auto_create_court_fee_transaction         Boolean   @default(false)
+  auto_create_shuttlecock_usage_transaction Boolean   @default(true)
+  default_payment_bank_account_id           String?   @db.Uuid
+  updated_at                                DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model payment_bank_accounts {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  account_name  String    @db.VarChar(255)
+  bank_name     String    @db.VarChar(255)
+  qr_s3_key     String    @db.VarChar(500)
+  qr_url        String    @db.VarChar(1000)
+  display_order Int       @default(0)
+  active        Boolean   @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([active, display_order], map: "idx_payment_bank_accounts_active_order")
 }
 
 model app_users {

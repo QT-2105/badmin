@@ -24,7 +24,18 @@ export async function PATCH(request: Request, context: RouteContext) {
       paymentMethod: payload.paymentMethod,
       paymentStatus: payload.paymentStatus,
       note: payload.note,
-      playerTags: payload.playerTags
+      playerTags: payload.playerTags,
+      firstArrivedAt: payload.firstArrivedAt,
+      arrivalBaselineMatches: payload.arrivalBaselineMatches === undefined ? undefined : payload.arrivalBaselineMatches === null ? null : Number(payload.arrivalBaselineMatches),
+      fairnessOffset: payload.fairnessOffset === undefined ? undefined : Number(payload.fairnessOffset),
+      deferredRounds: payload.deferredRounds === undefined ? undefined : Number(payload.deferredRounds),
+      waitingSince: payload.waitingSince,
+      entryPriorityConsumedAt: payload.entryPriorityConsumedAt,
+      lastFinishedAt: payload.lastFinishedAt,
+      nextMatchRequestedAt: payload.nextMatchRequestedAt,
+      nextMatchRequestMode: payload.nextMatchRequestMode,
+      endGameAt: payload.endGameAt,
+      endGameAfterMatch: payload.endGameAfterMatch
     });
 
     return NextResponse.json({ player });

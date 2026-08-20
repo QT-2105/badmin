@@ -1,6 +1,6 @@
 # Owner Intent
 
-Version: 2026-06-30
+Version: 2026-08-13
 
 ## Core Intent
 
@@ -33,7 +33,7 @@ The system should help manage:
 
 - DB should not be selected/written continuously during runtime
 - buttons and meaningful actions commit to DB
-- session start requires enough players: `court_count * 6`
+- session start requires at least four players; suggestions may fill any valid subset of courts without requiring six players per court
 - completed sessions lock runtime editing
 - past dates are review-only for schedule operations
 - unfinished past sessions may still need completion accounting updates
@@ -42,10 +42,14 @@ The system should help manage:
 - session profit must include court and shuttlecock costs
 - manual thu chi does not require choosing a session
 - finance and inventory reports default to current month and can switch to year
-- settings remain simple and browser-local unless owner requests shared configuration
-- player attendance tags guide auto-suggestions
+- settings remain simple and operational; shared configuration belongs in `app_settings`, while collection-style settings such as payment bank accounts use dedicated tables
+- `Đã tới` makes a player attendance-eligible; selecting `Host` also marks `Đã tới` because Host is an on-site operator role; `Trận kế` does not override attendance
 - auto-suggestion should explain why it cannot produce a match instead of silently writing empty runtime state
-- auto-suggestion should rotate partners/opponents for variety while keeping level balance fair
+- players return to the waiting pool immediately after a match; the operator may schedule consecutive matches without a cooldown lock
+- late arrivals receive limited help entering the rotation, not full catch-up; earlier arrivals must not be skipped for multiple compatible rounds
+- `Trận kế` is a one-shot request and `End-Game` means no more new matches in the current session
+- Couple partners remain together only in the registered match format and are ordinary independent players in other formats
+- auto-suggestion should avoid only the exact recent quartet when an acceptable alternative exists
 - female players are treated as one effective level lower than displayed level when balancing mixed-gender matches
 - same-format pairings are preferred when level balance is acceptable
 - mixed-format pairings are fallback options when they improve level balance or eligible players are limited

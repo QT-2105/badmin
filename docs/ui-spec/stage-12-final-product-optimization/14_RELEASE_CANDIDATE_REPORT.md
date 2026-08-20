@@ -120,7 +120,7 @@ Confirmed unchanged by source scope and protected diff:
 
 - waiting queue ordering
 - `PRIORITY` / `WAITING` behavior
-- `JUST_FINISHED` behavior
+- then-current `JUST_FINISHED` behavior (historical; superseded 2026-08-13)
 - pairing algorithm
 - court assignment
 - next-match generation

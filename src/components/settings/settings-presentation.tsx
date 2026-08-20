@@ -1,6 +1,7 @@
 'use client';
 
-import { Building2, CalendarDays, ChevronDown, ChevronUp, CircleDollarSign, History, ImageOff, ImageUp, Loader2, Palette, Save, Trash2 } from 'lucide-react';
+import { Building2, CalendarDays, ChevronDown, ChevronUp, CircleDollarSign, CreditCard, History, ImageOff, ImageUp, Loader2, Plus, QrCode, Palette, Save, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 
 import { BrandLogo } from '@/components/branding/brand-logo';
@@ -11,9 +12,9 @@ import { PageHeader, PageShell, formInputClass, formLabelClass } from '@/compone
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import type { AppSettings } from '@/lib/app-settings';
 import { cn } from '@/lib/utils';
-import type { BrandingSettings } from '@/types/domain';
+import type { BrandingSettings, PaymentBankAccount } from '@/types/domain';
 
-export type SettingsSectionId = 'branding' | 'schedule' | 'finance' | 'appearance' | 'images' | 'history';
+export type SettingsSectionId = 'branding' | 'schedule' | 'payment' | 'finance' | 'appearance' | 'images' | 'history';
 export type DestructiveAction = 'history' | 'images';
 export type ResetState = 'idle' | 'loading' | 'done' | 'error';
 export type BrandingSaveState = 'idle' | 'loading' | 'saved' | 'error';
@@ -48,9 +49,16 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
   {
     id: 'schedule',
     group: 'Vận hành',
-    label: 'Lịch & ca chơi',
-    description: 'Giới hạn số sân mỗi ca',
+    label: 'Ca chơi',
+    description: 'Giới hạn số sân cho ca',
     status: 'PARTIAL'
+  },
+  {
+    id: 'payment',
+    group: 'Thanh toán',
+    label: 'Tài khoản ngân hàng',
+    description: 'QR chuyển khoản điều phối',
+    status: 'AVAILABLE'
   },
   {
     id: 'finance',
@@ -87,7 +95,13 @@ const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 export function SettingsPageView({
   settings,
   branding,
+  paymentBankAccounts,
   clubName,
+  paymentAccountName,
+  paymentBankName,
+  paymentQrFileName,
+  paymentFormKey,
+  paymentMessage,
   isClubNameDirty,
   brandingSaveState,
   brandingSaveMessage,
@@ -102,6 +116,8 @@ export function SettingsPageView({
   updateNamePending,
   uploadLogoPending,
   deleteLogoPending,
+  createPaymentAccountPending,
+  deletePaymentAccountPending,
   onNavigateSection,
   onToggleSection,
   onClubNameChange,
@@ -109,6 +125,12 @@ export function SettingsPageView({
   onSaveBrandingName,
   onUploadLogo,
   onDeleteLogo,
+  onPaymentAccountNameChange,
+  onPaymentBankNameChange,
+  onPaymentQrFileChange,
+  onCreatePaymentBankAccount,
+  onDeletePaymentBankAccount,
+  onDefaultPaymentBankAccountChange,
   onCourtFeeTransactionChange,
   onShuttlecockUsageTransactionChange,
   onMaxCourtCountChange,
@@ -118,7 +140,13 @@ export function SettingsPageView({
 }: {
   settings: AppSettings;
   branding: BrandingSettings | undefined;
+  paymentBankAccounts: PaymentBankAccount[];
   clubName: string;
+  paymentAccountName: string;
+  paymentBankName: string;
+  paymentQrFileName: string | null;
+  paymentFormKey: number;
+  paymentMessage: string | null;
   isClubNameDirty: boolean;
   brandingSaveState: BrandingSaveState;
   brandingSaveMessage: string | null;
@@ -133,6 +161,8 @@ export function SettingsPageView({
   updateNamePending: boolean;
   uploadLogoPending: boolean;
   deleteLogoPending: boolean;
+  createPaymentAccountPending: boolean;
+  deletePaymentAccountPending: boolean;
   onNavigateSection: (sectionId: SettingsSectionId) => void;
   onToggleSection: (sectionId: SettingsSectionId) => void;
   onClubNameChange: (value: string) => void;
@@ -140,6 +170,12 @@ export function SettingsPageView({
   onSaveBrandingName: () => void;
   onUploadLogo: (file: File | undefined) => void;
   onDeleteLogo: () => void;
+  onPaymentAccountNameChange: (value: string) => void;
+  onPaymentBankNameChange: (value: string) => void;
+  onPaymentQrFileChange: (file: File | undefined) => void;
+  onCreatePaymentBankAccount: () => void;
+  onDeletePaymentBankAccount: (accountId: string) => void;
+  onDefaultPaymentBankAccountChange: (accountId: string | null) => void;
   onCourtFeeTransactionChange: (checked: boolean) => void;
   onShuttlecockUsageTransactionChange: (checked: boolean) => void;
   onMaxCourtCountChange: (value: string) => void;
@@ -184,13 +220,40 @@ export function SettingsPageView({
 
       <SettingsCard
         id="settings-schedule"
-        title="Lịch chơi"
-        description="Giới hạn thao tác tạo/sửa ca theo số sân tối đa phù hợp với vận hành thực tế."
+        title="Ca chơi"
+        description="Giới hạn số sân tối đa được phép chọn khi tạo hoặc sửa một ca chơi."
         icon={<CalendarDays className="h-5 w-5" />}
         expanded={expandedSections.schedule}
         onToggle={() => onToggleSection('schedule')}
       >
         <ScheduleSettingsSection settings={settings} onMaxCourtCountChange={onMaxCourtCountChange} />
+      </SettingsCard>
+
+      <SettingsCard
+        id="settings-payment"
+        title="Tài khoản thanh toán"
+        description="Lưu danh sách tài khoản và ảnh QR để hiển thị nhanh ở màn điều phối."
+        icon={<CreditCard className="h-5 w-5" />}
+        expanded={expandedSections.payment}
+        onToggle={() => onToggleSection('payment')}
+      >
+        <PaymentBankAccountsSection
+          accounts={paymentBankAccounts}
+          accountName={paymentAccountName}
+          bankName={paymentBankName}
+          qrFileName={paymentQrFileName}
+          formKey={paymentFormKey}
+          message={paymentMessage}
+          createPending={createPaymentAccountPending}
+          deletePending={deletePaymentAccountPending}
+          defaultAccountId={settings.defaultPaymentBankAccountId}
+          onAccountNameChange={onPaymentAccountNameChange}
+          onBankNameChange={onPaymentBankNameChange}
+          onQrFileChange={onPaymentQrFileChange}
+          onCreate={onCreatePaymentBankAccount}
+          onDelete={onDeletePaymentBankAccount}
+          onSetDefault={onDefaultPaymentBankAccountChange}
+        />
       </SettingsCard>
 
       <SettingsCard
@@ -276,7 +339,7 @@ function SettingsNavigation({
 }) {
   return (
     <nav aria-label="Điều hướng cài đặt" className="rounded-xl border border-border bg-surface p-1.5 shadow-subtle">
-      <div className="flex gap-1.5 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-6">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-7">
         {SETTINGS_NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
           const isDanger = item.tone === 'danger';
@@ -443,7 +506,7 @@ function FinanceSettingsSection({
     <div>
       <div className="mb-3 flex flex-col gap-2 rounded-lg border border-info/20 bg-info-soft px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-muted-foreground">
-          Thiết lập được tự lưu trong trình duyệt ngay khi thay đổi.
+          Thiết lập được lưu dùng chung cho các thiết bị khi thay đổi.
         </p>
         <span className="w-fit shrink-0 rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
           Lợi nhuận và chi phí không đổi
@@ -498,12 +561,12 @@ function ScheduleSettingsSection({
       <div className="rounded-xl border border-border bg-surface-muted p-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-info">Giới hạn hiện tại</p>
         <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{settings.maxCourtCountPerSession} sân</p>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">Áp dụng khi tạo hoặc sửa ca; không cập nhật các ca đã có.</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">Áp dụng cho thao tác tạo hoặc sửa ca; các ca đã tạo giữ nguyên số sân hiện có.</p>
       </div>
       <label className="rounded-xl border border-border bg-surface-muted p-3 sm:p-4">
-        <span className="block text-sm font-medium text-foreground">Số sân tối đa cho một ca</span>
+        <span className="block text-sm font-medium text-foreground">Limit số sân cho ca chơi</span>
         <span id="max-court-helper" className="mt-1 block text-xs text-muted-foreground">
-          Tự lưu trong trình duyệt, giới hạn từ 1 đến 12 sân.
+          Lưu dùng chung qua database, giới hạn lựa chọn số sân từ 1 đến 12 khi cấu hình ca.
         </span>
         <Input
           type="number"
@@ -515,6 +578,142 @@ function ScheduleSettingsSection({
           aria-describedby="max-court-helper"
         />
       </label>
+    </div>
+  );
+}
+
+function PaymentBankAccountsSection({
+  accounts,
+  accountName,
+  bankName,
+  qrFileName,
+  formKey,
+  message,
+  createPending,
+  deletePending,
+  defaultAccountId,
+  onAccountNameChange,
+  onBankNameChange,
+  onQrFileChange,
+  onCreate,
+  onDelete,
+  onSetDefault
+}: {
+  accounts: PaymentBankAccount[];
+  accountName: string;
+  bankName: string;
+  qrFileName: string | null;
+  formKey: number;
+  message: string | null;
+  createPending: boolean;
+  deletePending: boolean;
+  defaultAccountId: string | null;
+  onAccountNameChange: (value: string) => void;
+  onBankNameChange: (value: string) => void;
+  onQrFileChange: (file: File | undefined) => void;
+  onCreate: () => void;
+  onDelete: (accountId: string) => void;
+  onSetDefault: (accountId: string | null) => void;
+}) {
+  return (
+    <div className="grid gap-3 xl:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
+      <div className="rounded-xl border border-border bg-surface-muted p-3 sm:p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <QrCode className="h-4 w-4 text-info" />
+          <p className="text-sm font-semibold text-foreground">Thêm QR thanh toán</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <label className="block">
+            <span className={formLabelClass}>Tên tài khoản</span>
+            <Input
+              value={accountName}
+              onChange={(event) => onAccountNameChange(event.target.value)}
+              className={`${formInputClass} mt-1.5`}
+              placeholder="VD: Nguyễn Văn A"
+            />
+          </label>
+          <label className="block">
+            <span className={formLabelClass}>Ngân hàng</span>
+            <Input
+              value={bankName}
+              onChange={(event) => onBankNameChange(event.target.value)}
+              className={`${formInputClass} mt-1.5`}
+              placeholder="VD: Vietcombank"
+            />
+          </label>
+        </div>
+        <label className="mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-surface px-3 text-sm font-semibold text-foreground transition hover:bg-muted focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
+          <ImageUp className="h-4 w-4" />
+          <span className="min-w-0 truncate">{qrFileName ?? 'Chọn ảnh QR'}</span>
+          <input
+            key={formKey}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            onChange={(event) => onQrFileChange(event.target.files?.[0])}
+          />
+        </label>
+        <Button type="button" onClick={onCreate} disabled={createPending} className="mt-3 h-10 w-full rounded-lg">
+          {createPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Thêm tài khoản
+        </Button>
+        {message ? (
+          <p className="mt-2 rounded-lg border border-info/20 bg-info-soft px-3 py-2 text-xs font-medium text-info">{message}</p>
+        ) : (
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">QR hỗ trợ PNG, JPEG, WebP theo validation ảnh hiện tại.</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border bg-surface-muted p-3 sm:p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">Danh sách đang dùng</p>
+          <span className="rounded-full border border-info/25 bg-info-soft px-2.5 py-1 text-[10px] font-semibold text-info">
+            {accounts.length} tài khoản
+          </span>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
+          {accounts.map((account) => (
+            <div key={account.id} className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-3 rounded-lg border border-border bg-surface p-2">
+              <Image
+                src={account.qrUrl}
+                alt={`QR ${account.bankName}`}
+                width={64}
+                height={64}
+                unoptimized
+                className="h-16 w-16 rounded-md border border-border bg-white object-contain p-1"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground" title={account.accountName}>{account.accountName}</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground" title={account.bankName}>{account.bankName}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onSetDefault(account.id)}
+                    disabled={defaultAccountId === account.id}
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-info/25 bg-info-soft px-2 text-[11px] font-semibold text-info transition hover:bg-info-soft/80 disabled:cursor-default disabled:opacity-70"
+                  >
+                    {defaultAccountId === account.id ? 'Mặc định' : 'Đặt mặc định'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(account.id)}
+                    disabled={deletePending}
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-danger/25 bg-danger-soft px-2 text-[11px] font-semibold text-danger transition hover:bg-danger-soft/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {accounts.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-surface px-3 py-8 text-center text-sm font-medium text-muted-foreground md:col-span-2">
+              Chưa có tài khoản thanh toán.
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

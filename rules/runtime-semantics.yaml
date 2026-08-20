@@ -1,4 +1,4 @@
-version: "2026-06-30"
+version: "2026-08-13"
 name: runtime-semantics
 scope: scheduling-runtime
 
@@ -7,7 +7,6 @@ player_lifecycle:
     - WAITING
     - NEXT_MATCH_OR_PRIORITY
     - PLAYING
-    - JUST_FINISHED
     - WAITING
   statuses:
     WAITING:
@@ -15,18 +14,13 @@ player_lifecycle:
       eligible_for_suggestion: true
       eligible_for_replacement: true
     PRIORITY:
-      meaning: "Prepared in a next match or ready court."
+      meaning: "Reserved on a READY court. Preview suggestions are advisory and do not reserve players."
       eligible_for_suggestion: false
       eligible_for_replacement: "only when in another suggestion and not on court"
     PLAYING:
       meaning: "Currently active on a court."
       eligible_for_suggestion: false
       eligible_for_replacement: false
-    JUST_FINISHED:
-      meaning: "Recently completed match and cooling down."
-      eligible_for_suggestion: "allowed with penalties/current heuristic"
-      eligible_for_replacement: true
-      protected: true
     RESTING:
       meaning: "Unavailable."
       eligible_for_suggestion: false
@@ -36,15 +30,14 @@ player_lifecycle:
       eligible_for_suggestion: false
       eligible_for_replacement: false
 
-cooldown:
-  protected: true
-  just_finished_duration_ms: 120000
-  transition: "JUST_FINISHED -> WAITING"
-  rationale:
-    - fairness
-    - fatigue_management
-    - anti_repeat
-    - queue_continuity
+post_match:
+  transition: "PLAYING -> WAITING"
+  record_last_finished_at: true
+  last_finished_at_behavior: "soft ranking/explanation only"
+  forbidden:
+    - mandatory_cooldown
+    - hidden_time_based_lock
+  manual_consecutive_match: allowed
 
 court_lifecycle:
   statuses:
@@ -69,24 +62,24 @@ match_history:
     - event_sourcing
 
 runtime_eligibility:
-  minimum_players_formula: "court_count * 6"
+  minimum_players_for_match: 4
   disabled_when:
     - "session is not ACTIVE"
     - "session is COMPLETED or CANCELLED"
-    - "players.length < court_count * 6"
+    - "fewer than four eligible players exist for the requested format"
   auto_suggestion_requires:
     statuses:
       - WAITING
-      - JUST_FINISHED
     attendance_positive_tags:
       - ARRIVED
-      - PRIORITY
-      - HOST
     excluded_tags:
+      - END_GAME
       - INJURED
       - LEFT_EARLY
     default_ineligible_tag: NOT_ARRIVED
-    host_rule: "Avoid HOST when at least four non-host eligible players exist."
+    legacy_tag_mapping: "INJURED/LEFT_EARLY -> END_GAME"
+    attendance_rule: "ARRIVED makes a player attendance-eligible. Selecting HOST must also mark ARRIVED and clear NOT_ARRIVED because Host is an on-site operator role. PRIORITY never implies ARRIVED."
+    host_rule: "HOST is an operational fallback. Build a complete ordinary-player batch first and add the minimum Host count only when it increases valid batch cardinality. HOST receives no automatic catch-up, wait protection, or Trận kế priority; manual placement is allowed."
     blocked_behavior: "Show operator-facing reason and do not commit an empty runtime snapshot."
 
 auto_suggestion_scoring:
@@ -95,11 +88,15 @@ auto_suggestion_scoring:
     female: "displayed level - 1 for internal balancing only"
     ui_labels: "unchanged"
   priorities:
-    - fewer_matches
     - team_level_balance
+    - wait_protection
+    - one_shot_next_match_request
+    - limited_late_arrival_entry_assistance
+    - adjusted_match_fairness
+    - registered_format_couple
     - same_format_matchup_when_balanced
-    - pair_and_roster_variety
-    - anti_repeat
+    - exact_quartet_anti_repeat
+    - soft_last_finished_at
   same_format_matchups:
     - "nam-nam vs nam-nam"
     - "nu-nu vs nu-nu"
@@ -109,6 +106,44 @@ auto_suggestion_scoring:
     - "nam-nu vs nu-nu"
   discouraged_matchups:
     - "nam-nam vs nu-nu"
+  anti_repeat:
+    key: "sorted session player ids for exact quartet"
+    avoid_when_alternative_exists: true
+    fallback_with_warning: true
+    forbidden_penalties:
+      - last_court
+      - ordinary_partner_repeat
+      - ordinary_opponent_repeat
+
+fairness:
+  late_arrival: "limited entry assistance; no compensation for matches before arrival"
+  wait_protection: "a compatible player must not be skipped repeatedly"
+  refresh_does_not_count_as_skipped_round: true
+  displayed_match_count: "real matches only"
+
+requests:
+  next_match: "one-shot request consumed only when the requested match starts"
+  survives_refresh_and_cancel: true
+  cannot_override:
+    - attendance
+    - end_game
+    - playing_or_reserved
+    - duplicate_player
+    - format
+    - acceptable_team_balance
+
+couples:
+  scope: "two session players in one registered match format"
+  persistence: "same couple_number and couple_match_mode on both session_players rows"
+  separate_table_required: false
+  auto_behavior: "fixed teammates in registered format; independent in other formats"
+  display_number_is_priority: false
+  manual_split: "allowed for one match after warning"
+  cannot_override:
+    - eligibility
+    - end_game
+    - duplicate_player
+    - acceptable_team_balance
 
 persistence:
   live_owner: "zustand"
@@ -119,3 +154,10 @@ persistence:
     - event_sourcing
     - cqrs
     - continuous_db_write_loop
+
+locks:
+  protects_against: "automatic refresh and automatic top-up"
+  manual_edit_allowed: true
+  cross_lock_swap: "allowed; retain all Lock flags and commit every affected preview atomically"
+  hard_validation: "four unique eligible players, no court conflict, no cross-preview duplicate, current runtime revision"
+  soft_warnings: "Couple split, level imbalance, Host use, repeat, and manual format override never block operator Apply"

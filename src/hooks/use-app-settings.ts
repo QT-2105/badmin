@@ -1,24 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { defaultAppSettings, readAppSettings, writeAppSettings, type AppSettings } from '@/lib/app-settings';
+import { fetchAppSettings, updateAppSettings as updateRemoteAppSettings } from '@/services/app-settings-service';
+
+const appSettingsQueryKey = ['settings', 'app'] as const;
 
 export function useAppSettings() {
-  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: appSettingsQueryKey,
+    queryFn: ({ signal }) => fetchAppSettings(signal),
+    initialData: () => readAppSettings()
+  });
+  const mutation = useMutation({
+    mutationFn: updateRemoteAppSettings,
+    onSuccess: (savedSettings) => {
+      writeAppSettings(savedSettings);
+      queryClient.setQueryData(appSettingsQueryKey, savedSettings);
+    },
+    onError: () => {
+      const current = queryClient.getQueryData<AppSettings>(appSettingsQueryKey);
+      if (current) writeAppSettings(current);
+    }
+  });
 
-  useEffect(() => {
-    setSettings(readAppSettings());
-  }, []);
+  const settings = query.data ?? defaultAppSettings;
 
   function updateSettings(nextSettings: AppSettings) {
-    setSettings(nextSettings);
     writeAppSettings(nextSettings);
+    queryClient.setQueryData(appSettingsQueryKey, nextSettings);
+    mutation.mutate(nextSettings);
   }
 
   function setSetting<Key extends keyof AppSettings>(key: Key, value: AppSettings[Key]) {
     updateSettings({ ...settings, [key]: value });
   }
 
-  return { settings, setSetting, updateSettings };
+  return {
+    settings,
+    setSetting,
+    updateSettings,
+    isLoading: query.isLoading,
+    isSaving: mutation.isPending,
+    error: query.error ?? mutation.error
+  };
 }

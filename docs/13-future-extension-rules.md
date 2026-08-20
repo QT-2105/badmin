@@ -35,10 +35,11 @@ Escalate before adding:
 
 ## Settings Rule
 
-Settings should stay small and operational. Current settings are browser-local and include:
+Settings should stay small and operational. Shared operational settings are DB-backed singleton values and include:
 
 - auto-create court fee transaction
 - auto-create shuttlecock usage transaction
 - max court count per session
+- default payment bank account
 
-Do not add complex setting systems without a clear operational need.
+Collection-style settings such as payment bank accounts belong in dedicated tables. Browser-local settings are reserved for personal UI preferences such as theme or sidebar state. Do not add complex setting systems without a clear operational need.

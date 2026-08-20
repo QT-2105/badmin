@@ -26,7 +26,7 @@ Everything operational belongs to a Play Session:
 - `/sessions/[sessionId]/runtime`: live court orchestration
 - `/finance`: manual and session-generated finance transactions
 - `/inventory`: shuttlecock product, stock, movement management
-- `/settings`: browser-local operational settings
+- `/settings`: small operational settings backed by DB where values are shared across devices
 
 ## Domain Entities
 
@@ -49,7 +49,7 @@ Everything operational belongs to a Play Session:
 - database currently stores main statuses as `NOT_STARTED`, `LIVE`, `FINISHED`
 - list order inside a play date is earliest start time first
 - structural edits and deletes are allowed only before the session starts and only for non-past play dates
-- starting a session requires at least `court_count * 6` players
+- starting a session requires at least four players; court count controls runtime capacity, not a global player-count gate
 
 `session_players`
 
@@ -95,8 +95,10 @@ Everything operational belongs to a Play Session:
 
 `settings`
 
-- currently browser-local through `localStorage`
-- controls auto-created completion vouchers and maximum court count per session
+- shared operational settings live in the singleton `app_settings`
+- controls auto-created completion vouchers, maximum court count per session, and the default payment bank account
+- payment bank accounts are collection-style settings stored as dedicated rows for QR image, owner name, bank name, ordering, and deletion
+- browser-local storage is reserved for personal UI preferences such as theme/sidebar state
 - not a database-backed enterprise configuration module
 
 ## Boundary Rule

@@ -18,14 +18,16 @@ export function useSessionPlayers(sessionId: string) {
   });
 }
 
-export function useSessionPlayerMutations(sessionId: string) {
+export function useSessionPlayerMutations(sessionId: string, options: { invalidateRuntime?: boolean } = {}) {
   const queryClient = useQueryClient();
+  const invalidateRuntime = options.invalidateRuntime ?? true;
   const invalidate = async () => {
-    await Promise.all([
+    const invalidations = [
       queryClient.invalidateQueries({ queryKey: ['session', 'players', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] }),
-      queryClient.invalidateQueries({ queryKey: ['runtime', 'snapshot', sessionId] })
-    ]);
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] })
+    ];
+    if (invalidateRuntime) invalidations.push(queryClient.invalidateQueries({ queryKey: ['runtime', 'snapshot', sessionId] }));
+    await Promise.all(invalidations);
   };
 
   return {

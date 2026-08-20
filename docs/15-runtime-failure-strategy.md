@@ -29,6 +29,8 @@ The runtime top bar can warn about pending/sync/error states. Leaving runtime ma
 
 Do not block live court operation because sync is temporarily unhealthy.
 
+A runtime version conflict is different from a temporary connectivity error. On conflict, disable further scheduling mutations until the operator reloads the newest persisted snapshot. Provide an explicit reload action; do not silently merge or overwrite another device's state.
+
 ## Completion Recovery
 
 Completing a session is transactional. If completion fails, do not partially lock the UI. If completion succeeds:

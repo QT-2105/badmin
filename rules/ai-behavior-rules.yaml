@@ -1,4 +1,4 @@
-version: "2026-06-30"
+version: "2026-08-13"
 name: ai-behavior-rules
 scope: ai-agents
 
@@ -29,14 +29,19 @@ required_behavior:
   - "Preserve tablet/mobile-first runtime UX."
   - "Use readable level labels in user-facing UI."
   - "Preserve attendance-tag eligibility for auto-suggestion."
+  - "Preserve immediate post-match return; lastFinishedAt is soft metadata and not a cooldown."
+  - "Preserve limited late-arrival assistance and wait protection for earlier arrivals."
+  - "Preserve one-shot Trận kế, End-Game, registered-format Couple, and exact-quartet semantics."
   - "Preserve effective-level balancing where female players are internally treated as one level lower."
   - "Prefer same-format matchups when level balance is acceptable."
   - "Do not commit runtime snapshots when auto-suggestion is blocked or produces no valid suggestion."
+  - "Store shared operational settings in DB-backed singleton configuration; keep collection-style settings in dedicated tables and browser-local storage only for personal UI preferences."
   - "Update docs/rules/prompts when current architecture changes."
 
 must_ask_owner_before:
   - "Changing player lifecycle statuses or transitions."
-  - "Changing JUST_FINISHED cooldown/fairness semantics."
+  - "Changing immediate post-match return or lastFinishedAt semantics."
+  - "Changing late-arrival, wait-protection, Trận kế, End-Game, Couple, or exact-quartet semantics."
   - "Changing next-match scoring philosophy."
   - "Changing player tag eligibility for auto-suggestion."
   - "Changing effective-level gender balancing."
@@ -65,7 +70,9 @@ review_focus:
   - runtime_lifecycle_regressions
   - duplicate_players_in_suggestions
   - playing_player_replacement_bug
-  - just_finished_semantic_breakage
+  - post_match_return_semantic_breakage
+  - late_arrival_wait_protection_drift
+  - next_match_end_game_couple_drift
   - excessive_database_calls
   - auto_suggestion_empty_commit
   - player_tag_eligibility_drift

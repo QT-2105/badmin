@@ -25,7 +25,7 @@ Not modified:
 - Runtime refresh behavior.
 - React Query retry configuration.
 - Auth retry behavior.
-- Runtime cooldown timing.
+- then-current runtime cooldown timing (historical sprint scope; superseded 2026-08-13).
 
 ## Protected Diff Result
 
@@ -36,4 +36,3 @@ git diff --name-only -- src/app/api src/repositories src/services src/hooks src/
 ```
 
 Result: PASS, no output.
-

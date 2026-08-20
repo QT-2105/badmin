@@ -28,7 +28,7 @@ export function LiveCourtsSection({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex min-h-0 flex-col gap-2"
+      className="flex h-full min-h-0 flex-col gap-2"
       aria-label="Danh sách sân trong ca"
     >
       {showHeader ? (
@@ -45,7 +45,7 @@ export function LiveCourtsSection({
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pb-2 pr-1 [scrollbar-gutter:stable]">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pb-2 pr-1 [scrollbar-color:rgba(103,232,249,0.35)_transparent] [scrollbar-gutter:stable] [scrollbar-width:thin]">
         <div
           className="grid content-start items-stretch gap-2 md:gap-2.5 min-[900px]:grid-cols-2"
           role="list"

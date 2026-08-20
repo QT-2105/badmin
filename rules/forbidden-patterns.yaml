@@ -1,4 +1,4 @@
-version: "2026-06-09"
+version: "2026-08-13"
 name: forbidden-patterns
 scope: repository
 
@@ -48,10 +48,25 @@ forbidden_patterns:
     rule: "Do not allow PLAYING players to be selected as suggestion replacements."
     rationale: "This corrupts live court state."
 
-  - id: remove_just_finished
+  - id: reintroduce_post_match_cooldown
     severity: critical
-    rule: "Do not remove or cosmetically collapse JUST_FINISHED."
-    rationale: "It protects fairness, cooldown, fatigue, and anti-repeat behavior."
+    rule: "Do not reintroduce a mandatory cooldown, JUST_FINISHED lock, or hidden time-based block after a match."
+    rationale: "Players return to WAITING immediately; lastFinishedAt is soft metadata and the operator may schedule consecutive matches."
+
+  - id: late_arrival_full_catch_up
+    severity: high
+    rule: "Do not treat matches played before arrival as matches owed to a late player."
+    rationale: "Late arrivals receive limited entry assistance while wait protection preserves fairness for earlier arrivals."
+
+  - id: couple_global_or_absolute
+    severity: critical
+    rule: "Do not make Couple global, cross-session, active in every format, or stronger than eligibility and acceptable balance."
+    rationale: "Couple is session-scoped and fixes teammates only in its registered format."
+
+  - id: broad_anti_repeat
+    severity: high
+    rule: "Do not penalize last court, ordinary partner repetition, or ordinary opponent repetition."
+    rationale: "Only exact recent quartet repetition is avoided when another acceptable option exists."
 
   - id: inventory_direct_update
     severity: critical

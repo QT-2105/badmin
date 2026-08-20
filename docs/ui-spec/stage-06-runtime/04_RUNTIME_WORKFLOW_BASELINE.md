@@ -35,7 +35,7 @@ Scheduling is disabled when:
 
 ## Auto Match Workflow
 
-Operator clicks `Auto xếp cặp`.
+Operator clicks `Tạo gợi ý` (or `Tạo phương án khác` when suggestions already exist).
 
 Current behavior:
 

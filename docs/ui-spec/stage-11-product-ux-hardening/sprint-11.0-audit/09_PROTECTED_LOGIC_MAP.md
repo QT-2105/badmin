@@ -28,7 +28,7 @@ Protected functions/behavior:
 
 - queue source/order
 - player lifecycle
-- `JUST_FINISHED`
+- then-current `JUST_FINISHED` behavior (historical audit; superseded 2026-08-13)
 - suggestion scoring
 - replacement eligibility
 - apply/start/end/swap/cancel
@@ -80,4 +80,3 @@ Protected:
 - branding upload/delete behavior
 - destructive service calls
 - no fake settings for missing capabilities
-

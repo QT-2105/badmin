@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 
-import { syncRuntimeSnapshot } from '@/services/runtime-snapshot-service';
+import { RuntimeSyncConflictError, syncRuntimeSnapshot } from '@/services/runtime-snapshot-service';
 import { useBadmintonStore } from '@/lib/badminton-store';
 import type { RuntimeSyncPayload } from '@/types/runtime';
 
-export type RuntimeSyncState = 'idle' | 'pending' | 'syncing' | 'synced' | 'error';
+export type RuntimeSyncState = 'idle' | 'pending' | 'syncing' | 'synced' | 'error' | 'conflict';
 
 function parseCourtNumber(value: string | null): number | null {
   if (!value) return null;
@@ -20,11 +20,26 @@ function buildSyncPayload(
 ): RuntimeSyncPayload {
   return {
     sessionId,
+    mode: 'FULL',
     players: players.map((player) => ({
       id: player.id,
       status: player.status,
       matchesPlayed: player.matchesPlayed,
-      lastCourtNumber: parseCourtNumber(player.lastCourt)
+      lastCourtNumber: parseCourtNumber(player.lastCourt),
+      playerTags: player.playerTags,
+      firstArrivedAt: player.firstArrivedAt,
+      arrivalBaselineMatches: player.arrivalBaselineMatches,
+      fairnessOffset: player.fairnessOffset,
+      deferredRounds: player.deferredRounds,
+      waitingSince: player.waitingSince,
+      entryPriorityConsumedAt: player.entryPriorityConsumedAt,
+      lastFinishedAt: player.lastFinishedAt,
+      nextMatchRequestedAt: player.nextMatchRequestedAt,
+      nextMatchRequestMode: player.nextMatchRequestMode,
+      endGameAt: player.endGameAt,
+      endGameAfterMatch: player.endGameAfterMatch,
+      coupleNumber: player.coupleNumber,
+      coupleMatchMode: player.coupleMatchMode
     })),
     courts: courts.map((court) => ({
       courtId: court.id,
@@ -32,11 +47,25 @@ function buildSyncPayload(
       startedAt: court.startedAt,
       roster: court.slots
     })),
-    nextMatches: nextMatches.map((match) => ({
-      queueOrder: match.index,
-      roster: match.roster,
-      score: match.score
-    }))
+    nextMatches: nextMatches.map((match) => {
+      const persisted = match as typeof match & {
+        matchFormat?: RuntimeSyncPayload['nextMatches'][number]['matchFormat'];
+        generation?: number;
+        manualEdited?: boolean;
+        sourceRevision?: number | null;
+      };
+      return {
+        id: match.id,
+        queueOrder: match.index,
+        roster: match.roster,
+        score: match.score,
+        locked: match.locked ?? false,
+        matchFormat: persisted.matchFormat,
+        generation: persisted.generation,
+        manualEdited: persisted.manualEdited,
+        sourceRevision: persisted.sourceRevision
+      };
+    })
   };
 }
 
@@ -55,14 +84,21 @@ export function useRuntimeSync({ enabled = true }: { enabled?: boolean } = {}) {
 
     setSyncState('syncing');
     try {
-      await syncRuntimeSnapshot(payload);
+      const response = await syncRuntimeSnapshot(payload);
+      useBadmintonStore.setState((current) => ({
+        runtimeVersion: response.version,
+        nextMatches: current.nextMatches.map((match) => ({ ...match, sourceRevision: response.version })),
+        courts: current.courts.map((court) => court.status === 'EMPTY' ? court : { ...court, sourceRevision: response.version })
+      }));
       setSyncState('synced');
       return true;
-    } catch {
-      setSyncState('error');
+    } catch (error) {
+      setSyncState(error instanceof RuntimeSyncConflictError ? 'conflict' : 'error');
       return false;
     }
   }, [enabled, sessionId]);
 
-  return { syncState, commitRuntimeSnapshot };
+  const resetSyncState = useCallback(() => setSyncState('idle'), []);
+
+  return { syncState, commitRuntimeSnapshot, resetSyncState };
 }

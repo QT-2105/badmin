@@ -8,7 +8,7 @@ This sprint validates source-level preservation and command validation. Live see
 | --- | --- | --- |
 | Waiting queue ordering unchanged | PASS | No edits to queue source, sorting, filters or `src/lib/badminton-store.ts`. |
 | `PRIORITY` / `WAITING` ordering unchanged | PASS | No edits to status ranking, queue data source or generation logic. |
-| `JUST_FINISHED` behavior unchanged | PASS | No edits to lifecycle actions or status transitions. |
+| Then-current `JUST_FINISHED` behavior unchanged | PASS | Historical sprint result; semantics superseded by owner approval on 2026-08-13. |
 | Pairing algorithm unchanged | PASS | No edits to pairing helpers or store actions. |
 | Court assignment unchanged | PASS | Existing `applyNextMatch(..., court.id)` calls preserved. |
 | Next-match generation unchanged | PASS | Existing `refreshNextMatches` calls preserved. |

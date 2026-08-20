@@ -64,7 +64,7 @@ RealtimeDashboard
 │  ├─ History button
 │  ├─ Player fullscreen button
 │  ├─ SuggestionModePicker
-│  └─ Auto xếp cặp button → refreshSuggestions
+│  └─ Tạo gợi ý / Tạo phương án khác button → refreshSuggestions
 ├─ Court Grid
 │  └─ LiveCourtsSection
 │     └─ CourtCard

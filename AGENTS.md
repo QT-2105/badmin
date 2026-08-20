@@ -1,6 +1,6 @@
 # BADMIN — AI GOVERNANCE ENTRYPOINT
 
-Version: 2026-07-24
+Version: 2026-08-13
 
 ## Required Reading
 
@@ -113,9 +113,11 @@ The system must never force automatic matchmaking.
 
 The protected player lifecycle is:
 
-`WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> JUST_FINISHED -> WAITING`
+`WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> WAITING`
 
-`JUST_FINISHED` is not cosmetic. It is a fairness, cooldown, fatigue, anti-repeat, and queue-continuity mechanic.
+Ending a match returns players to `WAITING` immediately. `lastFinishedAt` is soft scheduling metadata only and must not create a mandatory cooldown or block consecutive manual matches.
+
+Protected scheduling semantics also include limited late-arrival entry assistance, wait protection for earlier arrivals, one-shot `Trận kế`, `End-Game`, registered-format Couple relationships, and exact-quartet-only anti-repeat.
 
 ## Protected Runtime Modules
 
@@ -169,13 +171,14 @@ Do not turn inventory into warehouse ERP.
 
 ## Settings Philosophy
 
-Current settings are simple browser-local operational preferences:
+Settings must stay small and operational. Shared operational settings are DB-backed singleton configuration:
 
 - auto-create court fee transaction
 - auto-create shuttlecock usage transaction
 - max court count per session
+- default payment bank account
 
-Do not add broad settings/admin systems without a clear operational need.
+Collection-style settings such as payment bank accounts belong in dedicated tables. Browser-local storage is only for personal UI preferences such as theme or sidebar state. Do not add broad settings/admin systems without a clear operational need.
 
 ## Mobile / Tablet First
 
@@ -206,7 +209,8 @@ Future AI models must not autonomously introduce:
 Ask the owner before changing:
 
 - scheduling lifecycle
-- `JUST_FINISHED` semantics
+- immediate post-match return and `lastFinishedAt` semantics
+- late-arrival fairness, wait protection, `Trận kế`, `End-Game`, Couple, and exact-quartet semantics
 - next-match scoring philosophy
 - replacement eligibility
 - court lifecycle
