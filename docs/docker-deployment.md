@@ -10,7 +10,7 @@ deployment and is not used by the active GitHub Actions workflow.
 - `docker-compose.yml`: production app service using a prebuilt image and external Neon/Postgres through `.env`.
 - `.dockerignore`: excludes local build artifacts, dependencies, and secrets.
 - `.env.docker.example`: deployment environment template.
-- `.github/workflows/ci-cd.yml`: validates source and deploys the image to Heroku on `main`.
+- `.github/workflows/ci-cd.yml`: validates pull requests targeting `heroku-prod` and deploys the image to Heroku only after a push or merge to `heroku-prod`; `main` does not trigger Heroku CI/CD.
 
 ## Prepare Environment
 

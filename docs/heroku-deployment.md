@@ -41,12 +41,14 @@ Environment variables:
 Protect the environment with required reviewers when the repository plan
 supports deployment protection rules.
 
-Pull requests run install, Prisma generation, the DB automation guard, lint,
-typecheck, tests, a production build, and a Heroku-compatible `linux/amd64`
-container build. A successful push to `main` repeats validation, builds the
-production image, pushes it to Heroku, releases the `web` process, and checks
-`/api/health` through the app URL returned by Heroku. The deploy job also
-verifies that both required Neon Config Vars exist without printing their
+Only pull requests targeting `heroku-prod` run this Heroku validation workflow.
+They run install, Prisma generation, the DB automation guard, lint, typecheck,
+tests, a production build, and a Heroku-compatible `linux/amd64` container
+build. A successful merge or direct push to `heroku-prod` repeats validation,
+builds the production image, pushes it to Heroku, releases the `web` process,
+and checks `/api/health` through the app URL returned by Heroku. Changes merged
+only to `main` do not trigger this workflow or deploy to Heroku. The deploy job
+also verifies that both required Neon Config Vars exist without printing their
 values.
 
 ## 3. Neon database
