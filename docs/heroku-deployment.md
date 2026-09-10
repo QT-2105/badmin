@@ -39,7 +39,9 @@ Environment variables:
 - `NEXT_PUBLIC_APP_URL`: final HTTPS URL, without a trailing slash.
 
 Protect the environment with required reviewers when the repository plan
-supports deployment protection rules.
+supports deployment protection rules. Restrict the environment deployment
+branch to `heroku-prod`. If an existing rule allows only `main`, replace it
+before the first Heroku release.
 
 Only pull requests targeting `heroku-prod` run this Heroku validation workflow.
 They run install, Prisma generation, the DB automation guard, lint, typecheck,
