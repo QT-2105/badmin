@@ -45,13 +45,20 @@ before the first Heroku release.
 
 Only pull requests targeting `heroku-prod` run this Heroku validation workflow.
 They run install, Prisma generation, the DB automation guard, lint, typecheck,
-tests, a production build, and a Heroku-compatible `linux/amd64` container
-build. A successful merge or direct push to `heroku-prod` repeats validation,
-builds the production image, pushes it to Heroku, releases the `web` process,
-and checks `/api/health` through the app URL returned by Heroku. Changes merged
-only to `main` do not trigger this workflow or deploy to Heroku. The deploy job
-also verifies that both required Neon Config Vars exist without printing their
-values.
+tests, and a Heroku-compatible `linux/amd64` container build. A successful merge
+or direct push to `heroku-prod` repeats the source checks, builds the production
+image once, pushes it to Heroku, releases the `web` process, and checks
+`/api/health` through the app URL returned by Heroku. Changes merged only to
+`main` do not trigger this workflow or deploy to Heroku. A newer commit cancels
+an older in-progress run for the same branch or pull request to avoid stale
+deployments and duplicate runner usage. The deploy job also verifies that both
+required Neon Config Vars exist without printing their values.
+
+The former GHCR, SSH/VPS, and Docker Compose deployment configuration has been
+removed. Delete its unused GitHub secrets (`SERVER_HOST`, `SERVER_USER`,
+`SERVER_SSH_KEY`, `SERVER_PORT`, and `SERVER_APP_DIR`) after confirming that no
+other workflow uses them. Remove old GHCR package versions separately if the
+repository no longer needs them.
 
 ## 3. Neon database
 
