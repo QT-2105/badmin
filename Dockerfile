@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat openssl
@@ -16,9 +16,11 @@ FROM base AS builder
 
 ARG DATABASE_URL=postgresql://user:password@localhost:5432/badmin
 ARG DATABASE_URL_UNPOOLED=postgresql://user:password@localhost:5432/badmin
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ENV DATABASE_URL=$DATABASE_URL
 ENV DATABASE_URL_UNPOOLED=$DATABASE_URL_UNPOOLED
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -48,6 +50,6 @@ USER nextjs
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null 2>&1 || exit 1
 
 CMD ["node", "server.js"]

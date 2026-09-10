@@ -1,4 +1,8 @@
-# Docker Deployment And CI/CD
+# Docker Deployment (Self-hosted Alternative)
+
+The primary production target is now Heroku. See `docs/heroku-deployment.md`.
+This document is retained only for an explicitly selected self-hosted Docker
+deployment and is not used by the active GitHub Actions workflow.
 
 ## Files
 
@@ -6,8 +10,7 @@
 - `docker-compose.yml`: production app service using a prebuilt image and external Neon/Postgres through `.env`.
 - `.dockerignore`: excludes local build artifacts, dependencies, and secrets.
 - `.env.docker.example`: deployment environment template.
-- `.github/workflows/ci-cd.yml`: validates source, builds Docker image, and pushes to GHCR on `main`.
-- `.github/workflows/deploy.yml`: manual SSH deploy workflow for a prebuilt image.
+- `.github/workflows/ci-cd.yml`: validates source and deploys the image to Heroku on `main`.
 
 ## Prepare Environment
 
@@ -79,26 +82,10 @@ docker compose up -d --no-build badmin
 
 Do not rely on server-side source builds for normal production deployment. CI/CD should build and publish the image.
 
-## GitHub Actions Setup
+## Legacy Self-hosted Setup
 
-Required repository secrets for manual deploy:
-
-- `SERVER_HOST`: server IP or hostname
-- `SERVER_USER`: SSH user
-- `SERVER_SSH_KEY`: private SSH key allowed to access the server
-- `SERVER_PORT`: SSH port, usually `22`
-- `SERVER_APP_DIR`: directory containing `docker-compose.yml` and `.env`
-
-The `CI/CD` workflow:
-
-- runs `npm ci`
-- runs `prisma generate`
-- blocks automatic DB schema migration commands in workflow, Docker, compose, and package scripts
-- runs lint, typecheck, and production build
-- builds Docker image
-- pushes `latest` and `sha-*` tags to GHCR on `main`
-
-The `Deploy` workflow is manual. Pick the image tag to deploy, then it runs:
+The following commands describe a manual self-hosted deployment only. The
+active GitHub workflow no longer pushes to GHCR or connects to a server by SSH:
 
 ```bash
 docker compose pull badmin

@@ -50,6 +50,14 @@ npm run dev
 - `npm run prisma:migrate` - create and apply a Prisma migration
 - `npm run prisma:studio` - open Prisma Studio
 
+## Production deployment
+
+Production CI/CD targets Heroku Container Registry, uses Neon Postgres, and can
+serve a Namecheap-managed custom domain. See
+[`docs/heroku-deployment.md`](docs/heroku-deployment.md) for the required
+Heroku config vars, GitHub environment values, DNS records, health check, and
+rollback procedure.
+
 ## Workspace structure
 
 - `src/app` - App Router entry points and global layout
