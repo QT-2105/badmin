@@ -37,7 +37,3 @@ export function Surface({
 export function Card(props: Parameters<typeof Surface>[0]) {
   return <Surface {...props} />;
 }
-
-export function SectionSurface(props: Parameters<typeof Surface>[0]) {
-  return <Surface padding="lg" {...props} />;
-}

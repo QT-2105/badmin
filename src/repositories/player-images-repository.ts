@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
-import { createImageKey, deleteS3Object, listS3ObjectKeysByPrefix, uploadS3Object } from '@/lib/s3-storage';
+import { createTenantImageKey, deleteS3Object, uploadS3Object } from '@/lib/s3-storage';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 export async function uploadPlayerAvatar(input: {
   playerId: string;
@@ -9,10 +10,11 @@ export async function uploadPlayerAvatar(input: {
   fileName: string;
   fileSize: number;
 }): Promise<{ avatarUrl: string | null; avatarS3Key: string | null }> {
-  const player = await prisma.session_players.findUnique({ where: { id: input.playerId } });
+  const { clubId } = requireTenantContext('player_image.create');
+  const player = await prisma.session_players.findUnique({ where: { id: input.playerId, club_id: clubId } });
   if (!player) throw new AppError('Không tìm thấy người chơi.', 404);
 
-  const key = createImageKey(`avatar_player/session_${player.session_id}/player_${player.id}`, input.fileName);
+  const key = createTenantImageKey(clubId, `avatar_player/session_${player.session_id}/player_${player.id}`, input.fileName);
   const uploaded = await uploadS3Object({
     key,
     body: input.buffer,
@@ -21,11 +23,12 @@ export async function uploadPlayerAvatar(input: {
 
   await prisma.$transaction(async (tx) => {
     await tx.session_player_images.updateMany({
-      where: { session_player_id: input.playerId, status: 'ACTIVE' },
+      where: { session_player_id: input.playerId, club_id: clubId, status: 'ACTIVE' },
       data: { status: 'REPLACED', updated_at: new Date() }
     });
     await tx.session_player_images.create({
       data: {
+        club_id: clubId,
         session_player_id: input.playerId,
         s3_key: uploaded.key,
         public_url: uploaded.publicUrl,
@@ -36,7 +39,7 @@ export async function uploadPlayerAvatar(input: {
       }
     });
     await tx.session_players.update({
-      where: { id: input.playerId },
+      where: { id: input.playerId, club_id: clubId },
       data: {
         avatar_s3_key: uploaded.key,
         avatar_url: uploaded.publicUrl,
@@ -56,7 +59,8 @@ export async function uploadPlayerAvatar(input: {
 }
 
 export async function deletePlayerAvatar(playerId: string): Promise<{ avatarUrl: null; avatarS3Key: null }> {
-  const player = await prisma.session_players.findUnique({ where: { id: playerId } });
+  const { clubId } = requireTenantContext('player_image.delete');
+  const player = await prisma.session_players.findUnique({ where: { id: playerId, club_id: clubId } });
   if (!player) throw new AppError('Không tìm thấy người chơi.', 404);
 
   if (player.avatar_s3_key) {
@@ -65,11 +69,11 @@ export async function deletePlayerAvatar(playerId: string): Promise<{ avatarUrl:
 
   await prisma.$transaction(async (tx) => {
     await tx.session_player_images.updateMany({
-      where: { session_player_id: playerId, status: 'ACTIVE' },
+      where: { session_player_id: playerId, club_id: clubId, status: 'ACTIVE' },
       data: { status: 'DELETED', updated_at: new Date() }
     });
     await tx.session_players.update({
-      where: { id: playerId },
+      where: { id: playerId, club_id: clubId },
       data: {
         avatar_s3_key: null,
         avatar_url: null,
@@ -85,17 +89,15 @@ export async function deletePlayerAvatar(playerId: string): Promise<{ avatarUrl:
 }
 
 export async function deleteAllPlayerImages(): Promise<{ deletedImages: number }> {
-  const [prefixKeys, playersWithAvatar] = await Promise.all([
-    listS3ObjectKeysByPrefix('avatar_player/'),
-    prisma.session_players.findMany({
-      where: { avatar_s3_key: { not: null } },
-      select: { avatar_s3_key: true }
-    })
-  ]);
+  const { clubId } = requireTenantContext('player_image.delete_all');
+  const playersWithAvatar = await prisma.session_players.findMany({
+    where: { club_id: clubId, avatar_s3_key: { not: null } },
+    select: { avatar_s3_key: true }
+  });
 
-  const s3Keys = new Set(prefixKeys);
+  const s3Keys = new Set<string>();
   playersWithAvatar.forEach((player) => {
-    if (player.avatar_s3_key?.startsWith('avatar_player/')) s3Keys.add(player.avatar_s3_key);
+    if (player.avatar_s3_key) s3Keys.add(player.avatar_s3_key);
   });
 
   for (const key of s3Keys) {
@@ -103,8 +105,9 @@ export async function deleteAllPlayerImages(): Promise<{ deletedImages: number }
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.session_player_images.deleteMany();
+    await tx.session_player_images.deleteMany({ where: { club_id: clubId } });
     await tx.session_players.updateMany({
+      where: { club_id: clubId },
       data: {
         avatar_s3_key: null,
         avatar_url: null,

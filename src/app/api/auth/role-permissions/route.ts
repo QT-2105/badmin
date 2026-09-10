@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
-import { authErrorResponse, requireApiPermission, requireApiUser } from '@/lib/auth/guards';
+import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
 import { normalizePermissionKeys, normalizeUserRole } from '@/lib/auth/permissions';
 import { listRolePermissions, updateRolePermissions } from '@/repositories/role-permissions-repository';
 
@@ -19,7 +19,10 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    await requireApiUser(request, ['OWNER']);
+    const currentUser = await requireApiPermission(request, 'users.manage');
+    if (currentUser.role !== 'OWNER') {
+      return NextResponse.json({ error: 'Chỉ Chủ CLB được cập nhật phân quyền.' }, { status: 403 });
+    }
     const payload = await request.json();
     const role = normalizeUserRole(payload.role);
     const result = await updateRolePermissions(role, normalizePermissionKeys(payload.permissions));

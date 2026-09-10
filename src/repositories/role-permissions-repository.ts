@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { requireTenantContext } from '@/lib/tenant-context';
 import {
   DEFAULT_ROLE_PERMISSIONS,
   normalizePermissionKeys,
@@ -14,7 +15,8 @@ export type RolePermissionSummary = {
 const CONFIGURABLE_ROLES: UserRole[] = ['MANAGER', 'OPERATOR', 'VIEWER'];
 
 export async function listRolePermissions(): Promise<RolePermissionSummary[]> {
-  const rows = await prisma.app_role_permissions.findMany();
+  const { clubId } = requireTenantContext('role_permissions.list');
+  const rows = await prisma.app_role_permissions.findMany({ where: { club_id: clubId } });
   const rowByRole = new Map(rows.map((row) => [row.role, normalizePermissionKeys(row.permissions)]));
 
   return (['OWNER', ...CONFIGURABLE_ROLES] as UserRole[]).map((role) => ({
@@ -25,9 +27,10 @@ export async function listRolePermissions(): Promise<RolePermissionSummary[]> {
   }));
 }
 
-export async function getPermissionsForRole(role: UserRole): Promise<PermissionKey[]> {
+export async function getPermissionsForRole(role: UserRole, requestedClubId?: string): Promise<PermissionKey[]> {
   if (role === 'OWNER') return DEFAULT_ROLE_PERMISSIONS.OWNER;
-  const row = await prisma.app_role_permissions.findUnique({ where: { role } });
+  const clubId = requestedClubId ?? requireTenantContext('role_permissions.get.compatibility').clubId;
+  const row = await prisma.app_role_permissions.findFirst({ where: { role, club_id: clubId } });
   return row ? normalizePermissionKeys(row.permissions) : DEFAULT_ROLE_PERMISSIONS[role];
 }
 
@@ -35,12 +38,17 @@ export async function updateRolePermissions(role: UserRole, permissions: Permiss
   if (role === 'OWNER') {
     return { role, permissions: DEFAULT_ROLE_PERMISSIONS.OWNER };
   }
+  const { clubId } = requireTenantContext('role_permissions.upsert');
   const normalized = normalizePermissionKeys(permissions);
-  const row = await prisma.app_role_permissions.upsert({
-    where: { role },
-    create: { role, permissions: normalized, updated_at: new Date() },
-    update: { permissions: normalized, updated_at: new Date() }
-  });
+  const existing = await prisma.app_role_permissions.findFirst({ where: { role, club_id: clubId } });
+  const row = existing
+    ? await prisma.app_role_permissions.update({
+      where: { club_id_role: { club_id: clubId, role: existing.role } },
+      data: { permissions: normalized, updated_at: new Date() }
+    })
+    : await prisma.app_role_permissions.create({
+      data: { club_id: clubId, role, permissions: normalized, updated_at: new Date() }
+    });
 
   return { role: row.role as UserRole, permissions: normalizePermissionKeys(row.permissions) };
 }

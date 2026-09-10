@@ -1,4 +1,4 @@
-version: "2026-08-13"
+version: "2026-08-25"
 name: forbidden-patterns
 scope: repository
 
@@ -87,3 +87,53 @@ forbidden_patterns:
     severity: critical
     rule: "Do not turn finance/inventory/settings into ERP or warehouse management."
     rationale: "Badmin is lightweight badminton operational software."
+
+  - id: merge_users_with_players
+    severity: critical
+    rule: "Do not merge app_users with session_players or turn user administration into global badminton membership."
+    rationale: "Application access and session participation are separate domains."
+
+  - id: bypass_permission_guards
+    severity: critical
+    rule: "Do not remove or bypass existing page/API permission guards or broaden bootstrap behavior without owner approval."
+    rationale: "Người dùng is an administrator capability and must remain access-controlled."
+
+  - id: production_database_from_development
+    severity: critical
+    rule: "Do not point development automation at production data, infer production state from beta, or apply generated schema SQL automatically."
+    rationale: "Beta development is intentionally isolated to protect real operational data."
+
+  - id: client_controlled_tenant
+    severity: critical
+    rule: "Do not trust club_id from request body, query, untrusted header, or URL as tenant authorization."
+    rationale: "Tenant identity comes from the authenticated server-side session; club code is only a locator."
+
+  - id: unscoped_tenant_query
+    severity: critical
+    rule: "Do not read, aggregate, update, or delete tenant-owned data without authenticated club scope."
+    rationale: "One omitted tenant predicate can expose or mutate another club's data."
+
+  - id: cross_tenant_relation
+    severity: critical
+    rule: "Do not rely on globally unique IDs alone for tenant parent/child relations."
+    rationale: "Application validation and composite tenant foreign keys must reject cross-club references."
+
+  - id: plan_branching_in_badmin
+    severity: high
+    rule: "Do not branch Badmin behavior on plan, promotion, or billing names."
+    rationale: "The Control Plane owns commercial logic; Badmin consumes effective capabilities and limits."
+
+  - id: big_bang_tenant_migration
+    severity: critical
+    rule: "Do not combine tenant columns, backfill, constraints, auth/routes, compatibility cleanup, and customer onboarding into one release."
+    rationale: "Expand/write/backfill/constrain/switch phases preserve Legacy Club data and rollback paths."
+
+  - id: second_tenant_before_isolation
+    severity: critical
+    rule: "Do not onboard a second customer club before tenant data, auth, cache, storage, runtime, completion, finance, and inventory gates pass."
+    rationale: "A second tenant converts every remaining global operation into a data-isolation risk."
+
+  - id: tenantization_runtime_rewrite
+    severity: critical
+    rule: "Do not rewrite scheduler or protected runtime semantics merely to add tenant boundaries."
+    rationale: "Tenantization scopes authentication and persistence around the proven runtime implementation."

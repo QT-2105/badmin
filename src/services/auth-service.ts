@@ -19,6 +19,8 @@ export type RolePermissionSummary = {
   permissions: PermissionKey[];
 };
 
+export type LoginVisibleClub = { code: string; name: string };
+
 export async function fetchCurrentUser(signal?: AbortSignal): Promise<AuthUser | null> {
   const res = await fetch('/api/auth/me', { signal, cache: 'no-store' });
   if (res.status === 401) return null;
@@ -26,31 +28,17 @@ export async function fetchCurrentUser(signal?: AbortSignal): Promise<AuthUser |
   return data.user;
 }
 
-export async function fetchBootstrapStatus(signal?: AbortSignal): Promise<boolean> {
-  const res = await fetch('/api/auth/bootstrap', { signal, cache: 'no-store' });
-  const data = await readJson<{ needsBootstrap: boolean }>(res, 'Không thể kiểm tra trạng thái khởi tạo');
-  return data.needsBootstrap;
+export async function lookupLoginClubs(query: string, signal?: AbortSignal): Promise<LoginVisibleClub[]> {
+  const res = await fetch(`/api/public/clubs?q=${encodeURIComponent(query)}`, { signal, cache: 'no-store' });
+  const data = await readJson<{ clubs: LoginVisibleClub[] }>(res, 'Không thể tìm CLB');
+  return data.clubs;
 }
 
-export async function bootstrapOwner(payload: {
-  email: string;
-  displayName: string;
-  password: string;
-}): Promise<AuthUser> {
-  const res = await fetch('/api/auth/bootstrap', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await readJson<{ user: AuthUser }>(res, 'Không thể tạo tài khoản đầu tiên');
-  return data.user;
-}
-
-export async function login(email: string, password: string): Promise<AuthUser> {
+export async function login(clubCode: string, identifier: string, password: string): Promise<AuthUser> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ clubCode, identifier, password })
   });
   const data = await readJson<{ user: AuthUser }>(res, 'Không thể đăng nhập');
   return data.user;
@@ -61,6 +49,15 @@ export async function logout(): Promise<void> {
   await readJson<{ ok: true }>(res, 'Không thể đăng xuất');
 }
 
+export async function activateClubOwner(payload: { clubCode: string; token: string; password: string }): Promise<void> {
+  const res = await fetch('/api/auth/activate-owner', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  await readJson<{ ok: true }>(res, 'Không thể kích hoạt tài khoản OWNER');
+}
+
 export async function fetchAuthUsers(signal?: AbortSignal): Promise<AuthUserSummary[]> {
   const res = await fetch('/api/auth/users', { signal, cache: 'no-store' });
   const data = await readJson<{ users: AuthUserSummary[] }>(res, 'Không thể tải danh sách tài khoản');
@@ -68,7 +65,9 @@ export async function fetchAuthUsers(signal?: AbortSignal): Promise<AuthUserSumm
 }
 
 export async function createAuthUser(payload: {
-  email: string;
+  username?: string | null;
+  email?: string | null;
+  phone?: string | null;
   displayName: string;
   password: string;
   role: UserRole;
@@ -83,7 +82,9 @@ export async function createAuthUser(payload: {
 }
 
 export async function updateAuthUser(userId: string, payload: {
-  email?: string;
+  username?: string | null;
+  email?: string | null;
+  phone?: string | null;
   displayName?: string;
   password?: string;
   role?: UserRole;

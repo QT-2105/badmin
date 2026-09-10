@@ -12,8 +12,10 @@ type RouteContext = {
 
 export async function GET(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.view');
     const { sessionId } = await context.params;
+    await requireApiPermission(request, 'session.view', {
+      feature: 'session.runtime', activeSessionId: sessionId, allowActiveSessionContinuation: true
+    });
     const url = new URL(request.url);
     const playerId = url.searchParams.get('playerId');
     const history = await listMatchHistory(sessionId, playerId);
@@ -25,8 +27,10 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { sessionId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionId: sessionId, allowActiveSessionContinuation: true
+    });
     const payload = await request.json();
     const history = await createMatchHistory({
       sessionId,

@@ -8,8 +8,17 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    await requireApiPermission(request, 'inventory.view');
     const url = new URL(request.url);
+    const sessionId = url.searchParams.get('sessionId') ?? undefined;
+    if (url.searchParams.get('view') === 'options' && sessionId) {
+      await requireApiPermission(request, 'session.view', {
+        feature: 'session.completion',
+        activeSessionId: sessionId,
+        allowActiveSessionContinuation: true
+      });
+    } else {
+      await requireApiPermission(request, 'inventory.view');
+    }
     if (url.searchParams.get('view') === 'options') {
       const products = await listShuttlecockProductOptions();
       return NextResponse.json({ products });

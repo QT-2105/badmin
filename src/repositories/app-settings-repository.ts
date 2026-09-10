@@ -1,8 +1,7 @@
 import { AppError } from '@/lib/app-error';
 import { defaultAppSettings, normalizeMaxCourtCount, normalizeOptionalId, type AppSettings } from '@/lib/app-settings';
 import { prisma } from '@/lib/prisma';
-
-const DEFAULT_ID = 'default';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 type AppSettingsRow = {
   max_court_count_per_session: number;
@@ -21,18 +20,20 @@ function mapAppSettings(row: AppSettingsRow | null): AppSettings {
 }
 
 export async function getAppSettings(): Promise<AppSettings> {
-  const row = await prisma.app_settings.findUnique({ where: { id: DEFAULT_ID } });
+  const { clubId } = requireTenantContext('settings.get');
+  const row = await prisma.app_settings.findFirst({ where: { club_id: clubId } });
   return mapAppSettings(row);
 }
 
 export async function updateAppSettings(input: Partial<AppSettings>): Promise<AppSettings> {
+  const { clubId } = requireTenantContext('settings.upsert');
   const defaultPaymentBankAccountId = input.defaultPaymentBankAccountId === undefined
     ? undefined
     : normalizeOptionalId(input.defaultPaymentBankAccountId);
 
   if (defaultPaymentBankAccountId) {
     const account = await prisma.payment_bank_accounts.findFirst({
-      where: { id: defaultPaymentBankAccountId, active: true },
+      where: { id: defaultPaymentBankAccountId, club_id: clubId, active: true },
       select: { id: true }
     });
     if (!account) throw new AppError('Tài khoản thanh toán mặc định không hợp lệ.');
@@ -54,20 +55,22 @@ export async function updateAppSettings(input: Partial<AppSettings>): Promise<Ap
     updated_at: new Date()
   };
 
-  const row = await prisma.app_settings.upsert({
-    where: { id: DEFAULT_ID },
-    create: {
-      id: DEFAULT_ID,
-      club_name: 'Badmin',
-      max_court_count_per_session: input.maxCourtCountPerSession === undefined
-        ? defaultAppSettings.maxCourtCountPerSession
-        : normalizeMaxCourtCount(input.maxCourtCountPerSession),
-      auto_create_court_fee_transaction: input.autoCreateCourtFeeTransaction ?? defaultAppSettings.autoCreateCourtFeeTransaction,
-      auto_create_shuttlecock_usage_transaction: input.autoCreateShuttlecockUsageTransaction ?? defaultAppSettings.autoCreateShuttlecockUsageTransaction,
-      default_payment_bank_account_id: defaultPaymentBankAccountId ?? null
-    },
-    update: data
-  });
+  const existing = await prisma.app_settings.findFirst({ where: { club_id: clubId } });
+  const row = existing
+    ? await prisma.app_settings.update({ where: { club_id: clubId }, data })
+    : await prisma.app_settings.create({
+      data: {
+        id: clubId,
+        club_id: clubId,
+        club_name: 'Badmin',
+        max_court_count_per_session: input.maxCourtCountPerSession === undefined
+          ? defaultAppSettings.maxCourtCountPerSession
+          : normalizeMaxCourtCount(input.maxCourtCountPerSession),
+        auto_create_court_fee_transaction: input.autoCreateCourtFeeTransaction ?? defaultAppSettings.autoCreateCourtFeeTransaction,
+        auto_create_shuttlecock_usage_transaction: input.autoCreateShuttlecockUsageTransaction ?? defaultAppSettings.autoCreateShuttlecockUsageTransaction,
+        default_payment_bank_account_id: defaultPaymentBankAccountId ?? null
+      }
+    });
 
   return mapAppSettings(row);
 }

@@ -1,25 +1,17 @@
 # UI Preservation Prompt
 
-Use this prompt before changing UI/UX.
-
 ```text
-Read AGENTS.md, docs/08-ui-ux-constitution.md, docs/09-mobile-tablet-constitution.md, and rules/protected-modules.yaml.
+Read AGENTS.md, docs/ui-ux.md, docs/runtime.md, and rules/protected-modules.yaml.
 
-Evaluate the change against current Badmin UI:
-- fixed/collapsible desktop sidebar
-- mobile sticky horizontal nav
-- root nav stays Dashboard, Lịch chơi, Thu chi, Kho cầu, Cài đặt
-- runtime is not global navigation
-- runtime header remains compact
-- QUẢN LÝ SÂN contains courts and next suggestions
-- no dead Hàng chờ tab
-- Người chơi button opens full-screen player list
-- cards use Mở rộng / Thu gọn consistently
-- touch targets remain large
-- numeric inputs remain simple
-- status/level labels are user-readable
+Preserve:
+- permission-filtered root navigation: Dashboard, Lịch chơi, Thu chi, Kho cầu, Người dùng, Cài đặt
+- runtime only inside a session
+- fixed/collapsible desktop sidebar and compact mobile navigation
+- compact runtime header, courts and previews in one management area
+- full-screen player and history access
+- Mở rộng / Thu gọn labels
+- large touch targets, bounded scrolling, simple numeric inputs, readable labels
+- auth and permission behavior behind Người dùng
 
-If changing protected runtime layout or scheduling flow, ask owner unless explicitly requested.
-
-Prefer compact operational UI over decorative or generic admin dashboard UI.
+Prefer existing consumed shared primitives. Do not add speculative primitives; remove unused presentation exports only after graph verification. Ask before protected runtime layout or navigation changes.
 ```

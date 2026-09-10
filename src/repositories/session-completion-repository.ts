@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { getPlaySession } from '@/repositories/play-sessions-repository';
 import type { PlaySessionSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
+import { lockShuttlecockProduct } from '@/repositories/transaction-locks';
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -54,14 +56,25 @@ export async function completePlaySession(input: {
   if (extraExpenseAmount > 0 && !extraExpenseTitle) {
     throw new Error('Vui lòng nhập nội dung chi phí phát sinh');
   }
+  const { clubId } = requireTenantContext('session.completion');
 
   await prisma.$transaction(async (tx) => {
+    const claimed = await tx.play_sessions.updateMany({
+      where: { id: input.sessionId, club_id: clubId, status: 'LIVE' },
+      data: { runtime_version: { increment: 1 }, updated_at: new Date() }
+    });
     const session = await tx.play_sessions.findUnique({
-      where: { id: input.sessionId },
-      include: { session_players: true, play_dates: true, runtime_courts: true }
+      where: { id: input.sessionId, club_id: clubId },
+      include: {
+        session_players: { where: { club_id: clubId } },
+        play_dates: true,
+        runtime_courts: { where: { club_id: clubId } }
+      }
     });
     if (!session) throw new Error('Session not found');
-    if (session.status === 'FINISHED') throw new Error('Ca chơi đã hoàn tất');
+    if (claimed.count !== 1 && session.status === 'FINISHED') throw new Error('Ca chơi đã hoàn tất');
+    if (claimed.count !== 1 && session.status === 'CANCELLED') throw new Error('Ca chơi đã hủy');
+    if (claimed.count !== 1) throw new Error('Chỉ có thể hoàn tất ca đang hoạt động');
     if (session.status !== 'LIVE') throw new Error('Chỉ có thể hoàn tất ca đang hoạt động');
     const activeCourts = session.runtime_courts.filter((court) => court.status === 'READY' || court.status === 'PLAYING');
     if (activeCourts.length > 0) {
@@ -71,8 +84,9 @@ export async function completePlaySession(input: {
       throw new Error(`Chưa thể hoàn tất ca: ${labels.join(', ')}.`);
     }
 
+    await lockShuttlecockProduct(tx, clubId, input.shuttlecockProductId);
     const product = await tx.shuttlecock_products.findUnique({
-      where: { id: input.shuttlecockProductId },
+      where: { id: input.shuttlecockProductId, club_id: clubId },
       include: { shuttlecock_inventory: true }
     });
     if (!product) throw new Error('Không tìm thấy loại cầu');
@@ -106,6 +120,7 @@ export async function completePlaySession(input: {
 
     const transactions = [
       {
+        club_id: clubId,
         session_id: input.sessionId,
         transaction_type: 'INCOME',
         category: 'SESSION_FEE',
@@ -119,6 +134,7 @@ export async function completePlaySession(input: {
 
     if (autoCreateCourtFeeTransaction) {
       transactions.push({
+        club_id: clubId,
         session_id: input.sessionId,
         transaction_type: 'EXPENSE',
         category: 'COURT_FEE',
@@ -132,6 +148,7 @@ export async function completePlaySession(input: {
 
     if (autoCreateShuttlecockUsageTransaction) {
       transactions.push({
+        club_id: clubId,
         session_id: input.sessionId,
         transaction_type: 'EXPENSE',
         category: 'SHUTTLECOCK_USAGE',
@@ -145,6 +162,7 @@ export async function completePlaySession(input: {
 
     if (autoCreateExtraExpenseTransaction && extraExpenseAmount > 0 && extraExpenseTitle) {
       transactions.push({
+        club_id: clubId,
         session_id: input.sessionId,
         transaction_type: 'EXPENSE',
         category: 'OTHER',
@@ -160,6 +178,7 @@ export async function completePlaySession(input: {
 
     await tx.shuttlecock_movements.create({
       data: {
+        club_id: clubId,
         shuttlecock_product_id: input.shuttlecockProductId,
         movement_type: 'PLAY_USAGE',
         quantity_ball: -shuttlecockPiecesUsed,
@@ -172,8 +191,14 @@ export async function completePlaySession(input: {
     });
 
     await tx.shuttlecock_inventory.upsert({
-      where: { shuttlecock_product_id: input.shuttlecockProductId },
+      where: {
+        club_id_shuttlecock_product_id: {
+          club_id: clubId,
+          shuttlecock_product_id: input.shuttlecockProductId
+        }
+      },
       create: {
+        club_id: clubId,
         shuttlecock_product_id: input.shuttlecockProductId,
         quantity_ball: nextQuantityBall,
         avg_cost_per_ball: shuttlecockCostPerBall,
@@ -189,14 +214,14 @@ export async function completePlaySession(input: {
     const totalExpense = courtCost + shuttlecockCost + extraExpenseAmount;
 
     await tx.session_players.updateMany({
-      where: { session_id: input.sessionId },
+      where: { session_id: input.sessionId, club_id: clubId },
       data: {
         runtime_status: 'FINISHED'
       }
     });
 
     await tx.runtime_courts.updateMany({
-      where: { session_id: input.sessionId },
+      where: { session_id: input.sessionId, club_id: clubId },
       data: {
         status: 'EMPTY',
         runtime_match_id: null,
@@ -205,7 +230,7 @@ export async function completePlaySession(input: {
       }
     });
 
-    await tx.runtime_matches.deleteMany({ where: { session_id: input.sessionId } });
+    await tx.runtime_matches.deleteMany({ where: { session_id: input.sessionId, club_id: clubId } });
 
     const sessionUpdateData = {
       status: 'FINISHED',
@@ -223,14 +248,14 @@ export async function completePlaySession(input: {
     } satisfies Record<string, unknown>;
 
     await tx.play_sessions.update({
-      where: { id: input.sessionId },
+      where: { id: input.sessionId, club_id: clubId },
       data: sessionUpdateData as typeof sessionUpdateData & Parameters<typeof tx.play_sessions.update>[0]['data']
     });
 
-    const existingSummary = await tx.session_summaries.findFirst({ where: { session_id: input.sessionId } });
+    const existingSummary = await tx.session_summaries.findFirst({ where: { session_id: input.sessionId, club_id: clubId } });
     if (existingSummary) {
       await tx.session_summaries.update({
-        where: { id: existingSummary.id },
+        where: { id: existingSummary.id, club_id: clubId },
         data: {
           total_players: session.session_players.length,
           total_income: totalIncome,
@@ -241,6 +266,7 @@ export async function completePlaySession(input: {
     } else {
       await tx.session_summaries.create({
         data: {
+          club_id: clubId,
           session_id: input.sessionId,
           total_players: session.session_players.length,
           total_income: totalIncome,

@@ -13,8 +13,11 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { playerId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionPlayerId: playerId,
+      allowActiveSessionContinuation: true
+    });
     const formData = await request.formData();
     const file = await readImageFileFromFormData(formData);
     const avatar = await uploadPlayerAvatar({ playerId, ...file });
@@ -26,8 +29,11 @@ export async function POST(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { playerId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionPlayerId: playerId,
+      allowActiveSessionContinuation: true
+    });
     const avatar = await deletePlayerAvatar(playerId);
     return NextResponse.json({ avatar });
   } catch (error) {

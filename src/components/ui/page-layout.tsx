@@ -1,84 +1,9 @@
-import type { LucideIcon } from 'lucide-react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
-type MetricTone = 'neutral' | 'income' | 'expense' | 'profit' | 'inventory' | 'warning' | 'info' | 'success' | 'danger' | 'violet';
 type NoticeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 type SectionCardDensity = 'compact' | 'default' | 'comfortable';
-
-const metricToneStyles: Record<MetricTone, { card: string; label: string; value: string; sub: string; icon: string }> = {
-  neutral: {
-    card: 'border-border bg-surface text-foreground',
-    label: 'text-foreground',
-    value: 'text-foreground',
-    sub: 'text-muted-foreground',
-    icon: 'text-muted-foreground'
-  },
-  income: {
-    card: 'border-border bg-surface ring-1 ring-success/10',
-    label: 'text-foreground',
-    value: 'text-success',
-    sub: 'text-muted-foreground',
-    icon: 'text-success'
-  },
-  expense: {
-    card: 'border-border bg-surface ring-1 ring-danger/10',
-    label: 'text-foreground',
-    value: 'text-danger',
-    sub: 'text-muted-foreground',
-    icon: 'text-danger'
-  },
-  profit: {
-    card: 'border-border bg-surface ring-1 ring-info/10',
-    label: 'text-foreground',
-    value: 'text-info',
-    sub: 'text-muted-foreground',
-    icon: 'text-info'
-  },
-  inventory: {
-    card: 'border-border bg-surface ring-1 ring-inventory/10',
-    label: 'text-foreground',
-    value: 'text-inventory',
-    sub: 'text-muted-foreground',
-    icon: 'text-inventory'
-  },
-  warning: {
-    card: 'border-border bg-surface ring-1 ring-warning/10',
-    label: 'text-foreground',
-    value: 'text-warning',
-    sub: 'text-muted-foreground',
-    icon: 'text-warning'
-  },
-  info: {
-    card: 'border-border bg-surface ring-1 ring-info/10',
-    label: 'text-foreground',
-    value: 'text-info',
-    sub: 'text-muted-foreground',
-    icon: 'text-info'
-  },
-  success: {
-    card: 'border-border bg-surface ring-1 ring-success/10',
-    label: 'text-foreground',
-    value: 'text-success',
-    sub: 'text-muted-foreground',
-    icon: 'text-success'
-  },
-  danger: {
-    card: 'border-border bg-surface ring-1 ring-danger/10',
-    label: 'text-foreground',
-    value: 'text-danger',
-    sub: 'text-muted-foreground',
-    icon: 'text-danger'
-  },
-  violet: {
-    card: 'border-border bg-surface ring-1 ring-info/10',
-    label: 'text-foreground',
-    value: 'text-info',
-    sub: 'text-muted-foreground',
-    icon: 'text-info'
-  }
-};
 
 const noticeToneStyles: Record<NoticeTone, string> = {
   neutral: 'border-border bg-surface-muted text-muted-foreground',
@@ -163,28 +88,6 @@ export function PageHeader({
   );
 }
 
-export function SectionHeader({
-  title,
-  description,
-  actions,
-  className
-}: {
-  title: string;
-  description?: string;
-  actions?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn('flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:justify-between', className)}>
-      <div className="min-w-0">
-        <h2 className="text-section-title">{title}</h2>
-        {description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p> : null}
-      </div>
-      {actions ? <div className="flex min-w-0 shrink-0 flex-wrap gap-2 md:justify-end">{actions}</div> : null}
-    </div>
-  );
-}
-
 export function PageFeedbackStack({
   children,
   className,
@@ -205,46 +108,6 @@ export function PageSummaryGrid({
   className?: string;
 } & HTMLAttributes<HTMLElement>) {
   return <section className={cn('grid min-w-0 auto-rows-fr gap-3', className)} {...props}>{children}</section>;
-}
-
-export function PageContentStack({
-  children,
-  className,
-  ...props
-}: {
-  children: ReactNode;
-  className?: string;
-} & HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('grid min-w-0 gap-4 md:gap-5', className)} {...props}>{children}</div>;
-}
-
-export function ToolbarCard({
-  title,
-  description,
-  actions,
-  children,
-  className
-}: {
-  title?: string;
-  description?: string;
-  actions?: ReactNode;
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={cn('min-w-0 rounded-xl border border-border bg-surface px-3 py-3 sm:px-4', className)}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {(title || description) ? (
-          <div className="min-w-0">
-            {title ? <div className="text-card-title">{title}</div> : null}
-            {description ? <div className="text-xs leading-5 text-muted-foreground">{description}</div> : null}
-          </div>
-        ) : null}
-        {actions ? <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">{actions}</div> : null}
-      </div>
-      {children ? <div className="mt-3 min-w-0">{children}</div> : null}
-    </section>
-  );
 }
 
 export function SectionCard({
@@ -279,40 +142,6 @@ export function SectionCard({
       ) : null}
       <div className={cn('min-w-0', title || description || actions ? densityStyle.content : '', contentClassName)}>{children}</div>
     </section>
-  );
-}
-
-export function MetricCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  tone = 'neutral',
-  className,
-  valueClassName,
-  labelClassName,
-  subClassName
-}: {
-  label: string;
-  value: ReactNode;
-  sub?: ReactNode;
-  icon?: LucideIcon;
-  tone?: MetricTone;
-  className?: string;
-  valueClassName?: string;
-  labelClassName?: string;
-  subClassName?: string;
-}) {
-  const toneStyle = metricToneStyles[tone];
-  return (
-    <div className={cn('relative grid min-h-[112px] grid-rows-[22px_1fr_22px] gap-2 overflow-hidden rounded-xl border p-4 before:absolute before:inset-y-4 before:left-0 before:w-1 before:rounded-r-full before:bg-current before:opacity-60', toneStyle.card, toneStyle.icon, className)}>
-      <div className="flex items-center justify-between gap-3">
-        <div className={cn('truncate text-[13px] font-semibold uppercase tracking-[0.12em]', toneStyle.label, labelClassName)}>{label}</div>
-        {Icon ? <Icon className={cn('h-4 w-4 shrink-0', toneStyle.icon)} /> : null}
-      </div>
-      <div className={cn('self-center break-words font-display text-[30px] font-bold leading-tight tracking-tight tabular-nums', toneStyle.value, valueClassName)}>{value}</div>
-      <div className={cn('self-start text-sm font-medium leading-snug', toneStyle.sub, sub ? '' : 'invisible', subClassName)}>{sub || '-'}</div>
-    </div>
   );
 }
 

@@ -3,63 +3,57 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
 import {
-  bootstrapOwner,
   createAuthUser,
-  fetchBootstrapStatus,
   fetchAuthUsers,
   fetchCurrentUser,
   fetchRolePermissions,
   login,
+  lookupLoginClubs,
   logout,
   updateAuthUser,
   updateRolePermissions
 } from '@/services/auth-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
+import { clearTenantClientState } from '@/lib/tenant-client-state';
 
 export function useCurrentUser() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['auth', 'me'],
+    queryKey: tenantQueryKey(clubId, 'auth', 'me'),
     queryFn: ({ signal }) => fetchCurrentUser(signal),
     staleTime: 60_000,
     retry: false
   });
 }
 
-export function useBootstrapStatus() {
-  return useQuery({
-    queryKey: ['auth', 'bootstrap'],
-    queryFn: ({ signal }) => fetchBootstrapStatus(signal),
-    staleTime: 30_000,
-    retry: false
-  });
-}
-
-export function useBootstrapOwnerMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: bootstrapOwner,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['auth'] });
-    }
-  });
-}
-
 export function useLoginMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
+    mutationFn: ({ clubCode, identifier, password }: { clubCode: string; identifier: string; password: string }) => login(clubCode, identifier, password),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth'] });
     }
+  });
+}
+
+export function useLoginClubLookup(query: string) {
+  return useQuery({
+    queryKey: ['public', 'clubs', query],
+    queryFn: ({ signal }) => lookupLoginClubs(query, signal),
+    staleTime: 30_000,
+    retry: false
   });
 }
 
 export function useLogoutMutation() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { clubId } = useTenantRoute();
   return useMutation({
     mutationFn: logout,
     onSuccess: async () => {
-      await queryClient.clear();
+      clearTenantClientState(clubId);
+      queryClient.clear();
       router.push('/login' as Route);
       router.refresh();
     }
@@ -67,16 +61,18 @@ export function useLogoutMutation() {
 }
 
 export function useAuthUsers() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['auth', 'users'],
+    queryKey: tenantQueryKey(clubId, 'auth', 'users'),
     queryFn: ({ signal }) => fetchAuthUsers(signal)
   });
 }
 
 export function useAuthUserMutations() {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['auth', 'users'] });
+    await queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'auth', 'users') });
   };
 
   return {
@@ -92,21 +88,23 @@ export function useAuthUserMutations() {
 }
 
 export function useRolePermissions() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['auth', 'role-permissions'],
+    queryKey: tenantQueryKey(clubId, 'auth', 'role-permissions'),
     queryFn: ({ signal }) => fetchRolePermissions(signal)
   });
 }
 
 export function useRolePermissionMutations() {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   return {
     updateRolePermissions: useMutation({
       mutationFn: updateRolePermissions,
       onSuccess: async () => {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['auth', 'role-permissions'] }),
-          queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'auth', 'role-permissions') }),
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'auth', 'me') })
         ]);
       }
     })

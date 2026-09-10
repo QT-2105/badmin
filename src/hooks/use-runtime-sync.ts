@@ -14,12 +14,14 @@ function parseCourtNumber(value: string | null): number | null {
 
 function buildSyncPayload(
   sessionId: string,
+  expectedVersion: number,
   players: ReturnType<typeof useBadmintonStore.getState>['players'],
   courts: ReturnType<typeof useBadmintonStore.getState>['courts'],
   nextMatches: ReturnType<typeof useBadmintonStore.getState>['nextMatches']
 ): RuntimeSyncPayload {
   return {
     sessionId,
+    expectedVersion,
     mode: 'FULL',
     players: players.map((player) => ({
       id: player.id,
@@ -80,7 +82,7 @@ export function useRuntimeSync({ enabled = true }: { enabled?: boolean } = {}) {
     }
 
     const state = useBadmintonStore.getState();
-    const payload = buildSyncPayload(sessionId, state.players, state.courts, state.nextMatches);
+    const payload = buildSyncPayload(sessionId, state.runtimeVersion, state.players, state.courts, state.nextMatches);
 
     setSyncState('syncing');
     try {

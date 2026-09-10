@@ -101,18 +101,6 @@ export const Radio = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
 );
 Radio.displayName = 'Radio';
 
-export function FormLabel({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={cn('text-sm font-medium text-text-secondary', className)} {...props} />;
-}
-
-export function FormDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-xs leading-5 text-muted-foreground', className)} {...props} />;
-}
-
-export function FormMessage({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p role="alert" className={cn('text-xs font-medium leading-5 text-danger', className)} {...props} />;
-}
-
 export function RequiredMark({ className }: { className?: string }) {
   return (
     <span aria-hidden="true" className={cn('ml-1 text-danger', className)}>

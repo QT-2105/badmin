@@ -12,8 +12,11 @@ type RouteContext = {
 
 export async function GET(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.view');
     const { sessionId } = await context.params;
+    await requireApiPermission(request, 'session.view', {
+      activeSessionId: sessionId,
+      allowActiveSessionContinuation: true
+    });
     const session = await getPlaySession(sessionId);
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
@@ -27,8 +30,11 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { sessionId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionId: sessionId,
+      allowActiveSessionContinuation: true
+    });
     const payload = await request.json();
     const session = await updatePlaySession(sessionId, {
       name: payload.name,

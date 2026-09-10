@@ -1,23 +1,14 @@
-# Docker Deployment And CI/CD
+# Docker deployment
 
-## Files
+Version: 2026-08-22
 
-- `Dockerfile`: production image for the Next.js app using Next standalone output.
-- `docker-compose.yml`: production app service using a prebuilt image and external Neon/Postgres through `.env`.
-- `.dockerignore`: excludes local build artifacts, dependencies, and secrets.
-- `.env.docker.example`: deployment environment template.
-- `.github/workflows/ci-cd.yml`: validates source, builds Docker image, and pushes to GHCR on `main`.
-- `.github/workflows/deploy.yml`: manual SSH deploy workflow for a prebuilt image.
+## Runtime shape
 
-## Prepare Environment
+`Dockerfile` builds a Next.js standalone image. `docker-compose.yml` runs only
+the app and connects to external Neon/PostgreSQL through `.env`; it does not
+start or migrate a database.
 
-On the server:
-
-```bash
-cp .env.docker.example .env
-```
-
-Set:
+Required deployment values:
 
 ```env
 NEXT_PUBLIC_APP_URL=https://your-domain.com
@@ -25,51 +16,27 @@ APP_PORT=3000
 BADMIN_IMAGE=ghcr.io/OWNER/REPO:latest
 DATABASE_URL=postgresql://...
 DATABASE_URL_UNPOOLED=postgresql://...
+BADMIN_RUNTIME_DB_ROLE=
 ```
 
-Use Neon/Postgres URLs with SSL enabled.
+Use a beta target isolated from production for development. Confirm both DB
+URLs before schema-sensitive work.
 
-## Run On Server
+`BADMIN_RUNTIME_DB_ROLE=badmin_uat_app` is an UAT-only effective-role mode and
+uses the unpooled URL. Production should place a dedicated least-privilege
+LOGIN directly in the pooled `DATABASE_URL` and leave this override empty.
 
-The production compose file expects a prebuilt image from CI/CD:
+## Image and compose
+
+Normal deployment uses a prebuilt image:
 
 ```bash
-export BADMIN_IMAGE=ghcr.io/OWNER/REPO:latest
 docker compose pull badmin
 docker compose up -d --no-build badmin
-```
-
-If the GHCR package is private, log in on the server once before pulling:
-
-```bash
-echo "GHCR_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
-```
-
-Check logs:
-
-```bash
 docker compose logs -f badmin
 ```
 
-Stop:
-
-```bash
-docker compose down
-```
-
-## Update Deployment
-
-Deploy a CI-built image:
-
-```bash
-export BADMIN_IMAGE=ghcr.io/OWNER/REPO:latest
-docker compose pull badmin
-docker compose up -d --no-build badmin
-```
-
-## Local Image Build
-
-For local verification or emergency server-side build, build the image explicitly, then run compose:
+For local image verification:
 
 ```bash
 docker build -t badmin:local .
@@ -77,59 +44,33 @@ export BADMIN_IMAGE=badmin:local
 docker compose up -d --no-build badmin
 ```
 
-Do not rely on server-side source builds for normal production deployment. CI/CD should build and publish the image.
+Private GHCR packages require a one-time server login.
 
-## GitHub Actions Setup
+## GitHub workflows
 
-Required repository secrets for manual deploy:
+`.github/workflows/ci-cd.yml` runs on pull requests or manual dispatch. It
+installs dependencies, generates Prisma Client, runs the DB-automation guard,
+lint, typecheck, build, and Docker build. Non-PR manual runs may push the image.
 
-- `SERVER_HOST`: server IP or hostname
-- `SERVER_USER`: SSH user
-- `SERVER_SSH_KEY`: private SSH key allowed to access the server
-- `SERVER_PORT`: SSH port, usually `22`
-- `SERVER_APP_DIR`: directory containing `docker-compose.yml` and `.env`
+`.github/workflows/deploy.yml` runs on pushes to `main`. It validates and builds,
+pushes `ghcr.io/qt-2105/badmin:latest` plus a SHA tag, then deploys over SSH to
+`/opt/ttclubminton`.
 
-The `CI/CD` workflow:
+Secrets consumed by the deploy workflow:
 
-- runs `npm ci`
-- runs `prisma generate`
-- blocks automatic DB schema migration commands in workflow, Docker, compose, and package scripts
-- runs lint, typecheck, and production build
-- builds Docker image
-- pushes `latest` and `sha-*` tags to GHCR on `main`
+- `SERVER_HOST`
+- `SERVER_USER`
+- `SERVER_SSH_KEY`
+- `SERVER_PORT` (optional; defaults to `22`)
+- `GHCR_PAT`
 
-The `Deploy` workflow is manual. Pick the image tag to deploy, then it runs:
+## Database safety and health
 
-```bash
-docker compose pull badmin
-docker compose up -d --no-build badmin
-```
+Schema changes use reviewed SQL under `prisma/manual-migrations` and explicit
+owner-approved application to the confirmed target. Do not add `prisma migrate
+deploy`, `prisma migrate dev`, or `prisma db push` to Docker, compose, CI, or
+application startup.
 
-## Database Notes
-
-This compose file does not start a local Postgres service. The current project uses external Neon/Postgres through `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
-
-This repository currently uses reviewed SQL files in `prisma/manual-migrations`.
-
-Before production traffic:
-
-1. Review pending SQL files.
-2. Apply them to Neon in order.
-3. Verify tables/constraints.
-4. Deploy the app image.
-
-Do not run `prisma migrate dev` against production.
-Do not run `prisma db push` against production unless the owner explicitly approves the schema change.
-Do not add `prisma migrate deploy` to Docker, compose, or GitHub Actions without explicit owner approval.
-
-Deployment is allowed to run normal application queries and runtime CRUD through the app service. It must not alter database structure automatically.
-
-## Healthcheck
-
-Docker healthcheck uses:
-
-```text
-/api/health
-```
-
-This endpoint does not query the database. It only verifies that the Next.js server is alive.
+The container healthcheck calls `/api/health`. It proves process liveness only,
+not database reachability; DB readiness requires a separate diagnostic until an
+approved readiness endpoint exists.

@@ -9,24 +9,27 @@ import {
   uploadSessionPlayerAvatar,
   type SessionPlayerPayload
 } from '@/services/session-players-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 
 export function useSessionPlayers(sessionId: string) {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['session', 'players', sessionId],
+    queryKey: tenantQueryKey(clubId, 'session', 'players', sessionId),
     queryFn: ({ signal }) => fetchSessionPlayers(sessionId, signal),
     enabled: Boolean(sessionId)
   });
 }
 
 export function useSessionPlayerMutations(sessionId: string, options: { invalidateRuntime?: boolean } = {}) {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   const invalidateRuntime = options.invalidateRuntime ?? true;
   const invalidate = async () => {
     const invalidations = [
-      queryClient.invalidateQueries({ queryKey: ['session', 'players', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] })
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'session', 'players', sessionId) }),
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'dashboard', 'summary') })
     ];
-    if (invalidateRuntime) invalidations.push(queryClient.invalidateQueries({ queryKey: ['runtime', 'snapshot', sessionId] }));
+    if (invalidateRuntime) invalidations.push(queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'runtime', 'snapshot', sessionId) }));
     await Promise.all(invalidations);
   };
 

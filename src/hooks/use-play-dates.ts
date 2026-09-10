@@ -12,37 +12,42 @@ import {
   updatePlayDate,
   updatePlaySession
 } from '@/services/schedule-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 
 export function usePlayDates() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['schedule', 'play-dates'],
+    queryKey: tenantQueryKey(clubId, 'schedule', 'play-dates'),
     queryFn: ({ signal }) => fetchPlayDates(signal)
   });
 }
 
 export function usePlayDate(id: string) {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['schedule', 'play-date', id],
+    queryKey: tenantQueryKey(clubId, 'schedule', 'play-date', id),
     queryFn: ({ signal }) => fetchPlayDate(id, signal),
     enabled: Boolean(id)
   });
 }
 
 export function usePlaySession(id: string) {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['schedule', 'session', id],
+    queryKey: tenantQueryKey(clubId, 'schedule', 'session', id),
     queryFn: ({ signal }) => fetchPlaySession(id, signal),
     enabled: Boolean(id)
   });
 }
 
 export function useScheduleMutations(playDateId?: string) {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['schedule', 'play-dates'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] }),
-      playDateId ? queryClient.invalidateQueries({ queryKey: ['schedule', 'play-date', playDateId] }) : Promise.resolve()
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'schedule', 'play-dates') }),
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'dashboard', 'summary') }),
+      playDateId ? queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'schedule', 'play-date', playDateId) }) : Promise.resolve()
     ]);
   };
 
@@ -56,8 +61,8 @@ export function useScheduleMutations(playDateId?: string) {
       onSuccess: async (_data, variables) => {
         await Promise.all([
           invalidate(),
-          queryClient.invalidateQueries({ queryKey: ['schedule', 'session', variables.id] }),
-          queryClient.invalidateQueries({ queryKey: ['runtime', 'snapshot', variables.id] })
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'schedule', 'session', variables.id) }),
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'runtime', 'snapshot', variables.id) })
         ]);
       }
     }),
@@ -66,10 +71,10 @@ export function useScheduleMutations(playDateId?: string) {
       onSuccess: async (_data, variables) => {
         await Promise.all([
           invalidate(),
-          queryClient.invalidateQueries({ queryKey: ['schedule', 'session', variables.id] }),
-          queryClient.invalidateQueries({ queryKey: ['finance', 'transactions'] }),
-          queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
-          queryClient.invalidateQueries({ queryKey: ['runtime', 'snapshot', variables.id] })
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'schedule', 'session', variables.id) }),
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'finance', 'transactions') }),
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'inventory', 'products') }),
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'runtime', 'snapshot', variables.id) })
         ]);
       }
     }),

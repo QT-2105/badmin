@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { AppError } from '@/lib/app-error';
 import { normalizePlayerTags } from '@/lib/player-tags';
 import { prisma } from '@/lib/prisma';
+import { requireTenantContext } from '@/lib/tenant-context';
 import type { SessionCoupleMatchMode, SessionCoupleSummary } from '@/types/domain';
 
 type TransactionClient = Prisma.TransactionClient;
@@ -99,13 +100,14 @@ async function loadMembers(
   tx: TransactionClient,
   sessionId: string,
   memberIds: string[],
+  clubId: string,
   allowedCoupleNumber?: number
 ): Promise<CouplePlayerRow[]> {
   const uniqueIds = [...new Set(memberIds)];
   if (uniqueIds.length !== 2) throw new AppError('Couple cần đúng hai người chơi khác nhau.');
 
   const players = await tx.session_players.findMany({
-    where: { session_id: sessionId, id: { in: uniqueIds } }
+    where: { session_id: sessionId, club_id: clubId, id: { in: uniqueIds } }
   });
   if (players.length !== 2) throw new AppError('Hai thành viên Couple phải thuộc cùng ca chơi.');
 
@@ -121,6 +123,7 @@ async function writeCoupleMembers(
   players: CouplePlayerRow[],
   displayNumber: number,
   matchMode: SessionCoupleMatchMode,
+  clubId: string,
   nextMatchRequestedAt?: string | number | Date | null
 ): Promise<CouplePlayerRow[]> {
   const requestDate = nextMatchRequestedAt === undefined ? undefined : parseDate(nextMatchRequestedAt);
@@ -132,7 +135,7 @@ async function writeCoupleMembers(
         ? normalizePlayerTags(player.player_tags).filter((tag) => tag !== 'PRIORITY')
         : normalizePlayerTags([...player.player_tags, 'PRIORITY']);
     updated.push(await tx.session_players.update({
-      where: { id: player.id },
+      where: { id: player.id, club_id: clubId },
       data: {
         couple_number: displayNumber,
         couple_match_mode: matchMode,
@@ -148,8 +151,14 @@ async function writeCoupleMembers(
 }
 
 export async function listSessionCouples(sessionId: string): Promise<SessionCoupleSummary[]> {
+  const { clubId } = requireTenantContext('session_couple.list');
+  const session = await prisma.play_sessions.findUnique({
+    where: { id: sessionId, club_id: clubId },
+    select: { id: true }
+  });
+  if (!session) throw new AppError('Không tìm thấy ca chơi.', 404);
   const players = await prisma.session_players.findMany({
-    where: { session_id: sessionId, couple_number: { not: null } },
+    where: { session_id: sessionId, club_id: clubId, couple_number: { not: null } },
     orderBy: [{ couple_number: 'asc' }, { joined_at: 'asc' }, { id: 'asc' }]
   });
   const groups = new Map<string, CouplePlayerRow[]>();
@@ -173,21 +182,27 @@ export async function createSessionCouple(input: {
   nextMatchRequestedAt?: string | number | Date | null;
 }): Promise<SessionCoupleSummary> {
   const matchMode = normalizeMode(input.matchMode);
+  const { clubId } = requireTenantContext('session_couple.create');
   return prisma.$transaction(async (tx) => {
-    const players = await loadMembers(tx, input.sessionId, input.memberIds);
+    const players = await loadMembers(tx, input.sessionId, input.memberIds, clubId);
     validateGender(players, matchMode);
-    const session = await tx.play_sessions.update({
-      where: { id: input.sessionId },
-      data: { next_couple_number: { increment: 1 }, updated_at: new Date() },
-      select: { next_couple_number: true }
-    });
+    let session: { next_couple_number: number };
+    try {
+      session = await tx.play_sessions.update({
+        where: { id: input.sessionId, club_id: clubId },
+        data: { next_couple_number: { increment: 1 }, updated_at: new Date() },
+        select: { next_couple_number: true }
+      });
+    } catch {
+      throw new AppError('Không tìm thấy ca chơi.', 404);
+    }
     const displayNumber = session.next_couple_number - 1;
     const reserved = await tx.session_players.updateMany({
-      where: { session_id: input.sessionId, id: { in: players.map((player) => player.id) }, couple_number: null },
+      where: { session_id: input.sessionId, club_id: clubId, id: { in: players.map((player) => player.id) }, couple_number: null },
       data: { couple_number: displayNumber, couple_match_mode: matchMode }
     });
     if (reserved.count !== 2) throw new AppError('Một người chơi vừa được đánh dấu vào Couple khác.', 409);
-    const updated = await writeCoupleMembers(tx, players, displayNumber, matchMode, input.nextMatchRequestedAt);
+    const updated = await writeCoupleMembers(tx, players, displayNumber, matchMode, clubId, input.nextMatchRequestedAt);
     return mapCouple(input.sessionId, displayNumber, matchMode, updated);
   });
 }
@@ -199,6 +214,7 @@ export async function updateSessionCouple(coupleId: string, input: {
   nextMatchRequestedAt?: string | number | Date | null;
 }): Promise<SessionCoupleSummary> {
   const { sessionId, displayNumber } = parseCoupleId(coupleId);
+  const { clubId } = requireTenantContext('session_couple.update');
   if (input.active === false) {
     const current = await listSessionCouples(sessionId);
     const summary = current.find((couple) => couple.displayNumber === displayNumber);
@@ -209,33 +225,34 @@ export async function updateSessionCouple(coupleId: string, input: {
 
   return prisma.$transaction(async (tx) => {
     const current = await tx.session_players.findMany({
-      where: { session_id: sessionId, couple_number: displayNumber }
+      where: { session_id: sessionId, club_id: clubId, couple_number: displayNumber }
     });
     if (current.length !== 2) throw new AppError('Không tìm thấy Couple hoặc dữ liệu Couple không hợp lệ.', 404);
     const matchMode = input.matchMode === undefined
       ? normalizeMode(current[0].couple_match_mode)
       : normalizeMode(input.matchMode);
     const memberIds = input.memberIds ?? current.map((player) => player.id);
-    const players = await loadMembers(tx, sessionId, memberIds, displayNumber);
+    const players = await loadMembers(tx, sessionId, memberIds, clubId, displayNumber);
     validateGender(players, matchMode);
 
     const retainedIds = new Set(players.map((player) => player.id));
     const removedIds = current.map((player) => player.id).filter((id) => !retainedIds.has(id));
     if (removedIds.length > 0) {
       await tx.session_players.updateMany({
-        where: { id: { in: removedIds }, session_id: sessionId, couple_number: displayNumber },
+        where: { id: { in: removedIds }, session_id: sessionId, club_id: clubId, couple_number: displayNumber },
         data: { couple_number: null, couple_match_mode: null }
       });
     }
-    const updated = await writeCoupleMembers(tx, players, displayNumber, matchMode, input.nextMatchRequestedAt);
+    const updated = await writeCoupleMembers(tx, players, displayNumber, matchMode, clubId, input.nextMatchRequestedAt);
     return mapCouple(sessionId, displayNumber, matchMode, updated);
   });
 }
 
 export async function deleteSessionCouple(coupleId: string): Promise<void> {
   const { sessionId, displayNumber } = parseCoupleId(coupleId);
+  const { clubId } = requireTenantContext('session_couple.delete');
   const result = await prisma.session_players.updateMany({
-    where: { session_id: sessionId, couple_number: displayNumber },
+    where: { session_id: sessionId, club_id: clubId, couple_number: displayNumber },
     data: { couple_number: null, couple_match_mode: null }
   });
   if (result.count === 0) throw new AppError('Không tìm thấy Couple.', 404);

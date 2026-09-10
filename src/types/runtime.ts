@@ -3,18 +3,6 @@ export type RuntimeGender = 'Nam' | 'Nữ';
 export type RuntimeMatchFormat = 'AUTO' | 'MEN' | 'WOMEN' | 'MIXED';
 export type RuntimeNextMatchRequestMode = 'ANY' | 'MEN' | 'WOMEN' | 'MIXED';
 
-export type RuntimePlayer = {
-  id: string;
-  name: string;
-  gender: RuntimeGender;
-  level: number;
-  matchesPlayed: number;
-  status: RuntimePlayerStatus;
-  fatigue: number;
-  statusUpdatedAt: number;
-  justFinishedAt: number | null;
-};
-
 export type RuntimeSession = {
   id: string;
   name: string;
@@ -145,7 +133,7 @@ export type RuntimeSyncMatch = {
 
 export type RuntimeSyncPayload = {
   sessionId: string;
-  expectedVersion?: number;
+  expectedVersion: number;
   mode?: 'FULL' | 'DELTA';
   players: RuntimeSyncPlayer[];
   courts: RuntimeSyncCourt[];

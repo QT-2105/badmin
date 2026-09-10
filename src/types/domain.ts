@@ -1,5 +1,3 @@
-export type PlaySessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'NOT_STARTED' | 'LIVE' | 'IN_PROGRESS' | 'FINISHED';
-
 export type PlaySessionSummary = {
   id: string;
   playDateId: string;

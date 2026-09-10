@@ -1,0 +1,4 @@
+ALTER TABLE public.app_users VALIDATE CONSTRAINT ck_app_users_identifier_required;
+ALTER TABLE public.app_users VALIDATE CONSTRAINT ck_app_users_username_pair;
+ALTER TABLE public.app_users VALIDATE CONSTRAINT ck_app_users_email_normalized_source;
+ALTER TABLE public.app_users VALIDATE CONSTRAINT ck_app_users_phone_pair;

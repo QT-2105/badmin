@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, CircleOff, Inbox, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Inbox, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
@@ -61,10 +61,6 @@ const sizeStyles: Record<FeedbackSize, { container: string; icon: string; title:
 
 export function Skeleton({ className, 'aria-hidden': ariaHidden, ...props }: SkeletonProps) {
   return <div aria-hidden={ariaHidden ?? true} className={cn('animate-pulse rounded-lg bg-surface-subtle motion-reduce:animate-none', className)} {...props} />;
-}
-
-export function Separator({ className }: { className?: string }) {
-  return <div className={cn('h-px w-full bg-border', className)} />;
 }
 
 function FeedbackState({
@@ -133,8 +129,4 @@ export function WarningState({ icon: Icon = AlertTriangle, className, ...props }
 
 export function SuccessState({ icon: Icon = CheckCircle2, className, ...props }: Omit<FeedbackStateProps, 'tone'>) {
   return <FeedbackState icon={Icon} tone="success" className={className} {...props} />;
-}
-
-export function DisabledState({ icon: Icon = CircleOff, className, ...props }: Omit<FeedbackStateProps, 'tone'>) {
-  return <FeedbackState icon={Icon} tone="neutral" className={className} {...props} />;
 }

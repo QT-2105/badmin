@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
+import { redirectLegacyPage } from '@/lib/auth/guards';
 
 export default function SessionsIndexPage() {
-  redirect('/schedule');
+  return redirectLegacyPage('/schedule');
 }
-

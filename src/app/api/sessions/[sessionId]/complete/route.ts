@@ -12,8 +12,11 @@ type RouteContext = {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.complete');
     const { sessionId } = await context.params;
+    await requireApiPermission(request, 'session.complete', {
+      activeSessionId: sessionId,
+      allowActiveSessionContinuation: true
+    });
     const payload = await request.json();
     const session = await completePlaySession({
       sessionId,

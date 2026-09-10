@@ -7,14 +7,15 @@ import type { RuntimeRecentQuartet, RuntimeSnapshot, RuntimeSyncPayload } from '
 import { listRuntimeCourts, listSessionCourtsAsRuntime } from './runtime-courts-repository';
 import { listRuntimeMatches } from './runtime-matches-repository';
 import { getRuntimeSession, listSessionPlayers, resolveRuntimeSessionId } from './runtime-session-repository';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 const RECENT_QUARTET_LIMIT = 16;
 
 export class RuntimeVersionConflictError extends AppError {
   currentVersion: number;
 
-  constructor(currentVersion: number) {
-    super('Điều phối đã thay đổi trên thiết bị khác. Vui lòng đồng bộ lại trước khi lưu.', 409);
+  constructor(currentVersion: number, message = 'Điều phối đã thay đổi trên thiết bị khác. Vui lòng đồng bộ lại trước khi lưu.') {
+    super(message, 409);
     this.currentVersion = currentVersion;
   }
 }
@@ -96,12 +97,13 @@ function hasChanges(row: Record<string, unknown>, data: Record<string, unknown>)
 }
 
 async function listRecentQuartets(sessionId: string): Promise<RuntimeRecentQuartet[]> {
+  const { clubId } = requireTenantContext('runtime_snapshot.recent_quartets');
   const rows = await prisma.match_histories.findMany({
-    where: { session_id: sessionId },
+    where: { session_id: sessionId, club_id: clubId },
     select: {
       id: true,
       ended_at: true,
-      match_history_players: { select: { session_player_id: true } }
+      match_history_players: { where: { club_id: clubId }, select: { session_player_id: true } }
     },
     orderBy: [{ ended_at: 'desc' }],
     take: RECENT_QUARTET_LIMIT
@@ -128,6 +130,21 @@ export async function getRuntimeSnapshot(sessionId?: string): Promise<RuntimeSna
   ]);
 
   const courts = runtimeCourts.length > 0 ? runtimeCourts : await listSessionCourtsAsRuntime(resolvedSessionId);
+  const playerIds = new Set(players.map((player) => player.id));
+  const reservedPlayerIds = new Set<string>();
+  for (const match of matches) {
+    const roster = [...match.teamA, ...match.teamB];
+    if (
+      match.sessionId !== resolvedSessionId
+      || roster.length !== 4
+      || new Set(roster).size !== 4
+      || roster.some((playerId) => !playerIds.has(playerId))
+      || roster.some((playerId) => reservedPlayerIds.has(playerId))
+    ) {
+      throw new AppError('Dữ liệu người chơi trong runtime snapshot không hợp lệ.', 409);
+    }
+    roster.forEach((playerId) => reservedPlayerIds.add(playerId));
+  }
 
   return {
     session,
@@ -148,29 +165,32 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
   const syncMode = payload.mode ?? 'FULL';
   if (syncMode !== 'FULL' && syncMode !== 'DELTA') throw new AppError('Chế độ đồng bộ runtime không hợp lệ.');
   const expectedVersion = payload.expectedVersion;
-  if (expectedVersion !== undefined) nonNegativeInteger(expectedVersion, 'Phiên bản runtime');
+  if (expectedVersion === undefined || expectedVersion === null) throw new AppError('Phiên bản runtime là bắt buộc.', 409);
+  if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
+    throw new AppError('Phiên bản runtime không hợp lệ.', 409);
+  }
+  const { clubId } = requireTenantContext('runtime_snapshot.sync');
 
   return prisma.$transaction(async (tx) => {
-    let version: number;
-    if (expectedVersion !== undefined) {
-      const claimed = await tx.play_sessions.updateMany({
-        where: { id: sessionId, runtime_version: expectedVersion },
-        data: { runtime_version: { increment: 1 }, updated_at: new Date() }
+    const claimed = await tx.play_sessions.updateMany({
+      where: { id: sessionId, club_id: clubId, status: 'LIVE', runtime_version: expectedVersion },
+      data: { runtime_version: { increment: 1 }, updated_at: new Date() }
+    });
+    if (claimed.count !== 1) {
+      const current = await tx.play_sessions.findUnique({
+        where: { id: sessionId, club_id: clubId },
+        select: { runtime_version: true, status: true }
       });
-      if (claimed.count !== 1) {
-        const current = await tx.play_sessions.findUnique({ where: { id: sessionId }, select: { runtime_version: true } });
-        if (!current) throw new AppError('Không tìm thấy ca điều phối.', 404);
-        throw new RuntimeVersionConflictError(current.runtime_version);
+      if (!current) throw new AppError('Không tìm thấy ca điều phối.', 404);
+      if (current.status === 'FINISHED' || current.status === 'CANCELLED') {
+        throw new RuntimeVersionConflictError(current.runtime_version, 'Ca chơi đã hoàn tất hoặc hủy, không thể thay đổi điều phối.');
       }
-      version = expectedVersion + 1;
-    } else {
-      const updated = await tx.play_sessions.update({
-        where: { id: sessionId },
-        data: { runtime_version: { increment: 1 }, updated_at: new Date() },
-        select: { runtime_version: true }
-      });
-      version = updated.runtime_version;
+      if (current.status !== 'LIVE') {
+        throw new RuntimeVersionConflictError(current.runtime_version, 'Ca chơi chưa ở trạng thái có thể điều phối.');
+      }
+      throw new RuntimeVersionConflictError(current.runtime_version);
     }
+    const version = expectedVersion + 1;
 
     const playerIds = [...new Set(payload.players.map((player) => player.id))];
     if (playerIds.length !== payload.players.length) throw new AppError('Snapshot chứa người chơi bị trùng.');
@@ -180,7 +200,7 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
       ...payload.courts.flatMap((court) => court.roster.filter((id): id is string => Boolean(id)))
     ])];
     const existingPlayers = referencedPlayerIds.length > 0
-      ? await tx.session_players.findMany({ where: { session_id: sessionId, id: { in: referencedPlayerIds } } })
+      ? await tx.session_players.findMany({ where: { session_id: sessionId, club_id: clubId, id: { in: referencedPlayerIds } } })
       : [];
     if (existingPlayers.length !== referencedPlayerIds.length) throw new AppError('Danh sách người chơi runtime không hợp lệ.');
     const playerById = new Map(existingPlayers.map((player) => [player.id, player]));
@@ -219,12 +239,12 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
       }
 
       if (hasChanges(existing as unknown as Record<string, unknown>, data as Record<string, unknown>)) {
-        await tx.session_players.update({ where: { id: player.id }, data });
+        await tx.session_players.update({ where: { id: player.id, club_id: clubId }, data });
       }
     }
 
     const existingQueueMatches = await tx.runtime_matches.findMany({
-      where: { session_id: sessionId, court_number: null, queue_order: { not: null } }
+      where: { session_id: sessionId, club_id: clubId, court_number: null, queue_order: { not: null } }
     });
     const queueByOrder = new Map(existingQueueMatches.map((match) => [match.queue_order ?? -1, match]));
     const queueOrders = [...new Set(payload.nextMatches.map((match) => nonNegativeInteger(match.queueOrder, 'Thứ tự gợi ý')))];
@@ -258,11 +278,12 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
 
       if (existing) {
         if (hasChanges(existing as unknown as Record<string, unknown>, data as Record<string, unknown>)) {
-          await tx.runtime_matches.update({ where: { id: existing.id }, data: { ...data, updated_at: new Date() } });
+          await tx.runtime_matches.update({ where: { id: existing.id, club_id: clubId }, data: { ...data, updated_at: new Date() } });
         }
       } else {
         await tx.runtime_matches.create({
           data: {
+            club_id: clubId,
             session_id: sessionId,
             ...data,
             created_at: new Date()
@@ -275,12 +296,14 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
     if (syncMode === 'FULL') {
       queueDeleteWhere.push({
         session_id: sessionId,
+        club_id: clubId,
         court_number: null,
         queue_order: queueOrders.length > 0 ? { notIn: queueOrders } : { not: null }
       });
     } else if ((payload.deletedQueueOrders?.length ?? 0) > 0) {
       queueDeleteWhere.push({
         session_id: sessionId,
+        club_id: clubId,
         court_number: null,
         queue_order: { in: [...new Set(payload.deletedQueueOrders!.map((order) => nonNegativeInteger(order, 'Thứ tự gợi ý')))] }
       });
@@ -296,10 +319,10 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
     if (courtNumbers.length !== parsedCourts.length) throw new AppError('Snapshot chứa sân bị trùng.');
     const [existingCourts, existingCourtMatches] = await Promise.all([
       courtNumbers.length > 0
-        ? tx.runtime_courts.findMany({ where: { session_id: sessionId, court_number: { in: courtNumbers } } })
+        ? tx.runtime_courts.findMany({ where: { session_id: sessionId, club_id: clubId, court_number: { in: courtNumbers } } })
         : [],
       courtNumbers.length > 0
-        ? tx.runtime_matches.findMany({ where: { session_id: sessionId, court_number: { in: courtNumbers } } })
+        ? tx.runtime_matches.findMany({ where: { session_id: sessionId, club_id: clubId, court_number: { in: courtNumbers } } })
         : []
     ]);
     const courtByNumber = new Map(existingCourts.map((court) => [court.court_number, court]));
@@ -330,7 +353,7 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
           } satisfies Prisma.runtime_matchesUncheckedUpdateInput;
           if (hasChanges(existingMatch as unknown as Record<string, unknown>, matchData as Record<string, unknown>)) {
             await tx.runtime_matches.update({
-              where: { id: existingMatch.id },
+              where: { id: existingMatch.id, club_id: clubId },
               data: { ...matchData, updated_at: new Date() }
             });
           }
@@ -338,6 +361,7 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
         } else {
           const created = await tx.runtime_matches.create({
             data: {
+              club_id: clubId,
               session_id: sessionId,
               court_number: court.courtNumber,
               queue_order: null,
@@ -362,17 +386,17 @@ export async function syncRuntimeSnapshot(payload: RuntimeSyncPayload): Promise<
       };
       if (existingCourt) {
         if (hasChanges(existingCourt as unknown as Record<string, unknown>, courtData)) {
-          await tx.runtime_courts.update({ where: { id: existingCourt.id }, data: { ...courtData, updated_at: new Date() } });
+          await tx.runtime_courts.update({ where: { id: existingCourt.id, club_id: clubId }, data: { ...courtData, updated_at: new Date() } });
         }
       } else {
         await tx.runtime_courts.create({
-          data: { session_id: sessionId, court_number: court.courtNumber, ...courtData }
+          data: { club_id: clubId, session_id: sessionId, court_number: court.courtNumber, ...courtData }
         });
       }
     }
 
     if (obsoleteCourtMatchIds.length > 0) {
-      await tx.runtime_matches.deleteMany({ where: { id: { in: obsoleteCourtMatchIds } } });
+      await tx.runtime_matches.deleteMany({ where: { id: { in: obsoleteCourtMatchIds }, club_id: clubId } });
     }
 
     return version;

@@ -1,36 +1,42 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { createMovement, createProduct, deleteProduct, fetchMovements, fetchProductOptions, fetchProducts, updateProduct } from '@/services/inventory-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 
 export function useInventoryProducts() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['inventory', 'products'],
+    queryKey: tenantQueryKey(clubId, 'inventory', 'products'),
     queryFn: ({ signal }) => fetchProducts(signal)
   });
 }
 
-export function useShuttlecockProductOptions() {
+export function useShuttlecockProductOptions(sessionId: string) {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['inventory', 'product-options'],
-    queryFn: ({ signal }) => fetchProductOptions(signal)
+    queryKey: tenantQueryKey(clubId, 'inventory', 'product-options', sessionId),
+    queryFn: ({ signal }) => fetchProductOptions(sessionId, signal),
+    enabled: Boolean(sessionId)
   });
 }
 
 export function useInventoryMovements() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['inventory', 'movements'],
+    queryKey: tenantQueryKey(clubId, 'inventory', 'movements'),
     queryFn: ({ signal }) => fetchMovements(signal)
   });
 }
 
 export function useInventoryMutations() {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'product-options'] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'movements'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] })
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'inventory', 'products') }),
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'inventory', 'product-options') }),
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'inventory', 'movements') }),
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'dashboard', 'summary') })
     ]);
   };
 

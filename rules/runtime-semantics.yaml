@@ -1,4 +1,4 @@
-version: "2026-08-13"
+version: "2026-09-04"
 name: runtime-semantics
 scope: scheduling-runtime
 
@@ -154,6 +154,17 @@ persistence:
     - event_sourcing
     - cqrs
     - continuous_db_write_loop
+  revision_contract:
+    expected_revision: mandatory_on_every_write
+    claim: "club_id + session_id + LIVE status + current runtime_version"
+    missing_or_stale: reject_conflict_before_snapshot_mutation
+    completed_or_cancelled: immutable
+  json_roster_validation:
+    phases: [hydrate, commit]
+    required:
+      - four_unique_players_per_match
+      - every_player_belongs_to_same_tenant_session
+      - no_duplicate_across_current_courts_and_previews
 
 locks:
   protects_against: "automatic refresh and automatic top-up"

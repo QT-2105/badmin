@@ -10,17 +10,22 @@ datasource db {
 
 model play_dates {
   id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  play_date     DateTime        @unique @db.Date
+  club_id       String          @db.Uuid
+  play_date     DateTime        @db.Date
   title         String?         @db.VarChar(255)
   note          String?
   created_at    DateTime?       @default(now()) @db.Timestamp(6)
   updated_at    DateTime?       @default(now()) @db.Timestamp(6)
   play_sessions play_sessions[]
+
+  @@unique([club_id, id], map: "uq_play_dates_club_id_id")
+  @@unique([club_id, play_date], map: "uq_play_dates_club_date")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model play_sessions {
   id                       String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id                  String                 @db.Uuid
   play_date_id             String                 @db.Uuid
   name                     String                 @db.VarChar(255)
   start_time               DateTime               @db.Time(6)
@@ -49,12 +54,16 @@ model play_sessions {
   session_summaries        session_summaries[]
   session_transactions     session_transactions[]
 
+  @@unique([club_id, id], map: "uq_play_sessions_club_id_id")
   @@index([play_date_id], map: "idx_play_sessions_play_date_id")
+  @@index([club_id, play_date_id, start_time, created_at], map: "idx_play_sessions_club_date_start")
+  @@index([club_id, status, updated_at(sort: Desc)], map: "idx_play_sessions_club_status_updated")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model runtime_courts {
   id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id          String           @db.Uuid
   session_id       String           @db.Uuid
   court_number     Int
   status           String           @db.VarChar(20)
@@ -64,13 +73,14 @@ model runtime_courts {
   runtime_matches  runtime_matches? @relation(fields: [runtime_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   play_sessions    play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([session_id, court_number], map: "uq_runtime_courts_session_number")
+  @@unique([club_id, session_id, court_number], map: "uq_runtime_courts_club_session_number")
   @@index([session_id], map: "idx_runtime_courts_session_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model runtime_matches {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id         String           @db.Uuid
   session_id      String           @db.Uuid
   queue_order     Int?
   court_number    Int?
@@ -88,13 +98,17 @@ model runtime_matches {
   runtime_courts  runtime_courts[]
   play_sessions   play_sessions    @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([session_id, queue_order], map: "uq_runtime_matches_session_queue")
-  @@unique([session_id, court_number], map: "uq_runtime_matches_session_court")
+  @@unique([club_id, id], map: "uq_runtime_matches_club_id_id")
+  @@unique([club_id, session_id, id], map: "uq_runtime_matches_club_session_id")
+  @@unique([club_id, session_id, queue_order], map: "uq_runtime_matches_club_session_queue")
+  @@unique([club_id, session_id, court_number], map: "uq_runtime_matches_club_session_court")
+  @@index([club_id, session_id, status], map: "idx_runtime_matches_club_session_status")
   @@index([session_id], map: "idx_runtime_matches_session_id")
 }
 
 model session_players {
   id                         String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id                    String                  @db.Uuid
   session_id                 String                  @db.Uuid
   full_name                  String                  @db.VarChar(255)
   gender                     String?                 @db.VarChar(10)
@@ -129,12 +143,16 @@ model session_players {
   play_sessions              play_sessions           @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   session_player_images      session_player_images[]
 
+  @@unique([club_id, id], map: "uq_session_players_club_id_id")
   @@index([session_id], map: "idx_session_players_session_id")
   @@index([session_id, couple_number], map: "idx_session_players_couple")
+  @@index([club_id, session_id, joined_at, full_name], map: "idx_session_players_club_session_joined")
+  @@index([club_id, session_id, couple_number], map: "idx_session_players_club_session_couple")
 }
 
 model app_settings {
-  id                                        String    @id @default("default") @db.VarChar(50)
+  id                                        String    @default("default") @db.VarChar(50)
+  club_id                                   String    @id @db.Uuid
   club_name                                 String    @default("Badmin") @db.VarChar(255)
   logo_s3_key                               String?   @db.VarChar(500)
   logo_url                                  String?   @db.VarChar(1000)
@@ -143,10 +161,12 @@ model app_settings {
   auto_create_shuttlecock_usage_transaction Boolean   @default(true)
   default_payment_bank_account_id           String?   @db.Uuid
   updated_at                                DateTime? @default(now()) @db.Timestamp(6)
+
 }
 
 model payment_bank_accounts {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id       String    @db.Uuid
   account_name  String    @db.VarChar(255)
   bank_name     String    @db.VarChar(255)
   qr_s3_key     String    @db.VarChar(500)
@@ -156,36 +176,56 @@ model payment_bank_accounts {
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
 
+  @@unique([club_id, id], map: "uq_payment_banks_club_id_id")
   @@index([active, display_order], map: "idx_payment_bank_accounts_active_order")
+  @@index([club_id, active, display_order, created_at, id], map: "idx_payment_banks_club_active_order")
 }
 
 model app_users {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String          @unique @db.VarChar(255)
-  password_hash String          @db.VarChar(255)
-  display_name  String          @db.VarChar(255)
-  role          String          @default("OPERATOR") @db.VarChar(30)
-  status        String          @default("ACTIVE") @db.VarChar(20)
-  last_login_at DateTime?       @db.Timestamp(6)
-  created_at    DateTime?       @default(now()) @db.Timestamp(6)
-  updated_at    DateTime?       @default(now()) @db.Timestamp(6)
-  auth_sessions auth_sessions[]
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id             String          @db.Uuid
+  username            String?         @db.VarChar(80)
+  username_normalized String?         @db.VarChar(80)
+  email               String?         @db.VarChar(320)
+  email_normalized    String?         @db.VarChar(320)
+  phone               String?         @db.VarChar(32)
+  phone_normalized    String?         @db.VarChar(20)
+  password_hash       String          @db.VarChar(255)
+  display_name        String          @db.VarChar(255)
+  role                String          @default("OPERATOR") @db.VarChar(30)
+  status              String          @default("ACTIVE") @db.VarChar(20)
+  last_login_at       DateTime?       @db.Timestamp(6)
+  created_at          DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?       @default(now()) @db.Timestamp(6)
+  auth_sessions       auth_sessions[]
+
+  @@unique([club_id, id], map: "uq_app_users_club_id_id")
+  @@unique([club_id, email], map: "uq_app_users_club_email")
+  @@unique([club_id, username_normalized], map: "uq_app_users_club_username_normalized")
+  @@unique([club_id, email_normalized], map: "uq_app_users_club_email_normalized")
+  @@unique([club_id, phone_normalized], map: "uq_app_users_club_phone_normalized")
+  @@index([club_id, role, status, created_at], map: "idx_app_users_club_role_status_created")
 }
 
 model auth_sessions {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id    String    @db.Uuid
   user_id    String    @db.Uuid
   token_hash String    @unique @db.VarChar(128)
   expires_at DateTime  @db.Timestamp(6)
   created_at DateTime? @default(now()) @db.Timestamp(6)
   app_users  app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@unique([club_id, id], map: "uq_auth_sessions_club_id_id")
   @@index([user_id], map: "idx_auth_sessions_user")
   @@index([expires_at], map: "idx_auth_sessions_expires")
+  @@index([club_id, user_id], map: "idx_auth_sessions_club_user")
+  @@index([club_id, expires_at], map: "idx_auth_sessions_club_expires")
 }
 
 model session_player_images {
   id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id           String          @db.Uuid
   session_player_id String          @db.Uuid
   s3_key            String          @db.VarChar(500)
   public_url        String          @db.VarChar(1000)
@@ -197,18 +237,25 @@ model session_player_images {
   updated_at        DateTime?       @default(now()) @db.Timestamp(6)
   session_players   session_players @relation(fields: [session_player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@unique([club_id, id], map: "uq_player_images_club_id_id")
   @@index([session_player_id], map: "idx_session_player_images_player")
   @@index([status], map: "idx_session_player_images_status")
+  @@index([club_id, session_player_id], map: "idx_player_images_club_player")
+  @@index([club_id, status], map: "idx_player_images_club_status")
 }
 
 model app_role_permissions {
-  role        String    @id @db.VarChar(30)
+  role        String    @db.VarChar(30)
+  club_id     String    @db.Uuid
   permissions Json      @default("[]")
   updated_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  @@id([club_id, role], map: "app_role_permissions_pkey")
 }
 
 model match_histories {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id               String                  @db.Uuid
   session_id            String                  @db.Uuid
   court_number          Int
   court_name            String                  @db.VarChar(50)
@@ -221,12 +268,16 @@ model match_histories {
   play_sessions         play_sessions           @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   match_history_players match_history_players[]
 
+  @@unique([club_id, id], map: "uq_match_histories_club_id_id")
   @@index([session_id, ended_at], map: "idx_match_histories_session_ended")
   @@index([session_id, court_number], map: "idx_match_histories_session_court")
+  @@index([club_id, session_id, ended_at(sort: Desc)], map: "idx_match_histories_club_session_ended")
+  @@index([club_id, session_id, court_number], map: "idx_match_histories_club_session_court")
 }
 
 model match_history_players {
   id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id           String          @db.Uuid
   match_history_id  String          @db.Uuid
   session_player_id String          @db.Uuid
   team              String          @db.VarChar(10)
@@ -234,12 +285,14 @@ model match_history_players {
   match_histories   match_histories @relation(fields: [match_history_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   session_players   session_players @relation(fields: [session_player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([match_history_id, session_player_id], map: "uq_match_history_player")
+  @@unique([club_id, match_history_id, session_player_id], map: "uq_history_players_club_history_player")
   @@index([session_player_id], map: "idx_match_history_players_player")
+  @@index([club_id, session_player_id], map: "idx_match_history_players_club_player")
 }
 
 model session_summaries {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id       String        @db.Uuid
   session_id    String        @db.Uuid
   total_players Int           @default(0)
   total_income  Decimal?      @default(0) @db.Decimal(12, 2)
@@ -247,11 +300,14 @@ model session_summaries {
   total_profit  Decimal?      @default(0) @db.Decimal(12, 2)
   created_at    DateTime?     @default(now()) @db.Timestamp(6)
   play_sessions play_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([club_id, session_id], map: "uq_session_summaries_club_session")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model session_transactions {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id          String         @db.Uuid
   session_id       String?        @db.Uuid
   transaction_type String         @db.VarChar(20)
   adjustment_type  String         @default("NORMAL") @db.VarChar(20)
@@ -263,20 +319,28 @@ model session_transactions {
   note             String?
   created_at       DateTime?      @default(now()) @db.Timestamp(6)
   play_sessions    play_sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([club_id, id], map: "uq_transactions_club_id_id")
+  @@index([club_id, created_at(sort: Desc)], map: "idx_session_transactions_club_created")
+  @@index([club_id, session_id, created_at(sort: Desc)], map: "idx_session_transactions_club_session_created")
 }
 
 model shuttlecock_inventory {
   id                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  shuttlecock_product_id   String               @unique @db.Uuid
+  club_id                  String               @db.Uuid
+  shuttlecock_product_id   String               @db.Uuid
   quantity_ball            Int                  @default(0)
   avg_cost_per_ball        Decimal?             @default(0) @db.Decimal(18, 6)
   avg_usage_price_per_ball Decimal?             @default(0) @db.Decimal(18, 6)
   updated_at               DateTime?            @default(now()) @db.Timestamp(6)
-  shuttlecock_products     shuttlecock_products @relation(fields: [shuttlecock_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shuttlecock_products     shuttlecock_products @relation(fields: [club_id, shuttlecock_product_id], references: [club_id, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([club_id, shuttlecock_product_id], map: "uq_inventory_club_product")
 }
 
 model shuttlecock_movements {
   id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id                String               @db.Uuid
   shuttlecock_product_id String               @db.Uuid
   movement_type          String               @db.VarChar(20)
   quantity_ball          Int                  @default(0)
@@ -287,10 +351,15 @@ model shuttlecock_movements {
   note                   String?
   created_at             DateTime?            @default(now()) @db.Timestamp(6)
   shuttlecock_products   shuttlecock_products @relation(fields: [shuttlecock_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([club_id, id], map: "uq_movements_club_id_id")
+  @@index([club_id, created_at(sort: Desc)], map: "idx_movements_club_created")
+  @@index([club_id, shuttlecock_product_id, created_at(sort: Desc)], map: "idx_movements_club_product_created")
 }
 
 model shuttlecock_products {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  club_id               String                  @db.Uuid
   name                  String                  @db.VarChar(255)
   brand                 String?                 @db.VarChar(100)
   balls_per_tube        Int                     @default(12)
@@ -299,4 +368,8 @@ model shuttlecock_products {
   updated_at            DateTime?               @default(now()) @db.Timestamp(6)
   shuttlecock_inventory shuttlecock_inventory?
   shuttlecock_movements shuttlecock_movements[]
+
+  @@unique([club_id, id], map: "uq_products_club_id_id")
+  @@index([club_id, created_at(sort: Desc)], map: "idx_products_club_created")
+  @@index([club_id, status, name], map: "idx_products_club_status_name")
 }

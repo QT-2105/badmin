@@ -26,7 +26,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Chỉ Chủ CLB được tạo tài khoản Chủ CLB.' }, { status: 403 });
     }
     const user = await createAuthUser({
+      username: payload.username,
       email: payload.email,
+      phone: payload.phone,
       displayName: payload.displayName,
       password: payload.password,
       role

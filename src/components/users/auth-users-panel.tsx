@@ -12,7 +12,7 @@ import {
 } from './auth-users-presentation';
 import type { PageSize } from '@/components/ui/pagination-controls';
 
-const emptyNewUser: NewAuthUserForm = { email: '', displayName: '', password: '', role: 'OPERATOR' };
+const emptyNewUser: NewAuthUserForm = { username: '', email: '', phone: '', displayName: '', password: '', role: 'OPERATOR' };
 
 export function AuthUsersPanel() {
   const { data: currentUser } = useCurrentUser();
@@ -54,7 +54,7 @@ export function AuthUsersPanel() {
     setNewUser(emptyNewUser);
   }
 
-  async function handleUpdateUser(userId: string, payload: { email?: string; displayName?: string; role?: UserRole; status?: UserStatus; password?: string }) {
+  async function handleUpdateUser(userId: string, payload: { username?: string | null; email?: string | null; phone?: string | null; displayName?: string; role?: UserRole; status?: UserStatus; password?: string }) {
     await authMutations.updateUser.mutateAsync({ userId, payload });
     if (payload.password !== undefined) {
       setUserPasswords((current) => ({ ...current, [userId]: '' }));
@@ -62,7 +62,15 @@ export function AuthUsersPanel() {
   }
 
   function handleUserEmailBlur(user: AuthUserRow, value: string) {
-    if (value !== user.email) void handleUpdateUser(user.id, { email: value });
+    if (value !== (user.email ?? '')) void handleUpdateUser(user.id, { email: value || null });
+  }
+
+  function handleUserUsernameBlur(user: AuthUserRow, value: string) {
+    if (value !== (user.username ?? '')) void handleUpdateUser(user.id, { username: value || null });
+  }
+
+  function handleUserPhoneBlur(user: AuthUserRow, value: string) {
+    if (value !== (user.phone ?? '')) void handleUpdateUser(user.id, { phone: value || null });
   }
 
   function handleUserDisplayNameBlur(user: AuthUserRow, value: string) {
@@ -162,6 +170,8 @@ export function AuthUsersPanel() {
       onUsersPageSizeChange={handleUsersPageSizeChange}
       onUsersPageChange={setUsersPage}
       onUserEmailBlur={handleUserEmailBlur}
+      onUserUsernameBlur={handleUserUsernameBlur}
+      onUserPhoneBlur={handleUserPhoneBlur}
       onUserDisplayNameBlur={handleUserDisplayNameBlur}
       onUserRoleChange={handleUserRoleChange}
       onUserStatusChange={handleUserStatusChange}

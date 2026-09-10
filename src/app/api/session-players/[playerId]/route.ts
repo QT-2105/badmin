@@ -12,8 +12,11 @@ type RouteContext = {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { playerId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionPlayerId: playerId,
+      allowActiveSessionContinuation: true
+    });
     const payload = await request.json();
     const player = await updateSessionPlayer(playerId, {
       fullName: payload.fullName,
@@ -46,8 +49,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { playerId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionPlayerId: playerId,
+      allowActiveSessionContinuation: true
+    });
     await deleteSessionPlayer(playerId);
     return NextResponse.json({ ok: true });
   } catch (error) {

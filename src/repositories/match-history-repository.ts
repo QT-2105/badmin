@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
 import type { MatchHistoryParticipant, MatchHistorySummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 type MatchHistoryPlayerInput = {
   playerId: string;
@@ -58,19 +59,27 @@ function mapHistory(row: {
 }
 
 export async function listMatchHistory(sessionId: string, playerId?: string | null): Promise<MatchHistorySummary[]> {
+  const { clubId } = requireTenantContext('match_history.list');
+  const session = await prisma.play_sessions.findUnique({
+    where: { id: sessionId, club_id: clubId },
+    select: { id: true }
+  });
+  if (!session) throw new AppError('Không tìm thấy ca chơi.', 404);
   const rows = await prisma.match_histories.findMany({
     where: {
       session_id: sessionId,
+      club_id: clubId,
       ...(playerId
         ? {
             match_history_players: {
-              some: { session_player_id: playerId }
+              some: { session_player_id: playerId, club_id: clubId }
             }
           }
         : {})
     },
     include: {
       match_history_players: {
+        where: { club_id: clubId },
         include: {
           session_players: {
             select: { full_name: true }
@@ -102,9 +111,11 @@ export async function createMatchHistory(input: {
   const playerIds = [...input.teamA, ...input.teamB].map((player) => player.playerId);
   if (new Set(playerIds).size !== 4) throw new AppError('Người chơi trong lịch sử trận bị trùng.');
 
+  const { clubId } = requireTenantContext('match_history.create');
   const sessionPlayers = await prisma.session_players.findMany({
     where: {
       session_id: input.sessionId,
+      club_id: clubId,
       id: { in: playerIds }
     },
     select: { id: true }
@@ -116,9 +127,9 @@ export async function createMatchHistory(input: {
   const durationSeconds = input.durationSeconds === null || input.durationSeconds === undefined
     ? null
     : Math.max(0, Math.floor(Number(input.durationSeconds)));
-
   const created = await prisma.match_histories.create({
     data: {
+      club_id: clubId,
       session_id: input.sessionId,
       court_number: Math.floor(input.courtNumber),
       court_name: input.courtName.trim() || `Sân ${input.courtNumber}`,
@@ -131,11 +142,13 @@ export async function createMatchHistory(input: {
         createMany: {
           data: [
             ...input.teamA.map((player, index) => ({
+              club_id: clubId,
               session_player_id: player.playerId,
               team: 'A',
               position: index
             })),
             ...input.teamB.map((player, index) => ({
+              club_id: clubId,
               session_player_id: player.playerId,
               team: 'B',
               position: index
@@ -146,6 +159,7 @@ export async function createMatchHistory(input: {
     },
     include: {
       match_history_players: {
+        where: { club_id: clubId },
         include: {
           session_players: {
             select: { full_name: true }
@@ -159,9 +173,10 @@ export async function createMatchHistory(input: {
 }
 
 export async function deleteAllMatchHistory(): Promise<{ deletedMatches: number; deletedParticipants: number }> {
+  const { clubId } = requireTenantContext('match_history.delete_all');
   return prisma.$transaction(async (tx) => {
-    const participants = await tx.match_history_players.deleteMany();
-    const matches = await tx.match_histories.deleteMany();
+    const participants = await tx.match_history_players.deleteMany({ where: { club_id: clubId } });
+    const matches = await tx.match_histories.deleteMany({ where: { club_id: clubId } });
 
     return {
       deletedMatches: matches.count,

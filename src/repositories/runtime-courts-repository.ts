@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { RuntimeCourt, RuntimeCourtStatus } from '@/types/runtime';
 import { resolveRuntimeSessionId } from './runtime-session-repository';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function normalizeCourtStatus(value: string | null | undefined): RuntimeCourtStatus {
   const raw = String(value ?? '').trim().toUpperCase();
@@ -20,9 +21,10 @@ function parseDateValue(value: unknown): number | null {
 export async function listRuntimeCourts(sessionId?: string): Promise<RuntimeCourt[]> {
   const resolvedSessionId = await resolveRuntimeSessionId(sessionId);
   if (!resolvedSessionId) return [];
+  const { clubId } = requireTenantContext('runtime_court.list');
 
   const rows = await prisma.runtime_courts.findMany({
-    where: { session_id: resolvedSessionId },
+    where: { session_id: resolvedSessionId, club_id: clubId },
     orderBy: [{ court_number: 'asc' }]
   });
 
@@ -39,8 +41,9 @@ export async function listRuntimeCourts(sessionId?: string): Promise<RuntimeCour
 }
 
 export async function listSessionCourtsAsRuntime(sessionId: string): Promise<RuntimeCourt[]> {
+  const { clubId } = requireTenantContext('runtime_court.session_projection');
   const session = await prisma.play_sessions.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, club_id: clubId },
     select: { court_count: true }
   });
   const courtCount = Math.max(0, session?.court_count ?? 0);

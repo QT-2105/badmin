@@ -3,6 +3,7 @@ import { toTimeInput } from '@/lib/date-format';
 import { getSignedAmount } from '@/lib/finance-calculation';
 import { normalizeSessionStatus } from '@/lib/session-status';
 import type { DashboardSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 type DashboardPeriod = 'MONTH' | 'YEAR';
 
@@ -71,6 +72,7 @@ function buildDailyFinance(transactions: Array<{ created_at: Date | null; transa
 export async function getDashboardSummary(options: { period?: DashboardPeriod; month?: string | null; year?: string | null } = {}): Promise<DashboardSummary> {
   const period = options.period === 'YEAR' ? 'YEAR' : 'MONTH';
   const range = getPeriodRange(period, options.month, options.year);
+  const { clubId } = requireTenantContext('dashboard.summary');
 
   const [
     playDates,
@@ -84,32 +86,35 @@ export async function getDashboardSummary(options: { period?: DashboardPeriod; m
     recentSessions,
     activeSessionRows
   ] = await Promise.all([
-    prisma.play_dates.count({ where: { play_date: { gte: range.start, lt: range.end } } }),
-    prisma.play_sessions.count({ where: { play_dates: { play_date: { gte: range.start, lt: range.end } } } }),
-    prisma.play_sessions.count({ where: { status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } } }),
-    prisma.session_players.count({ where: { play_sessions: { play_dates: { play_date: { gte: range.start, lt: range.end } } } } }),
+    prisma.play_dates.count({ where: { club_id: clubId, play_date: { gte: range.start, lt: range.end } } }),
+    prisma.play_sessions.count({ where: { club_id: clubId, play_dates: { play_date: { gte: range.start, lt: range.end } } } }),
+    prisma.play_sessions.count({ where: { club_id: clubId, status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } } }),
+    prisma.session_players.count({ where: { club_id: clubId, play_sessions: { play_dates: { play_date: { gte: range.start, lt: range.end } } } } }),
     prisma.session_transactions.findMany({
-      where: { created_at: { gte: range.start, lt: range.end } },
+      where: { club_id: clubId, created_at: { gte: range.start, lt: range.end } },
       select: { transaction_type: true, adjustment_type: true, category: true, total_amount: true, created_at: true }
     }),
     prisma.session_players.aggregate({
       _sum: { payment_amount: true },
       where: {
         payment_status: { not: 'PAID' },
+        club_id: clubId,
         play_sessions: { play_dates: { play_date: { gte: range.start, lt: range.end } } }
       }
     }),
-    prisma.shuttlecock_products.count(),
+    prisma.shuttlecock_products.count({ where: { club_id: clubId } }),
     prisma.shuttlecock_inventory.findMany({
+      where: { club_id: clubId },
       include: { shuttlecock_products: true }
     }),
     prisma.play_sessions.findMany({
+      where: { club_id: clubId },
       take: 8,
       orderBy: [{ play_dates: { play_date: 'desc' } }, { start_time: 'asc' }],
-      include: { play_dates: true, session_players: true }
+      include: { play_dates: true, session_players: { where: { club_id: clubId } } }
     }),
     prisma.play_sessions.findMany({
-      where: { status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } },
+      where: { club_id: clubId, status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } },
       take: 5,
       orderBy: [{ updated_at: 'desc' }],
       include: { play_dates: true }

@@ -3,6 +3,7 @@ import { AppError } from '@/lib/app-error';
 import { isPastDateInput, parseTimeInput, toDateInput, toTimeInput } from '@/lib/date-format';
 import { normalizeSessionStatus, toDatabaseSessionStatus } from '@/lib/session-status';
 import type { PlaySessionSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -57,13 +58,22 @@ function mapSession(row: {
 }
 
 export async function getPlaySession(sessionId: string): Promise<PlaySessionSummary | null> {
-  const row = await prisma.play_sessions.findUnique({ where: { id: sessionId } });
+  const { clubId } = requireTenantContext('play_session.get');
+  const row = await prisma.play_sessions.findUnique({ where: { id: sessionId, club_id: clubId } });
   return row ? mapSession(row) : null;
 }
 
 export async function listPlaySessions(playDateId?: string): Promise<PlaySessionSummary[]> {
+  const { clubId } = requireTenantContext('play_session.list');
+  if (playDateId) {
+    const playDate = await prisma.play_dates.findUnique({
+      where: { id: playDateId, club_id: clubId },
+      select: { id: true }
+    });
+    if (!playDate) throw new AppError('Không tìm thấy ngày chơi.', 404);
+  }
   const rows = await prisma.play_sessions.findMany({
-    where: playDateId ? { play_date_id: playDateId } : undefined,
+    where: { club_id: clubId, ...(playDateId ? { play_date_id: playDateId } : {}) },
     orderBy: [{ start_time: 'asc' }, { created_at: 'asc' }]
   });
 
@@ -94,14 +104,15 @@ export async function createPlaySession(input: {
   if (!Number.isFinite(Number(input.courtCount)) || Number(input.courtCount) < 1) throw new AppError('Vui lòng nhập số sân hợp lệ.');
 
   const courtCount = Math.max(1, Math.min(12, Math.floor(input.courtCount || 1)));
-  const playDate = await prisma.play_dates.findUnique({ where: { id: input.playDateId }, select: { play_date: true } });
+  const { clubId } = requireTenantContext('play_session.create');
+  const playDate = await prisma.play_dates.findUnique({ where: { id: input.playDateId, club_id: clubId }, select: { play_date: true } });
   if (!playDate) throw new AppError('Không tìm thấy ngày chơi.', 404);
   if (isPastDateInput(toDateInput(playDate.play_date))) {
     throw new AppError('Ngày chơi đã thuộc quá khứ, không thể tạo thêm ca chơi.');
   }
-
   const created = await prisma.play_sessions.create({
     data: {
+      club_id: clubId,
       play_date_id: input.playDateId,
       name: input.name.trim() || 'Ca chơi',
       start_time: parseTimeInput(input.startTime),
@@ -132,18 +143,24 @@ export async function updatePlaySession(sessionId: string, input: {
   totalExpense?: number;
   totalProfit?: number;
 }): Promise<PlaySessionSummary> {
+  const { clubId } = requireTenantContext('play_session.update');
   const updated = await prisma.$transaction(async (tx) => {
     const existing = await tx.play_sessions.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, club_id: clubId },
       include: { play_dates: { select: { play_date: true } } }
     });
     if (!existing) {
       throw new AppError('Không tìm thấy ca chơi.', 404);
     }
 
+    const currentStatus = normalizeSessionStatus(existing.status);
+    if (currentStatus === 'COMPLETED' || currentStatus === 'CANCELLED') {
+      throw new AppError('Ca chơi đã hoàn tất hoặc hủy, không thể chỉnh sửa.', 409);
+    }
+
     const hasStructuralEdit = input.name !== undefined || input.startTime !== undefined || input.endTime !== undefined || input.courtCount !== undefined;
     const isPastPlayDate = isPastDateInput(toDateInput(existing.play_dates.play_date));
-    if (hasStructuralEdit && normalizeSessionStatus(existing.status) !== 'PENDING') {
+    if (hasStructuralEdit && currentStatus !== 'PENDING') {
       throw new AppError('Chỉ có thể chỉnh sửa ca chơi khi ca chưa bắt đầu điều phối.');
     }
     if (hasStructuralEdit && isPastPlayDate) {
@@ -158,7 +175,7 @@ export async function updatePlaySession(sessionId: string, input: {
       if (isPastPlayDate) {
         throw new AppError('Ngày chơi đã thuộc quá khứ, không thể bắt đầu điều phối ca.');
       }
-      const playerCount = await tx.session_players.count({ where: { session_id: sessionId } });
+      const playerCount = await tx.session_players.count({ where: { session_id: sessionId, club_id: clubId } });
       const requiredPlayers = 4;
       if (playerCount < requiredPlayers) {
         throw new Error(`Cần ít nhất ${requiredPlayers} người chơi để bắt đầu ca`);
@@ -186,7 +203,7 @@ export async function updatePlaySession(sessionId: string, input: {
     } satisfies Record<string, unknown>;
 
     const session = await tx.play_sessions.update({
-      where: { id: sessionId },
+      where: { id: sessionId, club_id: clubId },
       data: sessionUpdateData as typeof sessionUpdateData & Parameters<typeof tx.play_sessions.update>[0]['data']
     });
 
@@ -197,8 +214,9 @@ export async function updatePlaySession(sessionId: string, input: {
 }
 
 export async function deletePlaySession(sessionId: string): Promise<void> {
+  const { clubId } = requireTenantContext('play_session.delete');
   const existing = await prisma.play_sessions.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, club_id: clubId },
     include: { play_dates: { select: { play_date: true } } }
   });
   if (!existing) throw new AppError('Không tìm thấy ca chơi.', 404);
@@ -209,5 +227,5 @@ export async function deletePlaySession(sessionId: string): Promise<void> {
     throw new AppError('Chỉ có thể xóa ca chơi khi ca chưa bắt đầu điều phối.');
   }
 
-  await prisma.play_sessions.delete({ where: { id: sessionId } });
+  await prisma.play_sessions.delete({ where: { id: sessionId, club_id: clubId } });
 }

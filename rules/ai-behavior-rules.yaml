@@ -1,4 +1,4 @@
-version: "2026-08-13"
+version: "2026-08-25"
 name: ai-behavior-rules
 scope: ai-agents
 
@@ -35,7 +35,13 @@ required_behavior:
   - "Preserve effective-level balancing where female players are internally treated as one level lower."
   - "Prefer same-format matchups when level balance is acceptable."
   - "Do not commit runtime snapshots when auto-suggestion is blocked or produces no valid suggestion."
-  - "Store shared operational settings in DB-backed singleton configuration; keep collection-style settings in dedicated tables and browser-local storage only for personal UI preferences."
+  - "Keep shared operational settings DB-backed as one singleton per club; keep collections in dedicated tables and browser-local storage only for personal UI preferences."
+  - "Preserve application authentication, role, permission, provisioning, and route-guard semantics; global bootstrap creation is retired in the pre-Phase 14 release."
+  - "For approved Multi-Tenant work, follow docs/multi-tenant.md and rules/multi-tenant-isolation.yaml phase gates while preserving current domain behavior."
+  - "Treat club UUID from authenticated server context as tenant identity; never trust client-provided club_id or URL alone."
+  - "Keep plan, subscription, billing, promotion, and entitlement-source management in the separate Control Plane."
+  - "Do not treat target Multi-Tenant documentation as evidence that a migration phase is already implemented."
+  - "Keep beta development database targets isolated from production data."
   - "Update docs/rules/prompts when current architecture changes."
 
 must_ask_owner_before:
@@ -54,6 +60,10 @@ must_ask_owner_before:
   - "Moving runtime to root/global navigation."
   - "Requiring session_id for manual finance transactions."
   - "Changing shuttlecock inventory movement formulas."
+  - "Changing authentication, authorization, role, permission, bootstrap, or route-guard semantics."
+  - "Changing tenant identity, data ownership, provisioning, club lifecycle, entitlement, or downgrade policy outside an already approved migration phase."
+  - "Onboarding a second customer club before every isolation release gate passes."
+  - "Changing database targets, applying schema, or accessing production data."
 
 must_not:
   - "Autonomously redesign protected runtime scheduling."
@@ -65,6 +75,11 @@ must_not:
   - "Replace session_players with users/members."
   - "Introduce event sourcing, CQRS, ERP, or warehouse architecture."
   - "Turn Dashboard into a live runtime monitor."
+  - "Merge application users with session-scoped players."
+  - "Apply generated schema SQL automatically or target production from development automation."
+  - "Use plan names in Badmin business branching."
+  - "Use a client-controlled club_id as authorization."
+  - "Assume a generic ORM tenant filter replaces repository review, database constraints, and isolation tests."
 
 review_focus:
   - runtime_lifecycle_regressions
@@ -81,3 +96,7 @@ review_focus:
   - shuttlecock_inventory_negative_stock
   - schedule_past_date_mutation
   - tablet_mobile_layout_regressions
+  - missing_tenant_scope
+  - cross_tenant_relation
+  - tenant_cache_or_storage_leak
+  - plan_logic_leaking_into_badmin

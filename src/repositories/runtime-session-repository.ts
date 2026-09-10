@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { normalizePlayerTags } from '@/lib/player-tags';
 import type { RuntimeGender, RuntimePlayerStatus, RuntimeSession, RuntimeSessionPlayer } from '@/types/runtime';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function parseDateValue(value: unknown): number | null {
   if (!value) return null;
@@ -27,16 +28,24 @@ function normalizeStatus(value: string | null | undefined): RuntimePlayerStatus 
 }
 
 export async function resolveRuntimeSessionId(sessionId?: string): Promise<string | null> {
-  if (sessionId) return sessionId;
+  const { clubId } = requireTenantContext('runtime_session.resolve');
+  if (sessionId) {
+    const owned = await prisma.play_sessions.findUnique({
+      where: { id: sessionId, club_id: clubId },
+      select: { id: true }
+    });
+    return owned?.id ?? null;
+  }
 
   const activeSession = await prisma.play_sessions.findFirst({
-    where: { status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } },
+    where: { club_id: clubId, status: { in: ['ACTIVE', 'LIVE', 'IN_PROGRESS'] } },
     orderBy: [{ updated_at: 'desc' }, { created_at: 'desc' }]
   });
 
   if (activeSession?.id) return activeSession.id;
 
   const fallbackSession = await prisma.play_sessions.findFirst({
+    where: { club_id: clubId },
     orderBy: [{ updated_at: 'desc' }, { created_at: 'desc' }]
   });
 
@@ -47,8 +56,9 @@ export async function getRuntimeSession(sessionId?: string): Promise<RuntimeSess
   const resolvedSessionId = await resolveRuntimeSessionId(sessionId);
   if (!resolvedSessionId) return null;
 
+  const { clubId } = requireTenantContext('runtime_session.get');
   const session = await prisma.play_sessions.findUnique({
-    where: { id: resolvedSessionId }
+    where: { id: resolvedSessionId, club_id: clubId }
   });
 
   if (!session) return null;
@@ -65,8 +75,9 @@ export async function getRuntimeSession(sessionId?: string): Promise<RuntimeSess
 }
 
 export async function listSessionPlayers(sessionId: string): Promise<RuntimeSessionPlayer[]> {
+  const { clubId } = requireTenantContext('runtime_session.players');
   const rows = await prisma.session_players.findMany({
-    where: { session_id: sessionId },
+    where: { session_id: sessionId, club_id: clubId },
     orderBy: [{ joined_at: 'asc' }]
   });
 

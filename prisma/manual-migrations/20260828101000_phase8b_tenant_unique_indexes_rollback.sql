@@ -1,0 +1,24 @@
+-- Run outside a transaction, after removing dependent composite FKs.
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_play_dates_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_play_sessions_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_products_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_runtime_matches_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_runtime_matches_club_session_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_session_players_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_payment_banks_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_app_users_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_auth_sessions_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_player_images_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_match_histories_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_transactions_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_movements_club_id_id";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_play_dates_club_date";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_runtime_courts_club_session_number";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_runtime_matches_club_session_queue";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_runtime_matches_club_session_court";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_app_settings_club";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_role_permissions_club_role";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_history_players_club_history_player";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_session_summaries_club_session";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_inventory_club_product";
+DROP INDEX CONCURRENTLY IF EXISTS public."uq_app_users_club_email";

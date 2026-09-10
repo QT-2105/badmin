@@ -36,7 +36,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
     const user = await updateAuthUser(userId, {
+      username: payload.username,
       email: payload.email,
+      phone: payload.phone,
       displayName: payload.displayName,
       role: nextRole,
       status: nextStatus,

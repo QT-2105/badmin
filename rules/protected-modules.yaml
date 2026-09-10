@@ -1,4 +1,4 @@
-version: "2026-08-13"
+version: "2026-08-25"
 name: protected-modules
 scope: repository
 
@@ -150,3 +150,50 @@ protected_modules:
       - collapsed state persistence
       - root nav labels
       - no global runtime nav
+      - permission-filtered navigation including Người dùng
+
+  - id: auth_and_users
+    paths:
+      - "src/lib/auth/*"
+      - "src/repositories/auth-users-repository.ts"
+      - "src/repositories/role-permissions-repository.ts"
+      - "src/app/api/auth/*"
+      - "src/components/users/*"
+    protected_semantics:
+      - app users remain separate from session players
+      - OWNER MANAGER OPERATOR VIEWER role values
+      - permission-guarded pages and APIs
+      - secure session token and cookie behavior
+      - global first-owner bootstrap creation is retired
+      - approved target binds each app user and auth session to exactly one club
+      - provisioning must pass its reviewed UAT migration before bootstrap retirement is deployed
+
+  - id: operational_settings
+    paths:
+      - "src/lib/app-settings.ts"
+      - "src/repositories/app-settings-repository.ts"
+      - "src/repositories/payment-bank-accounts-repository.ts"
+      - "src/app/api/settings/*"
+    protected_semantics:
+      - current DB-backed singleton operational settings
+      - dedicated payment bank account collection
+      - personal UI preferences remain browser-local
+      - approved target changes the DB singleton to one operational settings row per club
+
+  - id: tenant_boundary
+    paths:
+      - "src/lib/auth/*"
+      - "src/repositories/*"
+      - "src/app/api/*"
+      - "src/hooks/*"
+      - "src/services/*"
+      - "prisma/schema.prisma"
+    protected_semantics:
+      - authenticated server-owned club identity
+      - one application user belongs to one club
+      - tenant-scoped reads aggregates and mutations
+      - cross-tenant relationship rejection
+      - URL club code is a locator and not authorization
+      - permissions entitlements and domain invariants remain separate
+      - Control Plane owns commercial package logic
+      - second tenant remains disabled until isolation release gates pass

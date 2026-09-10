@@ -8,10 +8,18 @@ export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ coupleId: string }> };
 
+function sessionIdFromCoupleId(coupleId: string): string | undefined {
+  const separator = coupleId.lastIndexOf(':');
+  return separator > 0 ? coupleId.slice(0, separator) : undefined;
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { coupleId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionId: sessionIdFromCoupleId(coupleId),
+      allowActiveSessionContinuation: true
+    });
     const payload = await request.json();
     const couple = await updateSessionCouple(coupleId, {
       memberIds: payload.memberIds === undefined ? undefined : Array.isArray(payload.memberIds) ? payload.memberIds : [],
@@ -27,8 +35,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    await requireApiPermission(request, 'session.operate');
     const { coupleId } = await context.params;
+    await requireApiPermission(request, 'session.operate', {
+      activeSessionId: sessionIdFromCoupleId(coupleId),
+      allowActiveSessionContinuation: true
+    });
     await deleteSessionCouple(coupleId);
     return NextResponse.json({ ok: true });
   } catch (error) {

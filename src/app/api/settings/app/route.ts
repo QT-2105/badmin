@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
-import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
+import { authErrorResponse, requireApiPermission, requireApiUser } from '@/lib/auth/guards';
 import { getAppSettings, updateAppSettings } from '@/repositories/app-settings-repository';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireApiUser(request);
     const settings = await getAppSettings();
     return NextResponse.json({ settings });
   } catch (error) {
-    return apiError(error, 'Không thể tải cài đặt vận hành');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tải cài đặt vận hành');
   }
 }
 

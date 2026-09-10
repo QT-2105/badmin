@@ -1,6 +1,5 @@
 import type { RuntimeSnapshot, RuntimeSnapshotResponse, RuntimeSyncPayload, RuntimeSyncResponse } from '@/types/runtime';
 
-const runtimeVersions = new Map<string, number>();
 const runtimeSyncQueues = new Map<string, Promise<unknown>>();
 
 export class RuntimeSyncConflictError extends Error {
@@ -27,17 +26,14 @@ export async function fetchRuntimeSnapshot(sessionId?: string, signal?: AbortSig
   }
 
   const snapshot = (await res.json()) as RuntimeSnapshotResponse;
-  const resolvedSessionId = sessionId ?? snapshot.session?.id;
-  if (resolvedSessionId) runtimeVersions.set(resolvedSessionId, snapshot.version);
   return snapshot;
 }
 
 async function sendRuntimeSnapshot(payload: RuntimeSyncPayload, signal?: AbortSignal): Promise<RuntimeSyncResponse> {
-  const expectedVersion = payload.expectedVersion ?? runtimeVersions.get(payload.sessionId);
   const res = await fetch('/api/runtime/snapshot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, expectedVersion }),
+    body: JSON.stringify(payload),
     signal
   });
 
@@ -50,7 +46,6 @@ async function sendRuntimeSnapshot(payload: RuntimeSyncPayload, signal?: AbortSi
   }
 
   const response = (await res.json()) as RuntimeSyncResponse;
-  runtimeVersions.set(payload.sessionId, response.version);
   return response;
 }
 

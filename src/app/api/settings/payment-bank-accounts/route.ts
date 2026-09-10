@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { apiError } from '@/lib/api-response';
-import { authErrorResponse, requireApiPermission } from '@/lib/auth/guards';
+import { authErrorResponse, requireApiPermission, requireApiUser } from '@/lib/auth/guards';
 import { readImageFileFromFormData } from '@/lib/image-upload';
 import {
   createPaymentBankAccount,
@@ -10,12 +10,13 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireApiUser(request);
     const accounts = await listPaymentBankAccounts({ activeOnly: true });
     return NextResponse.json({ accounts });
   } catch (error) {
-    return apiError(error, 'Không thể tải tài khoản thanh toán');
+    return authErrorResponse(error) ?? apiError(error, 'Không thể tải tài khoản thanh toán');
   }
 }
 

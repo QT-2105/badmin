@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { RuntimeSnapshot } from '@/types/runtime';
 import { fetchRuntimeSnapshot } from '@/services/runtime-snapshot-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 
 type UseRuntimeSnapshotOptions = {
   sessionId?: string;
@@ -11,6 +12,7 @@ type UseRuntimeSnapshotOptions = {
 };
 
 export function useRuntimeSnapshot(options: UseRuntimeSnapshotOptions = {}) {
+  const { clubId } = useTenantRoute();
   const {
     sessionId,
     enabled = true,
@@ -19,7 +21,7 @@ export function useRuntimeSnapshot(options: UseRuntimeSnapshotOptions = {}) {
   } = options;
 
   return useQuery({
-    queryKey: ['runtime', 'snapshot', sessionId ?? 'active'],
+    queryKey: tenantQueryKey(clubId, 'runtime', 'snapshot', sessionId ?? 'active'),
     queryFn: ({ signal }) => fetchRuntimeSnapshot(sessionId, signal),
     enabled,
     initialData,

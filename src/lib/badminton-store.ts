@@ -1297,3 +1297,19 @@ export const useBadmintonStore = create<BadmintonState>((set) => {
   }
 };
 });
+
+export function clearTenantRuntimeState(): void {
+  useBadmintonStore.setState({
+    session: EMPTY_SESSION,
+    runtimeSessionId: null,
+    players: [],
+    courts: [],
+    nextMatches: [],
+    suggestionDiagnostics: [],
+    suggestionMode: 'random',
+    history: [],
+    recentQuartets: [],
+    runtimeVersion: 0,
+    suggestionGeneration: 0
+  });
+}

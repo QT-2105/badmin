@@ -1,3 +1,5 @@
+import { tenantAppSettingsStorageKey } from '@/lib/tenant-storage-keys';
+
 export type AppSettings = {
   autoCreateCourtFeeTransaction: boolean;
   autoCreateShuttlecockUsageTransaction: boolean;
@@ -12,13 +14,11 @@ export const defaultAppSettings: AppSettings = {
   defaultPaymentBankAccountId: null
 };
 
-export const appSettingsStorageKey = 'badmin_app_settings';
-
-export function readAppSettings(): AppSettings {
+export function readAppSettings(clubId: string): AppSettings {
   if (typeof window === 'undefined') return defaultAppSettings;
 
   try {
-    const raw = window.localStorage.getItem(appSettingsStorageKey);
+    const raw = window.localStorage.getItem(tenantAppSettingsStorageKey(clubId));
     if (!raw) return defaultAppSettings;
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
     return {
@@ -32,8 +32,8 @@ export function readAppSettings(): AppSettings {
   }
 }
 
-export function writeAppSettings(settings: AppSettings): void {
-  window.localStorage.setItem(appSettingsStorageKey, JSON.stringify({
+export function writeAppSettings(clubId: string, settings: AppSettings): void {
+  window.localStorage.setItem(tenantAppSettingsStorageKey(clubId), JSON.stringify({
     ...settings,
     maxCourtCountPerSession: normalizeMaxCourtCount(settings.maxCourtCountPerSession),
     defaultPaymentBankAccountId: normalizeOptionalId(settings.defaultPaymentBankAccountId)

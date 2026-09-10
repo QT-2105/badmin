@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 
 import { ActionMenu } from '@/components/ui/action-menu';
+import { TenantLink as Link } from '@/components/tenant/tenant-link';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/feedback';

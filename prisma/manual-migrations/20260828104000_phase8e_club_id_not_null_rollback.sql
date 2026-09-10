@@ -1,0 +1,19 @@
+-- Compatibility rollback. Ownership values and tenant FKs are intentionally preserved.
+ALTER TABLE public."app_role_permissions" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."app_settings" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."app_users" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."auth_sessions" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."match_histories" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."match_history_players" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."payment_bank_accounts" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."play_dates" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."play_sessions" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."runtime_courts" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."runtime_matches" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."session_player_images" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."session_players" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."session_summaries" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."session_transactions" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."shuttlecock_inventory" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."shuttlecock_movements" ALTER COLUMN club_id DROP NOT NULL;
+ALTER TABLE public."shuttlecock_products" ALTER COLUMN club_id DROP NOT NULL;

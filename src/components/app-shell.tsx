@@ -13,34 +13,37 @@ import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCurrentUser, useLogoutMutation } from '@/hooks/use-auth';
 import { useBranding } from '@/hooks/use-branding';
-import { getRoleLabel, hasPermission, type AuthUser, type PermissionKey } from '@/lib/auth/permissions';
+import { getRoleLabel, hasPermission, normalizePermissionPathname, type AuthUser, type PermissionKey } from '@/lib/auth/permissions';
+import { buildTenantHref, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 import { cn } from '@/lib/utils';
+import type { EntitlementFeatureKey } from '@/lib/entitlements/types';
+import { hasEntitlementFeature } from '@/lib/entitlements/types';
 
 const navGroups = [
   {
     label: 'Tổng quan',
     items: [
-      { href: '/dashboard', label: 'Dashboard', icon: BarChart3, permission: 'dashboard.view' }
+      { href: '/dashboard', label: 'Dashboard', icon: BarChart3, permission: 'dashboard.view', feature: 'dashboard' }
     ]
   },
   {
     label: 'Vận hành',
     items: [
-      { href: '/schedule', label: 'Lịch chơi', icon: CalendarDays, permission: 'schedule.view' }
+      { href: '/schedule', label: 'Lịch chơi', icon: CalendarDays, permission: 'schedule.view', feature: 'schedule' }
     ]
   },
   {
     label: 'Tài chính',
     items: [
-      { href: '/finance', label: 'Thu chi', icon: CircleDollarSign, permission: 'finance.view' },
-      { href: '/inventory', label: 'Kho cầu', icon: Package, permission: 'inventory.view' }
+      { href: '/finance', label: 'Thu chi', icon: CircleDollarSign, permission: 'finance.view', feature: 'finance' },
+      { href: '/inventory', label: 'Kho cầu', icon: Package, permission: 'inventory.view', feature: 'inventory' }
     ]
   },
   {
     label: 'Hệ thống',
     items: [
-      { href: '/users', label: 'Người dùng', icon: ShieldCheck, permission: 'users.manage' },
-      { href: '/settings', label: 'Cài đặt', icon: Settings2, permission: 'settings.manage' }
+      { href: '/users', label: 'Người dùng', icon: ShieldCheck, permission: 'users.manage', feature: 'users' },
+      { href: '/settings', label: 'Cài đặt', icon: Settings2, permission: 'settings.manage', feature: 'settings' }
     ]
   }
 ] as const;
@@ -58,13 +61,19 @@ function isNavItemActive(pathname: string, href: string): boolean {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { clubCode } = useTenantRoute();
+  const permissionPathname = normalizePermissionPathname(pathname);
+  const tenantHref = (href: string) => buildTenantHref(clubCode, href);
   const { data: branding } = useBranding();
   const { data: currentUser } = useCurrentUser();
   const logout = useLogoutMutation();
   const visibleNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => hasPermission(currentUser ?? null, item.permission as PermissionKey))
+      items: group.items.filter((item) => (
+        hasPermission(currentUser ?? null, item.permission as PermissionKey)
+        && (!currentUser?.entitlement || hasEntitlementFeature(currentUser.entitlement, item.feature as EntitlementFeatureKey))
+      ))
     }))
     .filter((group) => group.items.length > 0);
   const visibleNavItems = visibleNavGroups.flatMap((group) => group.items);
@@ -82,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setPendingHref(null);
   }, [pathname]);
 
-  function markNavigationPending(event: MouseEvent<HTMLAnchorElement>, href: string) {
+  function markNavigationPending(event: MouseEvent<HTMLAnchorElement>, href: string, baseHref: string) {
     if (
       event.defaultPrevented
       || event.button !== 0
@@ -90,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       || event.ctrlKey
       || event.shiftKey
       || event.altKey
-      || isNavItemActive(pathname, href)
+      || isNavItemActive(permissionPathname, baseHref)
     ) {
       return;
     }
@@ -129,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           >
             <Link
-              href="/dashboard"
+              href={tenantHref('/dashboard') as Route}
               className={cn(
                 'flex min-w-0 items-center gap-2 rounded-full outline-none transition-[width,opacity,background-color,box-shadow] duration-200 ease-[var(--ease-standard)] hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus/40 motion-reduce:transition-none',
                 collapsed && 'grid h-9 w-9 shrink-0 place-items-center overflow-hidden'
@@ -170,13 +179,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
                 ) : null}
                 {group.items.map((item) => {
-                  const active = isNavItemActive(pathname, item.href);
+                  const active = isNavItemActive(permissionPathname, item.href);
+                  const href = tenantHref(item.href);
                   const Icon = item.icon;
                   return (
                     <Link
                       key={item.href}
-                      href={item.href as Route}
-                      onClick={(event) => markNavigationPending(event, item.href)}
+                      href={href as Route}
+                      onClick={(event) => markNavigationPending(event, href, item.href)}
                       className={cn(
                         'relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none transition-[background-color,border-color,color,box-shadow,padding] duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                         active
@@ -230,18 +240,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         >
           <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-surface-elevated/95 px-3 backdrop-blur md:hidden">
-            <Link href="/dashboard">
+            <Link href={tenantHref('/dashboard') as Route}>
               <BrandLogo clubName={branding?.clubName} logoUrl={branding?.logoUrl} className="h-9 w-9 text-sm" textClassName="text-xs" />
             </Link>
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain">
               {visibleNavItems.map((item) => {
-                const active = isNavItemActive(pathname, item.href);
+                const active = isNavItemActive(permissionPathname, item.href);
+                const href = tenantHref(item.href);
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
-                    href={item.href as Route}
-                    onClick={(event) => markNavigationPending(event, item.href)}
+                    href={href as Route}
+                    onClick={(event) => markNavigationPending(event, href, item.href)}
                     className={cn(
                       'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-focus/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none',
                       active
@@ -312,7 +323,7 @@ function UserInitialsAvatar({ user, className }: { user: AuthUser; className?: s
         className
       )}
     >
-      {getUserInitials(user.displayName, user.email)}
+      {getUserInitials(user.displayName, user.username || user.email || user.phone || '')}
     </div>
   );
 }

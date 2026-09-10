@@ -7,8 +7,8 @@ export async function fetchProducts(signal?: AbortSignal): Promise<ShuttlecockPr
   return data.products;
 }
 
-export async function fetchProductOptions(signal?: AbortSignal): Promise<ShuttlecockProductOption[]> {
-  const res = await fetch('/api/inventory/products?view=options', { signal, cache: 'no-store' });
+export async function fetchProductOptions(sessionId: string, signal?: AbortSignal): Promise<ShuttlecockProductOption[]> {
+  const res = await fetch(`/api/inventory/products?view=options&sessionId=${encodeURIComponent(sessionId)}`, { signal, cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load shuttlecock products');
   const data = (await res.json()) as { products: ShuttlecockProductOption[] };
   return data.products;

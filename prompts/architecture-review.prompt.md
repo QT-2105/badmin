@@ -1,34 +1,19 @@
 # Architecture Review Prompt
 
-Use this prompt to review a Badmin change.
-
 ```text
-Review the change against Badmin governance.
-
-Read AGENTS.md, /docs/*, and /rules/* first.
+Read AGENTS.md, docs/README.md, canonical docs, rules, and the affected source.
 
 Prioritize findings:
-1. Runtime lifecycle regression
-2. JUST_FINISHED semantic breakage
-3. Duplicate players in suggestions/courts
-4. PLAYING players offered as replacement candidates
-5. Loss of operator override
-6. Excessive runtime DB calls or polling
-7. Auto-suggestion committing empty/invalid snapshots
-8. Player tag eligibility drift
-9. Effective-level gender balancing drift
-10. Same-format vs fallback matchup scoring drift
-11. Session-centric architecture drift
-12. Court_number/current-state persistence drift
-13. Session completion finance/inventory drift
-14. Mobile/tablet UX regression
-15. Enterprise over-engineering
+1. immediate post-match WAITING or operator-authority regression
+2. eligibility, wait protection, Trận kế, End-Game, Couple, Host, or exact-quartet drift
+3. duplicate/stale players, courts, previews, or runtime revision errors
+4. completed/cancelled runtime mutability
+5. excessive DB calls, concurrency loss, or partial finance/inventory mutation
+6. auth, permission, bootstrap, or route-guard regression
+7. session-scoped architecture or navigation drift
+8. beta/production database isolation or schema automation risk
+9. tablet/mobile operational UX regression
+10. unnecessary abstraction or dead code
 
-For each finding include:
-- file and line
-- observed behavior
-- governance rule violated
-- concrete safer fix
-
-If no issues are found, state that and list residual risks.
+For each finding include file/line, observed behavior, violated contract, impact, and smallest safe fix. If clean, list residual risks and validation gaps.
 ```

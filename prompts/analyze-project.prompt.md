@@ -1,50 +1,21 @@
 # Analyze Project Prompt
 
-Use this prompt when an AI model must understand the current Badmin repository before proposing work.
-
 ```text
-Read AGENTS.md first.
+Read AGENTS.md, docs/README.md, the canonical docs linked there, and rules/*.yaml before analysis.
 
-Then read /docs/* and /rules/*.
-
-Analyze the current implementation, focusing on:
-- src/app routes and API routes
-- src/components/app-shell.tsx
-- src/components/dashboard/dashboard-page-client.tsx
-- src/components/schedule/*
-- src/components/realtime-dashboard.tsx
-- src/components/sections/live-courts-section.tsx
-- src/components/sections/next-match-queue.tsx
-- src/components/sections/player-database-panel.tsx
-- src/components/cards/court-card.tsx
-- src/components/cards/next-match-card.tsx
-- src/lib/badminton-store.ts
-- src/lib/player-tags.ts
-- src/lib/player-labels.ts
-- src/lib/session-status.ts
-- src/lib/app-settings.ts
-- src/hooks/*
-- src/services/*
-- src/repositories/*
-- prisma/schema.prisma
+Treat removed UI stage/sprint records as Git history only. Inspect current source, Prisma schema, manual SQL, package scripts, and environment shape without exposing secrets or mutating data.
 
 Report the real current architecture:
-- root navigation: Dashboard, Lịch chơi, Thu chi, Kho cầu, Cài đặt
-- runtime route: /sessions/[sessionId]/runtime only
-- session-centric player model
-- current-state runtime snapshot model
-- court generation from play_sessions.court_count and court_number
-- next-match suggestion/replacement flow
-- attendance tag eligibility for auto-suggestion
-- effective-level balancing for mixed-gender matches
-- anti-repeat pair/roster variety
-- blocked auto-suggestion behavior without meaningless DB commits
-- session completion finance/inventory flow
-- shuttlecock product/inventory/movement model
-- browser-local settings
-- tablet/mobile runtime UX
+- root navigation: Dashboard, Lịch chơi, Thu chi, Kho cầu, Người dùng, Cài đặt
+- permission-guarded application users remain separate from session players
+- runtime only at /sessions/[sessionId]/runtime
+- optimistic Zustand state plus action-driven current-snapshot persistence
+- courts derived from play_sessions.court_count and persisted by court_number
+- WAITING -> NEXT_MATCH/PRIORITY -> PLAYING -> WAITING with soft lastFinishedAt
+- attendance, Host, Trận kế, End-Game, Couple, wait protection, and exact-quartet semantics
+- transactional session completion and movement-backed shuttlecock inventory
+- DB-backed operational settings and dedicated payment bank accounts
+- beta database isolation from production
 
-Do not implement.
-Do not regenerate governance unless asked.
-Do not propose enterprise architecture.
+Distinguish implemented behavior, governance target, known deviation, and future proposal. Do not implement or mutate DB.
 ```

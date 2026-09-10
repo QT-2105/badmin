@@ -1,0 +1,637 @@
+version: "2026-09-07"
+name: multi-tenant-isolation
+scope: approved-target-and-migration
+status: "target design; requirements become runtime gates only as their migration phase is implemented"
+
+architecture:
+  tenant_model: "shared PostgreSQL tables with club_id row ownership"
+  canonical_tenant_identity: "club UUID"
+  club_code_role: "human-facing login and URL locator only"
+  applications:
+    control_plane:
+      owns:
+        - club_registration
+        - club_lifecycle
+        - plans_and_plan_versions
+        - subscriptions_and_trials
+        - feature_overrides
+        - effective_entitlement_projection
+        - system_administration
+    badmin:
+      owns:
+        - tenant_users_and_permissions
+        - tenant_settings_and_branding
+        - schedule_and_sessions
+        - runtime_and_match_history
+        - completion_and_finance
+        - shuttlecock_inventory
+        - tenant_images
+  database_roles:
+    - migration_role
+    - control_plane_runtime_role
+    - badmin_runtime_role
+  schema_authority: "one reviewed migration authority for the shared database"
+
+tenant_context:
+  server_owned_fields:
+    - club_id
+    - club_code
+    - club_status
+    - user_id
+    - role
+    - permissions
+    - effective_features
+    - effective_limits
+    - entitlement_version
+  forbidden_sources_for_club_id:
+    - request_body
+    - query_string
+    - untrusted_header
+    - url_without_auth_session_comparison
+  required_order:
+    - authenticate_session
+    - establish_tenant_context
+    - validate_url_club_locator
+    - enforce_club_status_policy
+    - enforce_user_permission
+    - enforce_effective_entitlement_when_applicable
+    - enforce_domain_invariants
+    - use_tenant_scoped_repository
+    - rely_on_database_tenant_constraints
+
+data_rules:
+  classify_every_table_as:
+    - CONTROL_OWNED
+    - TENANT_OWNED
+    - GLOBAL_INTERNAL
+  tenant_owned_requirements:
+    - non_null_club_id_after_backfill
+    - tenant_predicate_on_every_read_and_mutation
+    - tenant_scoped_unique_constraints
+    - composite_foreign_keys_for_tenant_relations
+    - tenant_first_indexes_where_supported_by_queries
+  cross_tenant_resource_response: "not found unless an explicit system-admin API requires otherwise"
+  json_reference_rule: "validate tenant and parent ownership in application code because JSON cannot enforce player foreign keys"
+  nullable_relation_rule: "tenantization must not make an intentionally optional domain relation mandatory"
+
+phase_2_schema_contract:
+  authority: "docs/multi-tenant-schema-contract.md"
+  current_prisma_classification:
+    tenant_owned_count: 18
+    control_owned_count: 0
+    global_internal_count: 0
+  required_control_projection:
+    - control.clubs
+    - control.club_entitlements
+  operational_rules:
+    - "Every current Prisma model receives club_id through expand, compatibility write, backfill, and constraint phases."
+    - "Every tenant child uses a composite club relation; globally unique UUIDs alone are insufficient."
+    - "app_settings becomes one row keyed by club_id only after repositories stop using id=default."
+    - "play_sessions.shuttlecock_product_id, app_settings.default_payment_bank_account_id, and session_transactions.session_id retain current nullability."
+    - "runtime_courts.runtime_match_id must resolve to the same club and session."
+    - "runtime JSON rosters and match-history participant session equality require service validation where SQL cannot express the current shape without redundant fields."
+    - "session_summaries is one row per tenant session."
+    - "No user_login_identifiers table is added for the current one-value-per-identifier-type requirement."
+  migration_safety:
+    - nullable_expand_before_writes
+    - compatibility_writes_before_backfill
+    - parent_before_child_backfill
+    - reconciliation_before_constraints
+    - validated_composite_fks_before_second_tenant
+    - retain_legacy_constraints_until_application_cutover_is_proven
+
+phase_3_control_foundation:
+  authority: "docs/multi-tenant-control-foundation.md"
+  phase_3a_status: complete
+  phase_3b_status: complete_on_confirmed_uat
+  phase_3c_status: complete_read_only_non_enforcing
+  execution_target_fingerprint: "c2f96ce9dcd6"
+  legacy_club_id: "aa1f1aa3-c438-4498-96e9-ab228cd51f4f"
+  legacy_club_code: "tt-badminton"
+  badmin_effective_uat_role: "badmin_uat_app"
+  foundation_tables:
+    - control.clubs
+    - control.club_entitlements
+  legacy_capabilities:
+    - dashboard
+    - schedule
+    - session.runtime
+    - session.completion
+    - finance
+    - inventory
+    - users
+    - settings
+  initial_limits: {}
+  badmin_phase_3c_read_columns:
+    clubs:
+      - id
+      - code
+      - name
+      - status
+    club_entitlements:
+      - club_id
+      - version
+  forbidden_before_phase_3b_confirmation:
+    - create_manual_migration_sql
+    - connect_or_apply_to_uat
+    - create_legacy_club
+    - grant_environment_login_roles
+  forbidden_in_phase_3c:
+    - entitlement_enforcement
+    - auth_or_route_tenant_switch
+    - client_controlled_legacy_club_id
+    - control_table_mutation_by_badmin
+  phase_3_authorization_boundary: "Phase 4 required and received a separate explicit owner instruction"
+
+phase_4_nullable_expand:
+  status: complete_on_confirmed_uat
+  execution_target_fingerprint: "c2f96ce9dcd6"
+  subphases:
+    phase_4a:
+      tables: [app_users, auth_sessions, app_role_permissions, app_settings, payment_bank_accounts]
+    phase_4b:
+      tables: [play_dates, play_sessions, session_players]
+    phase_4c:
+      tables: [runtime_courts, runtime_matches, match_histories, match_history_players, session_summaries]
+    phase_4d:
+      tables: [session_transactions, shuttlecock_products, shuttlecock_inventory, shuttlecock_movements, session_player_images]
+  required_shape:
+    type: uuid
+    nullable: true
+    default: null
+  implemented:
+    - prisma_optional_scalar_fields
+    - reviewed_manual_expand_sql
+    - read_only_validation_sql
+    - emergency_rollback_sql
+    - uat_rehearsal
+    - application_regression
+  forbidden_and_absent:
+    - club_id_backfill
+    - club_id_not_null
+    - tenant_foreign_keys
+    - tenant_unique_replacements
+    - tenant_indexes_without_query_need
+    - compatibility_writes
+    - auth_identifier_or_login_changes
+  stop_boundary: "satisfied by the explicit Phase 5 owner instruction"
+
+phase_5_compatibility_writes:
+  status: complete
+  legacy_club_id: "aa1f1aa3-c438-4498-96e9-ab228cd51f4f"
+  server_source: BADMIN_LEGACY_CLUB_ID
+  context_policy:
+    - uuid_validated
+    - fail_closed_when_missing_or_invalid
+    - structured_missing_context_log
+    - no_client_override
+  write_policy:
+    - stamp_all_new_tenant_rows
+    - stamp_nested_and_bulk_creates
+    - leave_existing_update_rows_unchanged_until_backfill
+    - preserve_null_legacy_reads_during_compatibility
+  validation:
+    focused_tests: 97
+    source_write_guard: passed
+    uat_fingerprint: "c2f96ce9dcd6"
+    checked_tables: 18
+    positive_new_null_delta: 0
+    unexpected_club_rows: 0
+  forbidden_and_absent:
+    - client_controlled_tenant
+    - implicit_backfill
+    - login_or_route_change
+    - entitlement_enforcement
+    - tenant_constraints_or_indexes
+    - domain_behavior_change
+  stop_boundary: "satisfied by the explicit Phase 6 owner instruction"
+
+phase_6_backfill_reconciliation:
+  status: complete_on_confirmed_uat
+  target_fingerprint: "c2f96ce9dcd6"
+  legacy_club_id: "aa1f1aa3-c438-4498-96e9-ab228cd51f4f"
+  execution:
+    tenant_tables: 18
+    rows: 3337
+    batches: 23
+    batch_sizes: [100, 250, 500]
+    retry: where_club_id_is_null_idempotent
+    lock_policy: for_update_skip_locked_with_two_second_timeout
+  rehearsal:
+    successful_runs: 2
+    duration_ms: [12219.54, 13380.54]
+    reset_scope: club_id_only_after_exact_baseline_assertion
+    consistent_results: true
+    idempotent_retry_updated_rows: 0
+    deadlocks: 0
+    temp_spills: 0
+  reconciliation:
+    null_club_rows: 0
+    unexpected_club_rows: 0
+    orphan_relations: 0
+    tenant_mismatch_relations: 0
+    changed_business_checksums: 0
+    changed_row_counts: 0
+    inventory_mismatches: 0
+    operational_baseline: passed
+  forbidden_and_absent:
+    - club_id_not_null
+    - tenant_foreign_keys
+    - composite_tenant_foreign_keys
+    - tenant_unique_or_index_cutover
+    - login_or_route_change
+  stop_boundary: "Phase 6 is complete; Phase 7 application isolation was separately authorized"
+
+phase_7_application_data_access:
+  status: complete
+  scope:
+    - users_roles_settings_auth_sessions
+    - schedule_sessions_players_couples
+    - dashboard_counts_aggregates_recent_summaries
+    - history_reset_and_storage_mutations
+    - runtime_hydration_revision_snapshot_roster_validation
+    - finance_inventory_completion
+  required_invariants:
+    - server_owned_legacy_tenant_context_only
+    - no_unscoped_tenant_read_count_aggregate_update_or_delete
+    - cross_tenant_identifier_behaves_as_missing
+    - new_storage_keys_namespaced_by_club
+    - existing_legacy_storage_references_remain_supported
+    - scheduler_and_runtime_lifecycle_unchanged
+    - completion_formulas_and_inventory_movement_semantics_unchanged
+  validation:
+    - tenant_data_access_static_guard
+    - focused_cross_tenant_negative_tests
+    - full_regression_suite
+    - uat_read_only_reconciliation
+  forbidden_and_absent:
+    - club_id_not_null
+    - tenant_foreign_keys
+    - composite_tenant_foreign_keys
+    - tenant_unique_or_index_cutover
+    - tenant_aware_login_or_route_change
+    - second_tenant_activation
+  stop_boundary: "Phase 8F was later authorized and completed on confirmed UAT; Tenant #2 still requires the controlled release gate"
+
+phase_8_database_isolation:
+  status: complete_on_confirmed_uat
+  completed:
+    - tenant_query_indexes
+    - tenant_unique_indexes
+    - direct_club_foreign_keys
+    - composite_tenant_foreign_keys
+    - validated_constraints
+    - club_id_not_null
+    - cross_tenant_database_negative_probe
+    - uat_operational_reconciliation
+  phase_8f:
+    phase_8f_drop_legacy_global_uniqueness:
+      status: complete_on_confirmed_uat
+      completed:
+        - app_users_global_email_unique_removed_after_tenant_identifier_cutover
+        - tenant_only_prisma_and_repository_keys
+        - reviewed_remaining_key_sql_validation_and_rollback
+      uat_result:
+        - remaining_global_keys_removed
+        - app_settings_primary_key_is_club_id
+        - phase14_readiness_no_blockers
+  invariants:
+    - remaining_legacy_global_constraints_may_remain_in_database_until_manual_cutover
+    - tenant_number_two_is_not_active
+    - no_business_row_or_domain_semantic_change
+  stop_boundary: "Do not apply the remaining SQL or activate Tenant #2 without exact target confirmation and release-gate acceptance"
+
+phase_9_tenant_authentication:
+  status: phase_9a_to_9e_complete_phase_9f_complete_local_uat_deploy_pending
+  target_fingerprint: "c2f96ce9dcd6"
+  completed:
+    - nullable_username_email_phone_identifier_schema
+    - normalized_identifier_backfill_without_password_rewrite
+    - tenant_scoped_identifier_unique_indexes
+    - tenant_bound_auth_sessions
+    - minimal_public_club_code_and_name_lookup
+    - club_identifier_password_login_api
+    - club_selection_login_ui
+    - legacy_login_payload_compatibility
+    - generic_tenant_login_failure
+    - hashed_tenant_identifier_rate_limit_key
+  rollout_policy:
+    allowed_club: "aa1f1aa3-c438-4498-96e9-ab228cd51f4f"
+    non_legacy_login: fail_closed_exact_uuid_allowlist
+    second_tenant_activation: forbidden
+  phase_9f_global_bootstrap:
+    status: complete_local_uat_deploy_pending
+    evidence:
+      provisioning_receipt_table: proposed_manual_sql_not_applied
+      provisioning_function: implemented_local_not_rehearsed
+      owner_activation: implemented_local_not_rehearsed
+      bootstrap_create_endpoint: retired_with_http_410
+    deployment_gate: "Provisioning and activation must pass on UAT before this application release is deployed"
+  validation:
+    users: 5
+    missing_identifier: 0
+    missing_club: 0
+    duplicate_identifier_groups: 0
+    session_tenant_mismatch: 0
+    waiting_access_exclusive_locks: 0
+    same_email_cross_club_probe: allowed_and_rolled_back
+    regression_tests: 169
+  stop_boundary: "Do not deploy bootstrap retirement, enable a non-Legacy club, or activate Tenant #2 before UAT provisioning acceptance"
+
+repository_rules:
+  required:
+    - "Tenant-owned repositories accept TenantContext or are created from a tenant-bound factory."
+    - "Aggregates, counts, bulk updates, and bulk deletes are tenant-scoped."
+    - "Nested writes and transactions validate every tenant-owned relation."
+    - "Raw SQL carries an explicit tenant predicate and receives focused review."
+  forbidden:
+    - global_find_by_id_for_tenant_entity
+    - unscoped_tenant_aggregate
+    - unscoped_bulk_update
+    - unscoped_bulk_delete
+    - trusting_client_club_id
+    - relying_only_on_transparent_orm_injection
+
+authentication:
+  user_membership: "one app user belongs to exactly one club"
+  session_binding: "auth session binds user_id and club_id while retaining secure hashed tokens and cookie behavior"
+  login_input:
+    - selected_club
+    - one_username_email_or_phone_identifier
+    - password
+  identity_uniqueness:
+    - club_id_and_username_normalized
+    - club_id_and_email_normalized_when_present
+    - club_id_and_phone_normalized_when_present
+  user_login_identifiers_table: "deferred until multi-alias or multi-contact login is required"
+  generic_failure: "do not disclose whether the identifier exists in another club"
+  bootstrap_target: "replace global first-owner bootstrap with idempotent club provisioning and activation"
+  current_compatibility:
+    legacy_payload_without_club_code: "resolve only the configured Legacy Club"
+    public_club_fields: [code, name]
+    malformed_identifier_response: generic_tenant_login_failure
+    non_legacy_login: rollout_blocked
+  invariants:
+    - app_users_remain_separate_from_session_players
+    - preserve_owner_manager_operator_viewer_roles
+    - preserve_secure_token_hash_and_cookie_semantics
+
+provisioning:
+  phase_13_status: complete_on_confirmed_uat
+  registration_owner: control_plane
+  badmin_public_registration_api: forbidden
+  club_code:
+    canonical: lowercase_ascii_hyphenated
+    unique_authority: control_clubs_database_constraint
+    duplicate_name: allowed_with_warning_and_area_or_random_suffix_suggestions
+  seed_transaction:
+    initial_club_status: PROVISIONING
+    creates: [effective_entitlement, app_settings, default_role_permissions, disabled_owner, hashed_activation, idempotency_receipt]
+    idempotency: advisory_transaction_lock_and_canonical_payload_fingerprint
+    changed_payload_retry: reject
+  secrets:
+    plaintext_password_crosses_control_plane: false
+    database_activation_token: sha256_hash_only
+    database_password: scrypt_hash_only
+    activation_url_secret_location: fragment
+  activation:
+    badmin_table_mutation: denied
+    allowed_boundary: security_definer_function_only
+    complete_seed_required: true
+    club_active_transition: last_statement_in_atomic_activation
+    successful_retry: same_ids_without_reseed_or_password_rewrite
+  failure_retry:
+    provisioning_failure: transaction_rollback_then_same_request_retry
+    email_or_token_failure: control_plane_rotates_unused_token_hash_without_reseed
+  current_rollout:
+    manual_migration_applied: true
+    uat_rollback_only_rehearsal: passed_zero_residue
+    target_fingerprint: "c2f96ce9dcd6"
+    migration_role: neondb_owner
+    security_definer_owner: badmin_schema_owner
+    non_legacy_login: exact_uuid_allowlist_disabled_by_default
+    tenant_number_two: inactive
+
+tenant_context_runtime:
+  status: complete_local
+  source: authenticated_tenant_bound_session_only
+  storage: request_owned_async_local_storage
+  immutable_within_request: true
+  missing_or_mismatch: fail_closed
+  legacy_fallback: explicit_compatibility_flag_only
+  client_controlled_tenant: forbidden
+  validation:
+    - concurrent_request_context_isolation_test
+    - authenticated_guard_context_test
+    - tenant_repository_static_guards
+
+phase_14_controlled_release:
+  status: shadow_and_release_candidate_complete_controlled_tenant_pending
+  read_only_readiness_audit:
+    - exact_uat_fingerprint
+    - tenant_columns_constraints_and_remaining_global_keys
+    - provisioning_entitlement_and_runtime_role_grants
+    - legacy_baseline_and_auth_session_reconciliation
+    - blocking_lock_check
+  rollback_only_shadow:
+    - synthetic_tenant_provision_and_activation
+    - same_identifier_and_play_date_across_tenants
+    - cross_tenant_composite_fk_rejection
+    - forced_rollback_and_zero_residue
+  completed:
+    - exact_uat_target_validation
+    - phase_8f_manual_uat_execution
+    - effective_uat_runtime_role_deployment
+    - control_plane_and_badmin_role_shadow_rehearsal
+    - readiness_without_blockers
+    - release_candidate_quality_gates
+  pending:
+    - separate_control_plane_deployment
+    - controlled_club_and_owner_details
+    - secure_activation_delivery
+    - controlled_tenant_allowlist
+  tenant_number_two: inactive
+
+routing_and_cache:
+  target_page_prefix: "/{clubCode}"
+  url_is_authorization: false
+  api_tenant_source: "authenticated TenantContext"
+  permission_matching: "remove and validate the club-code segment before applying existing route permission rules"
+  tenant_key_required_for:
+    - react_query_cache
+    - server_cache
+    - login_rate_limit
+    - runtime_identity
+    - future_realtime_channel
+    - object_storage_prefix
+  logout_rule: "clear tenant-sensitive client state before another club login"
+  current_implementation:
+    tenant_routes: complete
+    legacy_redirects: session_resolved_club_code
+    permission_path: normalized_after_validated_tenant_segment
+    react_query_key_prefix: [tenant, club_id]
+    query_client_boundary: one_instance_per_authenticated_tenant_route
+    server_club_cache_key: authenticated_club_id
+    logout_clears:
+      - tenant_query_cache
+      - zustand_runtime_state
+      - current_tenant_runtime_storage
+      - current_tenant_settings_storage
+      - legacy_operational_storage_keys
+    preserves_on_logout:
+      - personal_theme
+      - personal_sidebar_state
+    url_mismatch: not_found
+
+runtime:
+  operation_identity:
+    - club_id
+    - session_id
+    - required_revision
+  preserve:
+    - current_state_snapshot
+    - optimistic_zustand_runtime
+    - meaningful_action_commits
+    - operator_final_authority
+    - protected_player_and_court_lifecycles
+    - scheduling_scoring_and_formations
+    - couple_wait_request_and_exact_quartet_semantics
+  forbidden:
+    - scheduler_rewrite_for_tenantization
+    - match_history_creation_during_session_completion
+    - event_sourcing_or_cqrs
+  phase_11_implementation:
+    expected_revision: mandatory
+    claim: tenant_session_live_revision_compare_and_swap
+    completed_cancelled_runtime: immutable
+    json_validation: hydrate_and_commit_against_tenant_session_players
+    scheduler_or_lifecycle_changed: false
+
+completion_finance_inventory:
+  required:
+    - one_tenant_per_transaction
+    - session_product_inventory_summary_transaction_and_movement_validation
+    - concurrency_safe_completion_and_stock_update
+    - non_negative_stock
+    - movement_for_every_stock_change
+    - unchanged_profit_and_voucher_semantics
+    - manual_finance_session_id_remains_optional
+  downgrade_rule: "do not delete historical data or strand an already allowed active session"
+  phase_11_implementation:
+    completion_claim: live_session_exactly_once
+    completion_advances_runtime_revision: true
+    shared_lock_key: tenant_shuttlecock_product_row
+    inventory_read_check_write: serialized
+    concurrent_completion_duplicate_side_effects: rejected
+    completion_inventory_race_negative_stock: rejected
+    formulas_or_movement_semantics_changed: false
+
+settings_and_storage:
+  operational_settings: "one DB-backed settings row per club"
+  official_club_name_source: "Control Plane club record"
+  optional_brand_display_name: "tenant Badmin settings"
+  object_key_prefix: "clubs/{clubId}/... for new writes"
+  legacy_object_rule: "existing keys may remain until a separately reviewed re-key migration"
+  bulk_delete_rule: "select stored keys owned by the current club; never delete a global prefix"
+  phase_10_implementation:
+    new_object_key_prefix: "clubs/{clubId}/..."
+    legacy_key_read: supported_through_tenant_owned_db_reference
+    bulk_rekey: not_performed
+    traversal_segments: rejected
+
+entitlements:
+  badmin_consumes: "versioned effective feature and limit projection"
+  badmin_must_not_branch_on:
+    - plan_name
+    - promotion_name
+    - billing_provider_state
+  separate_checks:
+    permission: "whether the user may act"
+    entitlement: "whether the club may use the capability"
+    domain_invariant: "whether the operation is operationally valid"
+  never_feature_flag:
+    - tenant_isolation
+    - permission_enforcement
+    - revision_safety
+    - non_negative_stock
+    - completion_atomicity
+    - duplicate_player_protection
+  downgrade_behavior:
+    - preserve_existing_data
+    - deny_new_disallowed_mutations
+    - allow_documented_safe_reads
+    - allow_documented_active_session_completion
+  phase_12_implementation:
+    recognized_features:
+      - dashboard
+      - schedule
+      - session.runtime
+      - session.completion
+      - finance
+      - inventory
+      - users
+      - settings
+    projection_access: read_only
+    check_order: [permission, entitlement, domain_invariant]
+    missing_or_unknown_feature: deny
+    limits: read_only_until_atomic_quota_design
+    shadow_log: [club_id, feature, reason, entitlement_version, projection_source]
+    cache_key: [club_id, entitlement_version, valid_until]
+    control_refresh_seconds: 15
+    stale_fallback_seconds: 120
+    stale_fallback_must_be_unexpired: true
+    downgrade_deletes_data: false
+    active_session_continuation:
+      required_owner: authenticated_tenant
+      required_status: LIVE
+      allowed: [session_support, runtime, completion, completion_read_dependencies]
+      forbidden: [new_schedule, inactive_session_reopen]
+    plan_name_branching: forbidden
+
+migration_order:
+  phases:
+    - baseline_and_environment_confirmation
+    - regression_safety_net
+    - schema_and_integration_contract
+    - control_foundation_and_legacy_club
+    - add_nullable_tenant_columns
+    - deploy_compatibility_tenant_writes
+    - backfill_and_reconcile
+    - add_constraints_and_indexes
+    - isolate_repository_service_and_api
+    - tenantize_authentication_and_users
+    - tenantize_routes_caches_and_storage
+    - harden_runtime_completion_finance_and_inventory
+    - enforce_effective_entitlements
+    - provision_and_shadow_validate_synthetic_tenant
+    - controlled_second_tenant_release
+    - optional_rls_and_scale_work
+  forbidden_migration_patterns:
+    - backfill_before_new_writes_always_set_club_id
+    - big_bang_schema_auth_route_and_cleanup_release
+    - set_not_null_before_reconciliation
+    - automatic_schema_application
+    - production_target_without_explicit_confirmation
+
+second_tenant_release_gates:
+  - all_tenant_rows_have_valid_club_id
+  - all_tenant_relations_are_cross_tenant_safe
+  - no_global_tenant_repository_queries
+  - auth_user_session_and_url_tenant_binding_passes
+  - settings_permissions_cache_and_storage_isolation_passes
+  - runtime_revision_and_isolation_tests_pass
+  - completion_and_inventory_concurrency_tests_pass
+  - legacy_club_counts_finance_stock_runtime_and_permissions_reconcile
+  - repository_and_api_cross_tenant_tests_cover_all_domains
+  - exact_database_target_backup_recovery_sql_and_rollback_are_approved
+  - standard_quality_gates_pass
+
+deferred_until_measured_need:
+  - row_level_security
+  - distributed_cache
+  - distributed_rate_limit
+  - atomic_commercial_quotas
+  - per_tenant_partitioning
+  - database_per_tenant
+  - tenant_export_and_restore_tooling
+  - club_code_aliases

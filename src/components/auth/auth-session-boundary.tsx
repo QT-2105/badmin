@@ -9,6 +9,7 @@ const SESSION_EXPIRED_NOTICE_KEY = 'badmin_session_expired_notice';
 function shouldHandleUnauthorized(url: URL): boolean {
   if (!url.pathname.startsWith('/api/')) return false;
   if (url.pathname === '/api/auth/login') return false;
+  if (url.pathname === '/api/auth/activate-owner') return false;
   if (url.pathname === '/api/auth/bootstrap') return false;
   if (url.pathname === '/api/auth/logout') return false;
   return true;

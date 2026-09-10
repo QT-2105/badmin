@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
 import { formatPlayDateTitle, isPastDateInput, parseDateInput, toDateInput, toTimeInput } from '@/lib/date-format';
 import type { PlayDateSummary, PlaySessionSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -78,9 +79,12 @@ function mapPlayDate(row: {
 }
 
 export async function listPlayDates(): Promise<PlayDateSummary[]> {
+  const { clubId } = requireTenantContext('play_date.list');
   const rows = await prisma.play_dates.findMany({
+    where: { club_id: clubId },
     include: {
       play_sessions: {
+        where: { club_id: clubId },
         orderBy: [{ start_time: 'asc' }, { created_at: 'asc' }]
       }
     },
@@ -91,10 +95,12 @@ export async function listPlayDates(): Promise<PlayDateSummary[]> {
 }
 
 export async function getPlayDate(id: string): Promise<PlayDateSummary | null> {
+  const { clubId } = requireTenantContext('play_date.get');
   const row = await prisma.play_dates.findUnique({
-    where: { id },
+    where: { id, club_id: clubId },
     include: {
       play_sessions: {
+        where: { club_id: clubId },
         orderBy: [{ start_time: 'asc' }, { created_at: 'asc' }]
       }
     }
@@ -109,13 +115,16 @@ export async function createPlayDate(input: { playDate: string; title?: string |
   const parsedPlayDate = parseDateInput(input.playDate);
   if (Number.isNaN(parsedPlayDate.getTime())) throw new AppError('Ngày chơi không hợp lệ. Vui lòng chọn lại ngày.');
 
-  const existing = await prisma.play_dates.findUnique({ where: { play_date: parsedPlayDate } });
+  const { clubId } = requireTenantContext('play_date.create');
+  const existing = await prisma.play_dates.findUnique({
+    where: { club_id_play_date: { club_id: clubId, play_date: parsedPlayDate } }
+  });
   if (existing) throw new AppError('Ngày chơi này đã tồn tại. Vui lòng chọn ngày khác.', 409);
 
   const title = input.title?.trim() || formatPlayDateTitle(input.playDate);
-
   const row = await prisma.play_dates.create({
     data: {
+      club_id: clubId,
       play_date: parsedPlayDate,
       title,
       note: input.note?.trim() || null
@@ -127,7 +136,8 @@ export async function createPlayDate(input: { playDate: string; title?: string |
 }
 
 export async function updatePlayDate(id: string, input: { playDate?: string; title?: string | null; note?: string | null }): Promise<PlayDateSummary> {
-  const current = await prisma.play_dates.findUnique({ where: { id } });
+  const { clubId } = requireTenantContext('play_date.update');
+  const current = await prisma.play_dates.findUnique({ where: { id, club_id: clubId } });
   if (!current) throw new AppError('Không tìm thấy ngày chơi.', 404);
   if (isPastDateInput(toDateInput(current.play_date))) {
     throw new AppError('Ngày chơi đã thuộc quá khứ, chỉ được xem lại thông tin.');
@@ -138,12 +148,14 @@ export async function updatePlayDate(id: string, input: { playDate?: string; tit
     if (isPastDateInput(input.playDate)) throw new AppError('Không thể chuyển ngày chơi về quá khứ.');
     parsedPlayDate = parseDateInput(input.playDate);
     if (Number.isNaN(parsedPlayDate.getTime())) throw new AppError('Ngày chơi không hợp lệ. Vui lòng chọn lại ngày.');
-    const existing = await prisma.play_dates.findUnique({ where: { play_date: parsedPlayDate } });
+    const existing = await prisma.play_dates.findUnique({
+      where: { club_id_play_date: { club_id: clubId, play_date: parsedPlayDate } }
+    });
     if (existing && existing.id !== id) throw new AppError('Ngày chơi này đã tồn tại. Vui lòng chọn ngày khác.', 409);
   }
 
   const row = await prisma.play_dates.update({
-    where: { id },
+    where: { id, club_id: clubId },
     data: {
       ...(parsedPlayDate ? { play_date: parsedPlayDate } : {}),
       ...(input.title !== undefined ? { title: input.title?.trim() || null } : {}),
@@ -152,6 +164,7 @@ export async function updatePlayDate(id: string, input: { playDate?: string; tit
     },
     include: {
       play_sessions: {
+        where: { club_id: clubId },
         orderBy: [{ start_time: 'asc' }, { created_at: 'asc' }]
       }
     }
@@ -161,8 +174,9 @@ export async function updatePlayDate(id: string, input: { playDate?: string; tit
 }
 
 export async function deletePlayDate(id: string): Promise<void> {
+  const { clubId } = requireTenantContext('play_date.delete');
   const playDate = await prisma.play_dates.findUnique({
-    where: { id },
+    where: { id, club_id: clubId },
     select: { play_date: true, _count: { select: { play_sessions: true } } }
   });
   if (!playDate) throw new AppError('Không tìm thấy ngày chơi.', 404);
@@ -175,5 +189,5 @@ export async function deletePlayDate(id: string): Promise<void> {
     throw new AppError('Ngày chơi này đã có ca chơi. Vui lòng xóa hoặc điều chỉnh các ca trong ngày trước khi xóa ngày chơi.');
   }
 
-  await prisma.play_dates.delete({ where: { id } });
+  await prisma.play_dates.delete({ where: { id, club_id: clubId } });
 }

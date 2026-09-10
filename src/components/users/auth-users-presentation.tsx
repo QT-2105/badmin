@@ -13,7 +13,9 @@ import { getRoleLabel, PERMISSION_DEFINITIONS, USER_ROLES, type AuthUser, type P
 import { cn } from '@/lib/utils';
 
 export type NewAuthUserForm = {
+  username: string;
   email: string;
+  phone: string;
   displayName: string;
   password: string;
   role: UserRole;
@@ -84,6 +86,8 @@ export function AuthUsersPanelView({
   onUsersPageSizeChange,
   onUsersPageChange,
   onUserEmailBlur,
+  onUserUsernameBlur,
+  onUserPhoneBlur,
   onUserDisplayNameBlur,
   onUserRoleChange,
   onUserStatusChange,
@@ -121,6 +125,8 @@ export function AuthUsersPanelView({
   onUsersPageSizeChange: (value: PageSize) => void;
   onUsersPageChange: (page: number) => void;
   onUserEmailBlur: (user: AuthUserRow, value: string) => void;
+  onUserUsernameBlur: (user: AuthUserRow, value: string) => void;
+  onUserPhoneBlur: (user: AuthUserRow, value: string) => void;
   onUserDisplayNameBlur: (user: AuthUserRow, value: string) => void;
   onUserRoleChange: (user: AuthUserRow, value: UserRole) => void;
   onUserStatusChange: (user: AuthUserRow, value: UserStatus) => void;
@@ -159,6 +165,8 @@ export function AuthUsersPanelView({
         onUsersPageSizeChange={onUsersPageSizeChange}
         onUsersPageChange={onUsersPageChange}
         onUserEmailBlur={onUserEmailBlur}
+        onUserUsernameBlur={onUserUsernameBlur}
+        onUserPhoneBlur={onUserPhoneBlur}
         onUserDisplayNameBlur={onUserDisplayNameBlur}
         onUserRoleChange={onUserRoleChange}
         onUserStatusChange={onUserStatusChange}
@@ -269,22 +277,41 @@ function CreateUserSection({
             </StatusBadge>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(190px,1.15fr)_minmax(180px,1fr)_minmax(180px,0.9fr)_150px_auto] lg:items-start">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:items-start">
             <label className="block">
               <span className={cn(formLabelClass, 'flex items-center gap-1')}>
-                Tên đăng nhập
-                <RequiredMark />
+                Username
               </span>
               <Input
                 type="text"
                 autoComplete="username"
+                value={newUser.username}
+                onChange={(event) => onNewUserChange({ ...newUser, username: event.target.value })}
+                className={formInputClass}
+                placeholder="operator01"
+                aria-describedby="create-user-username-hint"
+              />
+              <FieldHint id="create-user-username-hint">Ít nhất một trong username, email hoặc SĐT.</FieldHint>
+            </label>
+            <label className="block">
+              <span className={formLabelClass}>Email</span>
+              <Input
+                type="email"
                 value={newUser.email}
                 onChange={(event) => onNewUserChange({ ...newUser, email: event.target.value })}
                 className={formInputClass}
-                placeholder="operator01"
-                aria-describedby="create-user-email-hint"
+                placeholder="user@example.com"
               />
-              <FieldHint id="create-user-email-hint">Dùng để đăng nhập. Không tự động thêm đuôi email.</FieldHint>
+            </label>
+            <label className="block">
+              <span className={formLabelClass}>Số điện thoại</span>
+              <Input
+                type="tel"
+                value={newUser.phone}
+                onChange={(event) => onNewUserChange({ ...newUser, phone: event.target.value })}
+                className={formInputClass}
+                placeholder="0912 345 678"
+              />
             </label>
             <label className="block">
               <span className={cn(formLabelClass, 'flex items-center gap-1')}>
@@ -336,7 +363,7 @@ function CreateUserSection({
               type="button"
               onClick={onCreateUser}
               disabled={createUserPending}
-              className="h-11 w-full rounded-xl whitespace-nowrap sm:w-fit lg:mt-6"
+              className="h-11 w-full rounded-xl whitespace-nowrap sm:w-fit xl:mt-6"
               aria-label="Tạo tài khoản nội bộ"
             >
               {createUserPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
@@ -366,7 +393,9 @@ function UsersListSection({
   updateUserError,
   onUsersPageSizeChange,
   onUsersPageChange,
+  onUserUsernameBlur,
   onUserEmailBlur,
+  onUserPhoneBlur,
   onUserDisplayNameBlur,
   onUserRoleChange,
   onUserStatusChange,
@@ -384,7 +413,9 @@ function UsersListSection({
   updateUserError: string | null;
   onUsersPageSizeChange: (value: PageSize) => void;
   onUsersPageChange: (page: number) => void;
+  onUserUsernameBlur: (user: AuthUserRow, value: string) => void;
   onUserEmailBlur: (user: AuthUserRow, value: string) => void;
+  onUserPhoneBlur: (user: AuthUserRow, value: string) => void;
   onUserDisplayNameBlur: (user: AuthUserRow, value: string) => void;
   onUserRoleChange: (user: AuthUserRow, value: UserRole) => void;
   onUserStatusChange: (user: AuthUserRow, value: UserStatus) => void;
@@ -411,9 +442,9 @@ function UsersListSection({
         )}
       >
         <div className="operational-x-scroll max-h-[440px] overflow-auto overscroll-x-contain rounded-xl border border-border bg-background" aria-label="Danh sách tài khoản nội bộ">
-          <div className="min-w-[1020px]" role="table" aria-rowcount={visibleUsers.length + 1}>
-            <div className="sticky top-0 z-10 grid grid-cols-[minmax(210px,1.15fr)_minmax(170px,0.9fr)_150px_145px_150px_minmax(240px,1.2fr)] items-center gap-3 border-b border-border bg-surface-muted px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground shadow-subtle" role="row">
-              <div role="columnheader">Tài khoản</div>
+          <div className="min-w-[1120px]" role="table" aria-rowcount={visibleUsers.length + 1}>
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(300px,1.35fr)_minmax(170px,0.9fr)_150px_145px_150px_minmax(240px,1.2fr)] items-center gap-3 border-b border-border bg-surface-muted px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground shadow-subtle" role="row">
+              <div role="columnheader">Định danh đăng nhập</div>
               <div role="columnheader">Tên hiển thị</div>
               <div role="columnheader">Hoạt động</div>
               <div role="columnheader">Vai trò</div>
@@ -425,19 +456,37 @@ function UsersListSection({
               return (
                 <article
                   key={user.id}
-                  className="grid grid-cols-[minmax(210px,1.15fr)_minmax(170px,0.9fr)_150px_145px_150px_minmax(240px,1.2fr)] items-center gap-3 border-b border-border px-3 py-2.5 text-sm transition-colors last:border-b-0 hover:bg-surface-muted/70 focus-within:bg-surface-muted/70 motion-reduce:transition-none"
+                  className="grid grid-cols-[minmax(300px,1.35fr)_minmax(170px,0.9fr)_150px_145px_150px_minmax(240px,1.2fr)] items-center gap-3 border-b border-border px-3 py-2.5 text-sm transition-colors last:border-b-0 hover:bg-surface-muted/70 focus-within:bg-surface-muted/70 motion-reduce:transition-none"
                   role="row"
-                  aria-label={`Tài khoản ${user.displayName || user.email}`}
+                  aria-label={`Tài khoản ${user.displayName || user.username || user.email || user.phone || ''}`}
                 >
-                  <div className="flex min-w-0 items-center gap-2" role="cell">
-                    <UserInitialsAvatar displayName={user.displayName} email={user.email} />
-                    <Input
-                      defaultValue={user.email}
-                      onBlur={(event) => onUserEmailBlur(user, event.target.value)}
-                      className={`${formInputClass} h-9 min-w-0 font-semibold`}
-                      aria-label="Tên đăng nhập"
-                      title={user.email}
-                    />
+                  <div className="flex min-w-0 items-start gap-2" role="cell">
+                    <UserInitialsAvatar displayName={user.displayName} identifier={user.username || user.email || user.phone || ''} />
+                    <div className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
+                      <Input
+                        defaultValue={user.username ?? ''}
+                        onBlur={(event) => onUserUsernameBlur(user, event.target.value)}
+                        className={`${formInputClass} h-9 min-w-0 font-semibold`}
+                        aria-label="Username"
+                        placeholder="Username"
+                      />
+                      <Input
+                        type="email"
+                        defaultValue={user.email ?? ''}
+                        onBlur={(event) => onUserEmailBlur(user, event.target.value)}
+                        className={`${formInputClass} h-9 min-w-0`}
+                        aria-label="Email"
+                        placeholder="Email"
+                      />
+                      <Input
+                        type="tel"
+                        defaultValue={user.phone ?? ''}
+                        onBlur={(event) => onUserPhoneBlur(user, event.target.value)}
+                        className={`${formInputClass} h-9 min-w-0`}
+                        aria-label="Số điện thoại"
+                        placeholder="SĐT"
+                      />
+                    </div>
                   </div>
                   <div role="cell">
                     <Input
@@ -499,7 +548,7 @@ function UsersListSection({
                       onChange={(event) => onUserPasswordChange(user.id, event.target.value)}
                       className={`${formInputClass} h-9 min-w-0 flex-1`}
                       placeholder="Mật khẩu mới"
-                      aria-label={`Mật khẩu mới cho ${user.displayName || user.email}`}
+                      aria-label={`Mật khẩu mới cho ${user.displayName || user.username || user.email || user.phone || ''}`}
                     />
                     <Button
                       type="button"
@@ -508,7 +557,7 @@ function UsersListSection({
                       variant="secondary"
                       size="sm"
                       className="h-9 shrink-0 px-2.5 text-xs whitespace-nowrap"
-                      aria-label={`Lưu mật khẩu mới cho ${user.displayName || user.email}`}
+                      aria-label={`Lưu mật khẩu mới cho ${user.displayName || user.username || user.email || user.phone || ''}`}
                     >
                       {updateUserPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
                       Lưu
@@ -776,19 +825,19 @@ function countSelectedPermissions(
   return items.filter((item) => selectedPermissions.includes(item.key)).length;
 }
 
-function UserInitialsAvatar({ displayName, email }: { displayName: string; email: string }) {
+function UserInitialsAvatar({ displayName, identifier }: { displayName: string; identifier: string }) {
   return (
     <div
       aria-hidden="true"
       className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary-soft text-xs font-bold uppercase text-primary"
     >
-      {getUserInitials(displayName, email)}
+      {getUserInitials(displayName, identifier)}
     </div>
   );
 }
 
-function getUserInitials(displayName: string, email: string): string {
-  const source = displayName.trim() || email.trim();
+function getUserInitials(displayName: string, identifier: string): string {
+  const source = displayName.trim() || identifier.trim();
   if (!source) return 'U';
   const parts = source.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();

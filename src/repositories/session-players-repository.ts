@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
 import { normalizePlayerTags, type PlayerTag } from '@/lib/player-tags';
 import type { SessionPlayerSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -46,9 +47,11 @@ function runtimeTeamContainsPlayer(value: unknown, playerId: string): boolean {
 }
 
 async function getArrivalBaseline(sessionId: string, excludedPlayerId?: string): Promise<number> {
+  const { clubId } = requireTenantContext('session_player.arrival_baseline');
   const peers = await prisma.session_players.findMany({
     where: {
       session_id: sessionId,
+      club_id: clubId,
       ...(excludedPlayerId ? { id: { not: excludedPlayerId } } : {})
     },
     select: { total_matches: true, fairness_offset: true, player_tags: true }
@@ -129,12 +132,13 @@ function mapPlayer(row: {
 }
 
 async function refreshSessionPlayerCount(sessionId: string): Promise<void> {
-  const totalPlayers = await prisma.session_players.count({ where: { session_id: sessionId } });
-  const existing = await prisma.session_summaries.findFirst({ where: { session_id: sessionId } });
+  const { clubId } = requireTenantContext('session_summary.refresh');
+  const totalPlayers = await prisma.session_players.count({ where: { session_id: sessionId, club_id: clubId } });
+  const existing = await prisma.session_summaries.findFirst({ where: { session_id: sessionId, club_id: clubId } });
 
   if (existing) {
     await prisma.session_summaries.update({
-      where: { id: existing.id },
+      where: { id: existing.id, club_id: clubId },
       data: { total_players: totalPlayers }
     });
     return;
@@ -142,6 +146,7 @@ async function refreshSessionPlayerCount(sessionId: string): Promise<void> {
 
   await prisma.session_summaries.create({
     data: {
+      club_id: clubId,
       session_id: sessionId,
       total_players: totalPlayers
     }
@@ -149,8 +154,14 @@ async function refreshSessionPlayerCount(sessionId: string): Promise<void> {
 }
 
 export async function listSessionPlayers(sessionId: string): Promise<SessionPlayerSummary[]> {
+  const { clubId } = requireTenantContext('session_player.list');
+  const session = await prisma.play_sessions.findFirst({
+    where: { id: sessionId, club_id: clubId },
+    select: { id: true }
+  });
+  if (!session) throw new AppError('Không tìm thấy ca chơi.', 404);
   const rows = await prisma.session_players.findMany({
-    where: { session_id: sessionId },
+    where: { session_id: sessionId, club_id: clubId },
     orderBy: [{ joined_at: 'asc' }, { full_name: 'asc' }]
   });
 
@@ -184,6 +195,13 @@ export async function createSessionPlayer(input: {
   if (Number(input.paymentAmount ?? 0) < 0) throw new AppError('Phí người chơi không được âm.');
   if (Number(input.discount ?? 0) < 0) throw new AppError('Giảm giá không được âm.');
 
+  const { clubId } = requireTenantContext('session_player.create');
+  const session = await prisma.play_sessions.findFirst({
+    where: { id: input.sessionId, club_id: clubId },
+    select: { id: true }
+  });
+  if (!session) throw new AppError('Không tìm thấy ca chơi.', 404);
+
   const now = new Date();
   const playerTags = normalizePlayerTags(input.playerTags);
   const arrived = playerTags.includes('ARRIVED');
@@ -192,9 +210,9 @@ export async function createSessionPlayer(input: {
   const arrivalBaseline = input.arrivalBaselineMatches === undefined && arrived
     ? await getArrivalBaseline(input.sessionId)
     : input.arrivalBaselineMatches;
-
   const row = await prisma.session_players.create({
     data: {
+      club_id: clubId,
       session_id: input.sessionId,
       full_name: input.fullName.trim(),
       gender: input.gender?.trim() || null,
@@ -247,7 +265,8 @@ export async function updateSessionPlayer(playerId: string, input: {
   endGameAt?: string | number | Date | null;
   endGameAfterMatch?: boolean;
 }): Promise<SessionPlayerSummary> {
-  const existing = await prisma.session_players.findUnique({ where: { id: playerId } });
+  const { clubId } = requireTenantContext('session_player.update');
+  const existing = await prisma.session_players.findUnique({ where: { id: playerId, club_id: clubId } });
   if (!existing) {
     throw new AppError('Không tìm thấy người chơi.', 404);
   }
@@ -260,6 +279,7 @@ export async function updateSessionPlayer(playerId: string, input: {
     const partner = await prisma.session_players.findFirst({
       where: {
         session_id: existing.session_id,
+        club_id: clubId,
         couple_number: existing.couple_number,
         id: { not: existing.id }
       },
@@ -326,7 +346,7 @@ export async function updateSessionPlayer(playerId: string, input: {
   };
 
   const row = await prisma.session_players.update({
-    where: { id: playerId },
+    where: { id: playerId, club_id: clubId },
     data: {
       ...(input.fullName !== undefined ? { full_name: input.fullName.trim() || existing.full_name } : {}),
       ...(input.gender !== undefined ? { gender: input.gender?.trim() || null } : {}),
@@ -355,9 +375,10 @@ export async function updateSessionPlayer(playerId: string, input: {
 }
 
 export async function deleteSessionPlayer(playerId: string): Promise<void> {
-  const existing = await prisma.session_players.findUnique({ where: { id: playerId } });
+  const { clubId } = requireTenantContext('session_player.delete');
+  const existing = await prisma.session_players.findUnique({ where: { id: playerId, club_id: clubId } });
   if (!existing) {
-    return;
+    throw new AppError('Không tìm thấy người chơi.', 404);
   }
 
   await prisma.$transaction(async (tx) => {
@@ -368,7 +389,7 @@ export async function deleteSessionPlayer(playerId: string): Promise<void> {
       throw new AppError(`Hãy gỡ Couple_${existing.couple_number} trước khi xóa người chơi.`, 409);
     }
     const runtimeMatches = await tx.runtime_matches.findMany({
-      where: { session_id: existing.session_id },
+      where: { session_id: existing.session_id, club_id: clubId },
       select: { team_a: true, team_b: true, queue_order: true, court_number: true }
     });
     const referencedMatch = runtimeMatches.find((match) => (
@@ -380,7 +401,7 @@ export async function deleteSessionPlayer(playerId: string): Promise<void> {
         : `Gợi ý #${referencedMatch.queue_order ?? '?'}`;
       throw new AppError(`Không thể xóa người chơi đang nằm trong ${location}.`, 409);
     }
-    await tx.session_players.delete({ where: { id: playerId } });
+    await tx.session_players.delete({ where: { id: playerId, club_id: clubId } });
   });
   await refreshSessionPlayerCount(existing.session_id);
 }

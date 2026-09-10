@@ -6,18 +6,21 @@ import {
   updateBrandingName,
   uploadBrandingLogo
 } from '@/services/branding-service';
+import { tenantQueryKey, useTenantRoute } from '@/components/tenant/tenant-app-provider';
 
 export function useBranding() {
+  const { clubId } = useTenantRoute();
   return useQuery({
-    queryKey: ['settings', 'branding'],
+    queryKey: tenantQueryKey(clubId, 'settings', 'branding'),
     queryFn: ({ signal }) => fetchBranding(signal)
   });
 }
 
 export function useBrandingMutations() {
+  const { clubId } = useTenantRoute();
   const queryClient = useQueryClient();
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['settings', 'branding'] });
+    await queryClient.invalidateQueries({ queryKey: tenantQueryKey(clubId, 'settings', 'branding') });
   };
 
   return {

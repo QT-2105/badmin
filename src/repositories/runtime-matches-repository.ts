@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import type { RuntimeMatch } from '@/types/runtime';
 import { resolveRuntimeSessionId } from './runtime-session-repository';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function parseDateValue(value: unknown): number | null {
   if (!value) return null;
@@ -45,9 +46,10 @@ function parseTeam(value: Prisma.JsonValue): string[] {
 export async function listRuntimeMatches(sessionId?: string): Promise<RuntimeMatch[]> {
   const resolvedSessionId = await resolveRuntimeSessionId(sessionId);
   if (!resolvedSessionId) return [];
+  const { clubId } = requireTenantContext('runtime_match.list');
 
   const rows = await prisma.runtime_matches.findMany({
-    where: { session_id: resolvedSessionId },
+    where: { session_id: resolvedSessionId, club_id: clubId },
     orderBy: [{ queue_order: 'asc' }, { created_at: 'asc' }]
   });
 

@@ -6,18 +6,15 @@ export type UserStatus = (typeof USER_STATUSES)[number];
 
 export type AuthUser = {
   id: string;
-  email: string;
+  clubId: string;
+  username: string | null;
+  email: string | null;
+  phone: string | null;
   displayName: string;
   role: UserRole;
   status: UserStatus;
   permissions?: PermissionKey[];
-};
-
-const ROLE_RANK: Record<UserRole, number> = {
-  OWNER: 4,
-  MANAGER: 3,
-  OPERATOR: 2,
-  VIEWER: 1
+  entitlement?: EffectiveEntitlement;
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -107,11 +104,6 @@ export function hasAnyRole(user: AuthUser | null, roles: UserRole[]): boolean {
   return roles.includes(user.role);
 }
 
-export function hasMinimumRole(user: AuthUser | null, role: UserRole): boolean {
-  if (!user || user.status !== 'ACTIVE') return false;
-  return ROLE_RANK[user.role] >= ROLE_RANK[role];
-}
-
 export const ROUTE_PERMISSION_RULES: Array<{ prefix: string; permission: PermissionKey }> = [
   { prefix: '/users', permission: 'users.manage' },
   { prefix: '/settings', permission: 'settings.manage' },
@@ -122,6 +114,19 @@ export const ROUTE_PERMISSION_RULES: Array<{ prefix: string; permission: Permiss
   { prefix: '/dashboard', permission: 'dashboard.view' }
 ];
 
-export function getRoutePermission(pathname: string): PermissionKey {
-  return ROUTE_PERMISSION_RULES.find((rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`))?.permission ?? 'dashboard.view';
+const TENANT_PAGE_ROOTS = new Set(ROUTE_PERMISSION_RULES.map(({ prefix }) => prefix.slice(1)));
+
+export function normalizePermissionPathname(pathname: string): string {
+  const normalized = `/${pathname.split('?')[0].split('#')[0].split('/').filter(Boolean).join('/')}`;
+  const segments = normalized.split('/').filter(Boolean);
+  if (segments.length >= 2 && !TENANT_PAGE_ROOTS.has(segments[0]) && TENANT_PAGE_ROOTS.has(segments[1])) {
+    return `/${segments.slice(1).join('/')}`;
+  }
+  return normalized;
 }
+
+export function getRoutePermission(pathname: string): PermissionKey {
+  const permissionPath = normalizePermissionPathname(pathname);
+  return ROUTE_PERMISSION_RULES.find((rule) => permissionPath === rule.prefix || permissionPath.startsWith(`${rule.prefix}/`))?.permission ?? 'dashboard.view';
+}
+import type { EffectiveEntitlement } from '@/lib/entitlements/types';

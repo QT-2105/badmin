@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { AlertCircle, Check, ChevronDown, ImageUp, Loader2, Pencil, Play, Plus, Save, Square, Trash2, X } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 
 import { PlayerFeeInput } from '@/components/player/player-fee-input';
+import { TenantLink as Link } from '@/components/tenant/tenant-link';
 import { PlayerAvatar } from '@/components/player/player-avatar';
 import { PlayerQuickView, type QuickViewPlayer } from '@/components/player/player-quick-view';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export function SessionDetailClient({ sessionId }: { sessionId: string }) {
   const { data: session, isLoading, error } = usePlaySession(sessionId);
   const { data: currentUser } = useCurrentUser();
   const { data: players = [], isLoading: playersLoading, error: playersError } = useSessionPlayers(sessionId);
-  const { data: shuttlecockProducts = [] } = useShuttlecockProductOptions();
+  const { data: shuttlecockProducts = [] } = useShuttlecockProductOptions(sessionId);
   const { settings } = useAppSettings();
   const { createPlayer, updatePlayer, deletePlayer, uploadAvatar, deleteAvatar } = useSessionPlayerMutations(sessionId);
   const { updatePlaySession, completePlaySession } = useScheduleMutations(session?.playDateId);

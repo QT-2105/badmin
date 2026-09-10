@@ -1,66 +1,59 @@
 # Badmin
 
-Mobile-first badminton group management workspace for real-time court arrangement, player rotation, finance tracking, and offline-first session operations.
+Badmin is a Next.js/TypeScript operations platform for realtime badminton sessions. It combines touch-first court orchestration, session-scoped players, lightweight finance, shuttlecock inventory, authentication, and permission-guarded administration.
+
+## Current product surface
+
+- Dashboard
+- Lịch chơi
+- Thu chi
+- Kho cầu
+- Người dùng
+- Cài đặt
+- Contextual runtime at `/sessions/[sessionId]/runtime`
+
+The Play Session is the operational boundary. Zustand owns immediate runtime responsiveness; PostgreSQL/Prisma stores durable current-state snapshots and recovery data.
 
 ## Stack
 
-- Next.js 15 App Router
+- Next.js 15 App Router and React 19
 - TypeScript
+- Zustand and TanStack Query
+- Prisma with Neon PostgreSQL
 - Tailwind CSS
-- shadcn/ui-style primitives
-- Zustand
-- Framer Motion
-- TanStack Query
-- Supabase
-- PostgreSQL
-- Prisma
-- PWA/offline sync foundation
+- Vitest and ESLint
+- S3-compatible object storage for branding, QR, and player images
 
-## What this scaffold includes
+## Local setup
 
-- Mobile-first dashboard shell for court operations
-- Shared UI primitives for button and badge states
-- Dark operational design language
-- Prisma schema for users, players, sessions, courts, matches, pairings, attendance, transactions, expenses, tags, relationships, rotation history, and sync queue
-- Supabase and Prisma client helpers
-- Environment variable template
+1. Install dependencies with `npm ci`.
+2. Copy `.env.example` to `.env` and use development/beta credentials only.
+3. Generate Prisma Client with `npm run prisma:generate`.
+4. Apply reviewed SQL from `prisma/manual-migrations` only when the owner has approved the target database and migration.
+5. Start with `npm run dev`.
 
-## Getting started
+Never point a development workspace at the production database. Do not run `prisma migrate dev`, `prisma migrate deploy`, or `prisma db push` against shared/production data without explicit owner approval.
 
-1. Install dependencies.
-2. Copy `.env.example` to `.env.local` and fill in the values.
-3. Run Prisma generate and your database migration.
-4. Start the app in development mode.
+## Quality commands
 
 ```bash
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run dev
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npm run guard:no-db-schema-automation
+git diff --check
 ```
 
-## Scripts
+## Governance
 
-- `npm run dev` - start the app locally
-- `npm run build` - build for production
-- `npm run start` - start the production build
-- `npm run lint` - run ESLint
-- `npm run typecheck` - run TypeScript checks
-- `npm run prisma:generate` - generate Prisma client
-- `npm run prisma:migrate` - create and apply a Prisma migration
-- `npm run prisma:studio` - open Prisma Studio
+Read [AGENTS.md](./AGENTS.md), [docs/README.md](./docs/README.md), the canonical files under `docs/`, and all files under `rules/` before architecture-sensitive work.
 
-## Workspace structure
-
-- `src/app` - App Router entry points and global layout
-- `src/components/ui` - UI primitives
-- `src/lib` - shared utilities, env, Prisma, and Supabase helpers
-- `prisma/schema.prisma` - database schema
-
-## Next steps
-
-- Add auth routes for email/password and Google login
-- Add offline queue persistence with IndexedDB
-- Build court arrangement and rotation workflows
-- Wire session and finance mutations to Supabase/Postgres
-- Add background sync and conflict resolution
+- `docs/architecture.md`, `multi-tenant.md`, `runtime.md`,
+  `data-and-operations.md`, `ui-ux.md`, `governance.md`, and `readiness.md`:
+  current contracts and the explicitly marked Multi-Tenant target
+- removed UI stage/sprint records: historical Git evidence only
+- `rules/**`: machine-readable constraints
+- `prompts/**`: reusable workflows aligned with current governance
+- `prisma/schema.prisma`: application datamodel
+- `prisma/manual-migrations/**`: owner-reviewed SQL history

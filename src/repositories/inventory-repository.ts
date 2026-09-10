@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
 import type { ShuttlecockMovementSummary, ShuttlecockProductOption, ShuttlecockProductSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
+import { lockShuttlecockProduct } from '@/repositories/transaction-locks';
 
 type ShuttlecockMovementType = 'IMPORT' | 'SALE' | 'PLAY_USAGE' | 'ADJUSTMENT' | 'OTHER';
 
@@ -106,8 +108,10 @@ function mapProduct(row: {
 }
 
 export async function listShuttlecockProducts(): Promise<ShuttlecockProductSummary[]> {
+  const { clubId } = requireTenantContext('inventory.product.list');
   const rows = await prisma.shuttlecock_products.findMany({
-    include: { shuttlecock_inventory: true, shuttlecock_movements: true },
+    where: { club_id: clubId },
+    include: { shuttlecock_inventory: true, shuttlecock_movements: { where: { club_id: clubId } } },
     orderBy: [{ created_at: 'desc' }]
   });
 
@@ -115,8 +119,9 @@ export async function listShuttlecockProducts(): Promise<ShuttlecockProductSumma
 }
 
 export async function listShuttlecockProductOptions(): Promise<ShuttlecockProductOption[]> {
+  const { clubId } = requireTenantContext('inventory.product.options');
   const rows = await prisma.shuttlecock_products.findMany({
-    where: { status: 'ACTIVE' },
+    where: { status: 'ACTIVE', club_id: clubId },
     select: {
       id: true,
       name: true,
@@ -146,9 +151,11 @@ export async function createShuttlecockProduct(input: {
 }): Promise<ShuttlecockProductSummary> {
   if (!input.name?.trim()) throw new AppError('Vui lòng nhập tên loại cầu.');
   if (Number(input.ballsPerTube ?? 12) < 1) throw new AppError('Số quả/ống phải lớn hơn 0.');
+  const { clubId } = requireTenantContext('inventory.product.create');
 
   const row = await prisma.shuttlecock_products.create({
     data: {
+      club_id: clubId,
       name: input.name.trim(),
       brand: input.brand?.trim() || null,
       balls_per_tube: Math.max(1, Math.floor(Number(input.ballsPerTube ?? 12))),
@@ -176,43 +183,51 @@ export async function updateShuttlecockProduct(productId: string, input: {
   if (input.name !== undefined && !input.name.trim()) throw new AppError('Tên loại cầu không được bỏ trống.');
   if (input.ballsPerTube !== undefined && Number(input.ballsPerTube) < 1) throw new AppError('Số quả/ống phải lớn hơn 0.');
 
-  if (input.ballsPerTube !== undefined) {
-    const existing = await prisma.shuttlecock_products.findUnique({
-      where: { id: productId },
-      include: { shuttlecock_inventory: true, _count: { select: { shuttlecock_movements: true } } }
+  const { clubId } = requireTenantContext('inventory.product.update');
+  const row = await prisma.$transaction(async (tx) => {
+    await lockShuttlecockProduct(tx, clubId, productId);
+    const existing = await tx.shuttlecock_products.findUnique({
+      where: { id: productId, club_id: clubId },
+      include: { shuttlecock_inventory: true, _count: { select: { shuttlecock_movements: { where: { club_id: clubId } } } } }
     });
-    if (!existing) throw new Error('Không tìm thấy loại cầu');
-    const nextBallsPerTube = Math.max(1, Math.floor(input.ballsPerTube));
-    if (nextBallsPerTube !== existing.balls_per_tube && ((existing.shuttlecock_inventory?.quantity_ball ?? 0) > 0 || existing._count.shuttlecock_movements > 0)) {
-      throw new Error('Không thể đổi số quả/ống khi loại cầu đã có tồn kho hoặc lịch sử nhập xuất');
+    if (!existing) throw new AppError('Không tìm thấy loại cầu', 404);
+    if (input.ballsPerTube !== undefined) {
+      const nextBallsPerTube = Math.max(1, Math.floor(input.ballsPerTube));
+      if (nextBallsPerTube !== existing.balls_per_tube && ((existing.shuttlecock_inventory?.quantity_ball ?? 0) > 0 || existing._count.shuttlecock_movements > 0)) {
+        throw new Error('Không thể đổi số quả/ống khi loại cầu đã có tồn kho hoặc lịch sử nhập xuất');
+      }
     }
-  }
 
-  const row = await prisma.shuttlecock_products.update({
-    where: { id: productId },
-    data: {
-      ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-      ...(input.brand !== undefined ? { brand: input.brand?.trim() || null } : {}),
-      ...(input.ballsPerTube !== undefined ? { balls_per_tube: Math.max(1, Math.floor(input.ballsPerTube)) } : {}),
-      ...(input.status !== undefined ? { status: input.status } : {}),
-      updated_at: new Date()
-    },
-    include: { shuttlecock_inventory: true, shuttlecock_movements: true }
+    return tx.shuttlecock_products.update({
+      where: { id: productId, club_id: clubId },
+      data: {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.brand !== undefined ? { brand: input.brand?.trim() || null } : {}),
+        ...(input.ballsPerTube !== undefined ? { balls_per_tube: Math.max(1, Math.floor(input.ballsPerTube)) } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        updated_at: new Date()
+      },
+      include: { shuttlecock_inventory: true, shuttlecock_movements: { where: { club_id: clubId } } }
+    });
   });
   return mapProduct(row);
 }
 
 export async function deleteShuttlecockProduct(productId: string): Promise<void> {
-  const movements = await prisma.shuttlecock_movements.count({ where: { shuttlecock_product_id: productId } });
-  if (movements > 0) throw new Error('Không thể xóa loại cầu đã có lịch sử nhập xuất');
-  await prisma.$transaction([
-    prisma.shuttlecock_inventory.deleteMany({ where: { shuttlecock_product_id: productId } }),
-    prisma.shuttlecock_products.delete({ where: { id: productId } })
-  ]);
+  const { clubId } = requireTenantContext('inventory.product.delete');
+  await prisma.$transaction(async (tx) => {
+    await lockShuttlecockProduct(tx, clubId, productId);
+    const movements = await tx.shuttlecock_movements.count({ where: { shuttlecock_product_id: productId, club_id: clubId } });
+    if (movements > 0) throw new Error('Không thể xóa loại cầu đã có lịch sử nhập xuất');
+    await tx.shuttlecock_inventory.deleteMany({ where: { shuttlecock_product_id: productId, club_id: clubId } });
+    await tx.shuttlecock_products.delete({ where: { id: productId, club_id: clubId } });
+  });
 }
 
 export async function listShuttlecockMovements(): Promise<ShuttlecockMovementSummary[]> {
+  const { clubId } = requireTenantContext('inventory.movement.list');
   const rows = await prisma.shuttlecock_movements.findMany({
+    where: { club_id: clubId },
     include: { shuttlecock_products: true },
     orderBy: [{ created_at: 'desc' }]
   });
@@ -247,16 +262,19 @@ export async function createShuttlecockMovement(input: {
 }): Promise<void> {
   const movementType = normalizeMovementType(input.movementType);
   if (!input.title?.trim()) throw new AppError('Vui lòng nhập tiêu đề phiếu kho.');
+  const { clubId } = requireTenantContext('inventory.movement.create');
 
   await prisma.$transaction(async (tx) => {
+    await lockShuttlecockProduct(tx, clubId, input.productId);
     const product = await tx.shuttlecock_products.findUnique({
-      where: { id: input.productId },
+      where: { id: input.productId, club_id: clubId },
       include: { shuttlecock_inventory: true }
     });
     if (!product) throw new Error('Không tìm thấy loại cầu');
 
     const inventory = product.shuttlecock_inventory ?? await tx.shuttlecock_inventory.create({
       data: {
+        club_id: clubId,
         shuttlecock_product_id: product.id,
         quantity_ball: 0,
         avg_cost_per_ball: 0,
@@ -338,6 +356,7 @@ export async function createShuttlecockMovement(input: {
 
     await tx.shuttlecock_movements.create({
       data: {
+        club_id: clubId,
         shuttlecock_product_id: input.productId,
         movement_type: movementType,
         quantity_ball: quantityBall,
@@ -350,7 +369,12 @@ export async function createShuttlecockMovement(input: {
     });
 
     await tx.shuttlecock_inventory.update({
-      where: { shuttlecock_product_id: input.productId },
+      where: {
+        club_id_shuttlecock_product_id: {
+          club_id: clubId,
+          shuttlecock_product_id: input.productId
+        }
+      },
       data: {
         quantity_ball: nextQuantity,
         avg_cost_per_ball: nextAvgCost,

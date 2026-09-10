@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/app-error';
 import { getSignedAmount, normalizeAdjustmentType } from '@/lib/finance-calculation';
 import type { SessionTransactionSummary } from '@/types/domain';
+import { requireTenantContext } from '@/lib/tenant-context';
 
 function toNumber(value: unknown): number {
   return Number(value ?? 0);
@@ -40,7 +41,8 @@ function mapTransaction(row: {
 }
 
 async function refreshSessionFinance(sessionId: string): Promise<void> {
-  const rows = await prisma.session_transactions.findMany({ where: { session_id: sessionId } });
+  const { clubId } = requireTenantContext('finance.session.refresh');
+  const rows = await prisma.session_transactions.findMany({ where: { session_id: sessionId, club_id: clubId } });
   const totals = rows.reduce(
     (acc, row) => {
       const amount = getSignedAmount(row.total_amount, row.adjustment_type);
@@ -52,7 +54,7 @@ async function refreshSessionFinance(sessionId: string): Promise<void> {
   );
 
   await prisma.play_sessions.update({
-    where: { id: sessionId },
+    where: { id: sessionId, club_id: clubId },
     data: {
       total_income: totals.income,
       total_expense: totals.expense,
@@ -67,8 +69,10 @@ export async function listSessionTransactions(options?: {
   from?: Date;
   to?: Date;
 }): Promise<SessionTransactionSummary[]> {
+  const { clubId } = requireTenantContext('finance.transaction.list');
   const rows = await prisma.session_transactions.findMany({
     where: {
+      club_id: clubId,
       ...(options?.sessionId ? { session_id: options.sessionId } : {}),
       ...(options?.from || options?.to ? { created_at: { ...(options.from ? { gte: options.from } : {}), ...(options.to ? { lt: options.to } : {}) } } : {})
     },
@@ -101,9 +105,18 @@ export async function createSessionTransaction(input: {
   if (!Number.isFinite(quantity) || quantity <= 0) throw new AppError('Số lượng phải lớn hơn 0.');
   if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new AppError('Đơn giá không được âm.');
   if (!Number.isFinite(totalAmount) || totalAmount < 0) throw new AppError('Tổng tiền không được âm.');
+  const { clubId } = requireTenantContext('finance.transaction.create');
+  if (input.sessionId) {
+    const session = await prisma.play_sessions.findUnique({
+      where: { id: input.sessionId, club_id: clubId },
+      select: { id: true }
+    });
+    if (!session) throw new AppError('Không tìm thấy ca chơi.', 404);
+  }
 
   const row = await prisma.session_transactions.create({
     data: {
+      club_id: clubId,
       session_id: input.sessionId || null,
       transaction_type: input.transactionType,
       adjustment_type: adjustmentType,

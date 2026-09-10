@@ -15,12 +15,6 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function fetchSessionCouples(sessionId: string, signal?: AbortSignal): Promise<SessionCoupleSummary[]> {
-  const response = await fetch(`/api/sessions/${sessionId}/couples`, { cache: 'no-store', signal });
-  const payload = await readJson<{ couples: SessionCoupleSummary[] }>(response, 'Không thể tải danh sách Couple');
-  return payload.couples;
-}
-
 export async function createSessionCouple(sessionId: string, payload: SessionCouplePayload): Promise<SessionCoupleSummary> {
   const response = await fetch(`/api/sessions/${sessionId}/couples`, {
     method: 'POST',

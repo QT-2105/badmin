@@ -1,6 +1,6 @@
 # BADMIN — AI GOVERNANCE ENTRYPOINT
 
-Version: 2026-08-13
+Version: 2026-08-25
 
 ## Required Reading
 
@@ -13,8 +13,13 @@ Before implementing any feature, refactor, migration, optimization, or architect
 5. Preserve protected runtime systems
 6. Preserve tablet/mobile-first UX
 7. Preserve current-state runtime architecture
+8. Confirm the intended database environment before any DB-sensitive command
 
 This project is still evolving. AI models must infer intent from the real implementation, preserve working behavior, and avoid unnecessary rewrites.
+
+Current authority lives in this file, `docs/README.md`, the canonical
+documents linked there, `rules/*`, and working source. Removed UI
+stage/sprint records are historical Git evidence only.
 
 ## Project Identity
 
@@ -25,6 +30,8 @@ Badmin is:
 - touch-first tablet/mobile runtime
 - lightweight finance and shuttlecock inventory
 - current-state persistence for recovery and synchronization
+- the existing implementation base for an approved, incremental Multi-Tenant
+  SaaS Tenant Application
 
 Badmin is not:
 
@@ -49,13 +56,17 @@ The root sidebar contains only:
 - Người dùng
 - Cài đặt
 
-`Người dùng` is an existing administrator-facing user and permission management capability. It must remain permission-guarded and must not change authentication, authorization, role, permission, or route-guard semantics.
+`Người dùng` is an existing administrator-facing user and permission management capability. It must remain permission-guarded. The approved Multi-Tenant migration may tenant-scope authentication, users, permissions, and routes only through the reviewed phases in `docs/multi-tenant.md`; current role values and access semantics remain protected.
 
 Realtime scheduling is not root navigation.
 
 The runtime route is:
 
 `/sessions/[sessionId]/runtime`
+
+The approved target route is `/{clubCode}/sessions/[sessionId]/runtime`, but it
+is not current-state authority until the route migration phase passes. The URL
+club code is never authorization.
 
 ## Canonical Workflow
 
@@ -145,6 +156,17 @@ Database owns persistence and recovery.
 
 Runtime must avoid continuous DB select/write loops. Commit to DB on meaningful operator actions such as refresh/apply/replace/start/end/cancel/save, not on temporary UI state or render cycles.
 
+## Database Environment Boundary
+
+Development may use an intentionally empty beta Neon database. Empty beta data is valid and must not be compared with or mistaken for production data.
+
+Before schema inspection or migration work, confirm the exact project, branch, database, and role target. Schema changes remain manual, reviewed, and owner-approved. Do not point development automation at production or apply generated SQL automatically.
+
+The approved SaaS target uses shared-table tenancy with a server-owned
+`club_id`. The current club becomes Tenant #1. Do not onboard Tenant #2 until
+the isolation, reconciliation, test, backup, and rollback gates in
+`docs/multi-tenant.md` and `rules/multi-tenant-isolation.yaml` pass.
+
 ## Finance Philosophy
 
 Finance is lightweight operational finance.
@@ -171,7 +193,9 @@ Do not turn inventory into warehouse ERP.
 
 ## Settings Philosophy
 
-Settings must stay small and operational. Shared operational settings are DB-backed singleton configuration:
+Settings must stay small and operational. Shared operational settings are
+currently DB-backed singleton configuration and become one singleton per club
+through the approved tenant migration:
 
 - auto-create court fee transaction
 - auto-create shuttlecock usage transaction
@@ -203,6 +227,9 @@ Future AI models must not autonomously introduce:
 - runtime as root navigation
 - continuous runtime DB write loops
 - enterprise court identity/catalog as required runtime dependency
+- schema-per-club or database-per-club tenancy
+- plan/subscription/billing management inside Badmin
+- client-controlled tenant identity or plan-name branching
 
 ## Escalation Required
 
@@ -219,6 +246,10 @@ Ask the owner before changing:
 - shuttlecock movement semantics
 - session-scoped player architecture
 - app navigation hierarchy
+- tenant identity or isolation rules
+- Control Plane/Badmin ownership or provisioning contracts
+- club status, entitlement, downgrade, or active-session continuation policy
+- activation of a second customer club
 
 ## Primary Goal
 
@@ -230,5 +261,7 @@ The goal is real-world badminton operational efficiency:
 - accurate lightweight finance
 - accurate shuttlecock stock
 - tablet/mobile usability
+- strict data isolation between clubs without changing established club
+  operations
 
 Not theoretical software perfection.

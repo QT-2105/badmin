@@ -1,0 +1,380 @@
+version: "2026-09-07"
+name: release-readiness
+scope: repository-and-environments
+
+environment_boundary:
+  development_database: "isolated beta or explicitly confirmed UAT target"
+  uat_production_copy: "sensitive point-in-time non-production data; aggregated diagnostics only and no mutable production integrations"
+  production_database: "never accessed, inferred, or mutated without explicit owner approval"
+  confirm_before_db_work:
+    - project
+    - branch
+    - database
+    - role
+  schema_application: "manual reviewed SQL only"
+  forbidden:
+    - automatic_schema_deploy
+    - generated_sql_auto_apply
+    - development_automation_against_production
+    - raw_pii_tokens_hashes_or_object_keys_in_ai_diagnostics
+    - uat_mutation_of_production_storage_email_webhooks_or_payments
+
+required_quality_gates:
+  - npm_test
+  - npm_run_lint
+  - npm_run_typecheck
+  - npm_run_build
+  - npm_run_guard_no_db_schema_automation
+  - npm_run_guard_runtime_hardening
+  - npm_run_guard_entitlement_enforcement
+  - git_diff_check
+
+database_sensitive_checks:
+  - "validate prisma/schema.prisma"
+  - "run read-only drift comparison against the confirmed beta target"
+  - "record drift; do not apply it automatically"
+
+next_layer_promotion_blockers:
+  - database_readiness_diagnostic
+  - production_dependency_security_updates
+  - idempotent_club_provisioning_and_activation
+
+phase_2_design_gate:
+  status: complete
+  authority: "docs/multi-tenant-schema-contract.md"
+  scope: "documentation and rules only; does not clear Phase 0 or authorize Prisma/SQL/application tenant changes"
+  required_before_phase_3_or_schema_work:
+    - confirmed_neon_project_branch_database_and_role
+    - isolated_uat_mutable_integrations
+    - recorded_backup_reset_owner_and_procedure
+    - owner_approval_for_the_exact_next_phase
+
+phase_3_control_foundation_gate:
+  phase_3a: complete
+  authority: "docs/multi-tenant-control-foundation.md"
+  phase_3b: complete_on_confirmed_uat
+  phase_3c: complete_read_only_non_enforcing
+  uat_owner_exception: "backup/reset details waived for Phase 3 UAT execution only; production promotion gate remains open"
+  confirm_before_manual_sql_creation_or_application:
+    - neon_project_and_branch
+    - database_and_migration_role
+    - reviewed_target_fingerprint
+    - backup_snapshot_reset_owner_and_procedure
+    - isolated_uat_mutable_integrations
+    - legacy_club_name_and_approved_code
+    - badmin_and_control_plane_runtime_role_mapping
+  phase_3c_requires:
+    - phase_3b_migration_passed
+    - control_schema_reconciliation_passed
+    - badmin_read_only_and_no_mutation_grants_verified
+  result:
+    target_fingerprint: "c2f96ce9dcd6"
+    foundation_reconciliation: passed
+    operational_baseline_reconciliation: passed
+    stop_before_phase_4: true
+
+phase_4_nullable_expand_gate:
+  status: complete_on_confirmed_uat
+  authority: "docs/multi-tenant-schema-contract.md"
+  result:
+    target_fingerprint: "c2f96ce9dcd6"
+    nullable_uuid_columns: 18
+    populated_club_id_rows: 0
+    tenant_constraints_added: 0
+    tenant_indexes_added: 0
+    table_rewrites: 0
+    operational_baseline_reconciliation: passed
+    application_regression: passed
+    stop_before_phase_5: true
+  forbidden_until_later_phase:
+    - club_id_backfill
+    - club_id_not_null
+    - composite_tenant_foreign_keys
+    - legacy_unique_constraint_removal
+    - tenant_login_or_route_switch
+
+phase_5_compatibility_write_gate:
+  status: complete
+  authority: "docs/multi-tenant-schema-contract.md"
+  result:
+    legacy_club_id: "aa1f1aa3-c438-4498-96e9-ab228cd51f4f"
+    server_owned_context: passed
+    tenant_write_source_guard: passed
+    focused_regression_tests: 97
+    target_fingerprint: "c2f96ce9dcd6"
+    monitored_tables: 18
+    positive_new_null_delta: 0
+    unexpected_club_rows: 0
+    application_quality_gates: passed
+    stop_before_phase_6: true
+  forbidden_until_phase_6_or_later:
+    - club_id_backfill
+    - club_id_not_null
+    - tenant_constraint_cutover
+    - tenant_login_or_route_switch
+
+phase_6_backfill_gate:
+  status: complete_on_confirmed_uat
+  authority: "docs/multi-tenant-schema-contract.md"
+  result:
+    target_fingerprint: "c2f96ce9dcd6"
+    tenant_tables: 18
+    backfilled_rows: 3337
+    null_club_rows: 0
+    unexpected_club_rows: 0
+    orphan_relations: 0
+    tenant_mismatch_relations: 0
+    changed_business_checksums: 0
+    successful_rehearsals: 2
+    idempotent_retry_updated_rows: 0
+    rehearsal_duration_ms: [12219.54, 13380.54]
+    operational_baseline_reconciliation: passed
+    stop_before_phase_7: true
+  forbidden_until_phase_7_or_later:
+    - club_id_not_null
+    - tenant_foreign_keys
+    - composite_tenant_foreign_keys
+    - tenant_unique_or_index_cutover
+
+phase_7_application_data_access_gate:
+  status: complete
+  authority: "docs/multi-tenant.md"
+  result:
+    tenant_source_files_guarded: 20
+    tenant_data_access_source_guard: passed
+    full_regression_tests: 158
+    users_roles_settings: passed
+    schedule_sessions_players_couples: passed
+    dashboard_aggregates: passed
+    history_and_storage_mutations: passed
+    runtime_repositories_and_roster_validation: passed
+    finance_inventory_completion: passed
+    scheduler_or_domain_semantics_changed: false
+    schema_or_business_data_changed: false
+    uat_target_fingerprint: "c2f96ce9dcd6"
+    uat_rows_reconciled: 3337
+    uat_null_or_unexpected_owner_rows: 0
+    uat_operational_baseline_reconciliation: passed
+    stop_before_phase_8: true
+  forbidden_until_phase_8_or_later:
+    - club_id_not_null
+    - tenant_foreign_keys
+    - composite_tenant_foreign_keys
+    - tenant_unique_or_index_cutover
+    - tenant_login_or_route_switch
+    - second_tenant_activation
+
+phase_8_database_isolation_gate:
+  status: complete_on_confirmed_uat
+  authority: "docs/multi-tenant.md"
+  result:
+    target_fingerprint: "c2f96ce9dcd6"
+    tenant_query_indexes: 20
+    tenant_unique_indexes: 23
+    validated_direct_club_foreign_keys: 18
+    validated_composite_tenant_foreign_keys: 16
+    required_club_id_columns: 18
+    cross_tenant_database_probe: rejected_and_rolled_back
+    waiting_access_exclusive_locks: 0
+    uat_rows_reconciled: 3337
+    uat_null_or_unexpected_owner_rows: 0
+    application_quality_gates: passed
+  phase_8f:
+    status: complete_on_confirmed_uat
+    completed:
+      - app_users_global_email_unique_removed
+      - tenant_only_prisma_and_repository_contract
+      - reviewed_remaining_key_sql_validation_and_rollback
+    result:
+      legacy_global_keys: 0
+      app_settings_primary_key: club_id
+      phase14_readiness: passed_no_blockers
+  stop_before_phase_8f_database_execution: false
+
+phase_9_tenant_authentication_gate:
+  status: phase_9a_to_9e_complete_phase_9f_complete_local_uat_deploy_pending
+  authority: "docs/multi-tenant.md"
+  result:
+    target_fingerprint: "c2f96ce9dcd6"
+    tenant_identifier_indexes: 3
+    validated_identifier_checks: 4
+    legacy_users_reconciled: 5
+    missing_identifier_or_club: 0
+    duplicate_identifier_groups: 0
+    session_tenant_mismatch: 0
+    same_email_cross_club_probe: allowed_and_rolled_back
+    public_club_projection: [code, name]
+    legacy_login_compatibility: passed
+    application_quality_gates: passed
+  rollout:
+    non_legacy_login: exact_uuid_allowlist_disabled_by_default
+    tenant_number_two: inactive
+    tenant_prefixed_routes: complete_for_legacy_club
+  phase_9f:
+    status: complete_local_uat_deploy_pending
+    required_before_deploying_bootstrap_retirement:
+      - idempotent_provisioning_receipt
+      - tested_owner_activation_path
+      - empty_club_defaults_and_permissions_creation
+  stop_before_phase_10: false
+
+phase_10_tenant_url_cache_storage_gate:
+  status: complete
+  authority: "docs/multi-tenant.md"
+  result:
+    tenant_prefixed_routes: complete
+    legacy_compatibility_redirects: complete
+    url_is_authorization: false
+    permission_normalization: complete
+    react_query_keys_tenant_prefixed: complete
+    tenant_query_client_boundary: complete
+    logout_tenant_state_cleanup: complete
+    new_s3_keys_tenant_namespaced: complete
+    legacy_s3_keys_readable_by_db_reference: true
+    bulk_object_move_performed: false
+    database_mutation: false
+  remaining_blocks:
+    - phase_9f_idempotent_provisioning_and_owner_activation
+    - non_legacy_login_rollout
+    - tenant_number_two_activation
+  stop_before_phase_11: false
+
+phase_11_runtime_concurrency_gate:
+  status: complete_local
+  authority: "docs/multi-tenant.md"
+  result:
+    mandatory_runtime_revision: passed
+    live_revision_compare_and_swap: passed
+    completed_cancelled_runtime_immutability: passed
+    runtime_json_tenant_validation: passed
+    completion_idempotency: passed
+    inventory_row_lock_serialization: passed
+    completion_inventory_cross_operation_test: passed
+    negative_stock: rejected
+    duplicate_completion_movement_transaction: rejected
+    regression_tests: 185
+    lint: passed
+    typecheck: passed
+    production_build: passed
+    prisma_schema_validation: passed
+    yaml_validation: passed
+    runtime_hardening_guard: passed
+    tenant_read_write_guards: passed
+    no_db_schema_automation_guard: passed
+    diff_check: passed
+    scheduler_or_lifecycle_changed: false
+    database_schema_or_business_data_changed: false
+  remaining_blocks:
+    - request_owned_dynamic_tenant_context
+    - phase_9f_idempotent_provisioning_and_owner_activation
+    - remaining_phase_8f_global_keys
+    - synthetic_second_tenant_shadow_validation
+  stop_before_phase_12: false
+
+phase_12_entitlement_gate:
+  status: complete_on_confirmed_uat
+  authority: "docs/multi-tenant.md"
+  result:
+    read_only_effective_projection: passed_local
+    shadow_decision_logging: passed
+    backend_feature_enforcement: passed
+    module_page_and_navigation_enforcement: passed
+    commercial_plan_branching_in_badmin: absent
+    legacy_all_features: passed
+    downgrade_data_mutation: absent
+    tenant_live_session_continuation: passed
+    limits_enforced: false
+    entitlement_source_guard: passed
+    regression_tests: 195
+    lint: passed
+    typecheck: passed
+    production_build: passed
+    prisma_schema_validation: passed
+    yaml_validation: passed
+    prior_source_guards: passed
+    diff_check: passed
+    uat_projection_grant_applied: true
+  pending_uat_activation:
+    - reconfirm_exact_project_branch_database_role_and_fingerprint
+    - apply_reviewed_projection_column_grant
+    - run_projection_grant_validation
+    - run_legacy_entitlement_reconciliation
+  stop_before_phase_13: false
+
+phase_13_provisioning_gate:
+  status: complete_on_confirmed_uat
+  authority: "docs/multi-tenant.md"
+  result:
+    registration_and_code_contract: passed_local
+    idempotent_seed_function: reviewed_manual_sql
+    default_settings_roles_owner_seed: passed_static_and_focused_tests
+    owner_activation_api_and_ui: passed_local
+    plaintext_password_in_control_plane_or_email: absent
+    registration_email_emphasizes_club_code: passed
+    activation_token_storage: hash_only
+    failure_retry_and_token_rotation: implemented_local
+    club_active_only_after_complete_seed: atomic_function_guarded
+    provisioning_contract_guard: passed
+    regression_tests: 204
+    lint: passed
+    typecheck: passed
+    production_build: passed
+    prisma_schema_validation: passed
+    yaml_validation: passed
+    prior_source_guards: passed
+    diff_check: passed
+    database_migration: applied_and_validated
+    target_fingerprint: "c2f96ce9dcd6"
+    migration_role: neondb_owner
+    rollback_only_rehearsal: passed
+    synthetic_residue: 0
+    legacy_baseline_reconciliation: passed
+  rollout:
+    phase_9f_bootstrap_disable: implemented_local_deploy_blocked_until_uat_acceptance
+    non_legacy_login: exact_uuid_allowlist_disabled_by_default
+    tenant_number_two: inactive
+  stop_before_phase_14: true
+
+pre_phase_14_hardening_gate:
+  status: complete_on_confirmed_uat
+  result:
+    request_owned_dynamic_tenant_context: passed_local
+    tenant_context_client_override: rejected
+    legacy_fallback: explicit_compatibility_only
+    controlled_login_rollout: exact_uuid_allowlist
+    global_bootstrap_creation: retired_http_410_local
+    remaining_phase_8f_application_contract: applied_and_validated_on_uat
+    phase_14_read_only_audit: passed_no_blockers
+    phase_14_rollback_only_shadow: passed_zero_residue
+    tenant_context_read_write_guards: passed
+    lint_typecheck_build: passed
+    prisma_and_yaml_validation: passed
+    prior_runtime_entitlement_provisioning_guards: passed
+    schema_automation_guard: passed
+    diff_check: passed
+    database_mutation: reviewed_phase_8f_and_runtime_grants_only
+    effective_runtime_role_smoke: passed
+    regression_tests: 211
+    production_dependency_vulnerabilities: 0
+  rollout:
+    tenant_number_two: inactive_pending_controlled_customer_input
+    phase_14_operational_release: external_input_required
+
+multi_tenant_second_club_gates:
+  design_contract: "docs/multi-tenant.md and rules/multi-tenant-isolation.yaml"
+  required:
+    - valid_non_null_club_id_on_every_tenant_row
+    - application_and_database_cross_tenant_relation_protection
+    - no_global_tenant_read_aggregate_update_or_delete
+    - tenant_bound_user_auth_session_permissions_and_routes
+    - tenant_safe_settings_cache_rate_limit_and_object_storage
+    - tenant_scoped_runtime_revision_hydration_and_commit
+    - concurrency_safe_completion_and_inventory
+    - legacy_club_data_finance_stock_runtime_permission_and_capability_reconciliation
+    - cross_tenant_repository_and_api_test_coverage
+    - idempotent_provisioning_and_shadow_validation
+    - approved_exact_target_backup_recovery_sql_and_rollback
+  forbidden_until_all_pass:
+    - customer_tenant_number_two_activation
+    - broad_customer_onboarding
+    - treating_optional_rls_as_a_substitute_for_application_isolation

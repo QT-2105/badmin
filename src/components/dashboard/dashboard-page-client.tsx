@@ -1,11 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import type { Route } from 'next';
 import { AlertTriangle, ChevronDown, CircleDollarSign, Package, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { TenantLink as Link } from '@/components/tenant/tenant-link';
 import { DataTable } from '@/components/ui/data-table';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/feedback';

@@ -4,12 +4,13 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { CalendarDays, ChevronDown, ChevronUp, CreditCard, History, Home, Loader2, QrCode, Users, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { TenantLink as Link } from '@/components/tenant/tenant-link';
+import { useTenantRoute } from '@/components/tenant/tenant-app-provider';
 import { ConfirmationDialog, Dialog } from '@/components/ui/dialog';
 import { FullscreenToggle } from '@/components/ui/fullscreen-toggle';
 import { useBadmintonStore, type Player, type SuggestionMode } from '@/lib/badminton-store';
@@ -25,6 +26,7 @@ import { getLevelLabel, LEVEL_OPTIONS } from '@/lib/player-labels';
 import { PLAYER_TAG_OPTIONS, normalizePlayerTags } from '@/lib/player-tags';
 import { isPlayerEligibleForAutoSuggestion } from '@/lib/runtime-eligibility';
 import { getRuntimeValidationMessage } from '@/lib/runtime-roster-validation';
+import { tenantRuntimeSessionStorageKey } from '@/lib/tenant-storage-keys';
 import type { MatchHistoryPayload } from '@/services/match-history-service';
 import type { PaymentBankAccount } from '@/types/domain';
 import { LiveCourtsSection } from './sections/live-courts-section';
@@ -41,6 +43,7 @@ const SUGGESTION_MODES: Array<{ value: SuggestionMode; label: string }> = [
 ];
 
 export function RealtimeDashboard() {
+  const { clubId } = useTenantRoute();
   const players = useBadmintonStore((state) => state.players);
   const session = useBadmintonStore((state) => state.session);
   const suggestionDiagnostics = useBadmintonStore((state) => state.suggestionDiagnostics);
@@ -75,11 +78,11 @@ export function RealtimeDashboard() {
 
   // Initialize runtimeSessionId from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('badmin_active_session_id');
+    const stored = localStorage.getItem(tenantRuntimeSessionStorageKey(clubId));
     if (stored) {
       setRuntimeSessionId(stored);
     }
-  }, [setRuntimeSessionId]);
+  }, [clubId, setRuntimeSessionId]);
 
   const stats = useMemo(() => {
     const waiting = players.filter((player) => player.status === 'WAITING').length;
@@ -158,7 +161,7 @@ export function RealtimeDashboard() {
   function confirmLeave(event: MouseEvent<HTMLAnchorElement>, href: Route) {
     if (syncState === 'pending' || syncState === 'syncing' || syncState === 'error' || syncState === 'conflict') {
       event.preventDefault();
-      setPendingLeaveHref(href);
+      setPendingLeaveHref((event.currentTarget.getAttribute('href') || href) as Route);
     }
   }
 

@@ -1,4 +1,7 @@
+import { createHash } from 'crypto';
+
 import { AppError } from '@/lib/app-error';
+import { classifyLoginIdentifier } from './identifiers';
 
 type LoginAttempt = {
   count: number;
@@ -9,10 +12,20 @@ const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 8;
 const attempts = new Map<string, LoginAttempt>();
 
-export function getLoginRateLimitKey(request: Request, email: string): string {
+export function getLoginRateLimitKey(request: Request, clubId: string, identifier: string): string {
   const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
   const ip = forwarded || request.headers.get('x-real-ip') || 'unknown';
-  return `${ip}:${email.trim().toLowerCase()}`;
+  let canonicalIdentifier: string;
+  try {
+    const classified = classifyLoginIdentifier(identifier);
+    canonicalIdentifier = `${classified.kind}:${classified.normalized}`;
+  } catch {
+    canonicalIdentifier = `invalid:${identifier.normalize('NFKC').trim().toLowerCase()}`;
+  }
+  const identityHash = createHash('sha256')
+    .update(`${clubId}:${canonicalIdentifier}`)
+    .digest('hex');
+  return `${ip}:${identityHash}`;
 }
 
 export function assertLoginAllowed(key: string): void {

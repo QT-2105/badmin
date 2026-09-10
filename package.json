@@ -7,11 +7,34 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "audit:uat-baseline": "node --env-file=.env scripts/uat-baseline.mjs",
+    "audit:control-foundation": "node --env-file=.env scripts/control-foundation-readiness.mjs",
+    "audit:phase4-tenant-schema": "node --env-file=.env scripts/phase4-tenant-schema-readiness.mjs",
+    "audit:phase5-tenant-writes": "node --env-file=.env scripts/phase5-tenant-write-readiness.mjs",
+    "audit:phase6-preflight": "node --env-file=.env scripts/phase6-backfill-preflight.mjs",
+    "phase6:rehearsal": "node --env-file=.env scripts/phase6-backfill-rehearsal.mjs",
+    "audit:phase8-preflight": "node --env-file=.env scripts/phase8-preflight.mjs",
+    "phase8:uat": "node --env-file=.env scripts/phase8-uat-rehearsal.mjs",
+    "audit:phase9-preflight": "node --env-file=.env scripts/phase9-preflight.mjs",
+    "phase9:uat": "node --env-file=.env scripts/phase9-uat-rehearsal.mjs",
+    "phase8f:uat": "node --env-file=.env scripts/phase8f-uat.mjs",
+    "phase13:uat": "node --env-file=.env scripts/phase13-uat-rehearsal.mjs",
+    "audit:phase14-readiness": "node --env-file=.env scripts/phase14-readiness.mjs",
+    "audit:runtime-role": "node --env-file=.env scripts/runtime-role-readiness.mjs",
+    "audit:runtime-role-smoke": "node --env-file=.env scripts/runtime-role-smoke.mjs",
+    "phase14:shadow": "node --env-file=.env scripts/phase14-shadow-rehearsal.mjs",
+    "phase14:runtime-roles": "node --env-file=.env scripts/phase14-runtime-roles-uat.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
-    "guard:no-db-schema-automation": "node scripts/check-no-db-schema-automation.mjs"
+    "guard:no-db-schema-automation": "node scripts/check-no-db-schema-automation.mjs",
+    "guard:tenant-write-coverage": "node scripts/check-tenant-write-coverage.mjs",
+    "guard:tenant-data-access": "node scripts/check-tenant-data-access-coverage.mjs",
+    "guard:runtime-hardening": "node scripts/check-runtime-hardening.mjs",
+    "guard:entitlement-enforcement": "node scripts/check-entitlement-enforcement.mjs",
+    "guard:provisioning-contract": "node scripts/check-provisioning-contract.mjs",
+    "guard:dynamic-tenant-context": "node scripts/check-dynamic-tenant-context.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.8.0",
@@ -32,10 +55,14 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.5.18",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.28",
     "prisma": "^6.8.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "vitest": "^2.1.9"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "postcss": "$postcss"
   }
 }

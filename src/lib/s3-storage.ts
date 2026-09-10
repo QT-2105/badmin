@@ -143,11 +143,6 @@ function signedHeaders(input: {
   };
 }
 
-export function publicUrlForS3Key(key: string): string {
-  const config = getS3Config();
-  return `${config.publicBaseUrl}/${encodeKey(key)}`;
-}
-
 export async function uploadS3Object(input: UploadInput): Promise<{ key: string; publicUrl: string }> {
   const config = getS3Config();
   const signed = signedHeaders({
@@ -245,4 +240,17 @@ export async function listS3ObjectKeysByPrefix(prefix: string): Promise<string[]
 export function createImageKey(folder: string, fileName: string): string {
   const extension = fileName.toLowerCase().match(/\.(jpe?g|png|webp)$/)?.[0] ?? '.webp';
   return `${folder.replace(/^\/|\/$/g, '')}/${crypto.randomUUID()}${extension}`;
+}
+
+const CLUB_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SAFE_OBJECT_FOLDER_PATTERN = /^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
+
+export function createTenantImageKey(clubId: string, folder: string, fileName: string): string {
+  const normalizedFolder = folder.replace(/^\/+|\/+$/g, '');
+  const folderSegments = normalizedFolder.split('/');
+  const hasUnsafeSegment = folderSegments.some((segment) => segment === '.' || segment === '..');
+  if (!CLUB_ID_PATTERN.test(clubId) || !SAFE_OBJECT_FOLDER_PATTERN.test(normalizedFolder) || hasUnsafeSegment) {
+    throw new AppError('Namespace lưu trữ theo CLB không hợp lệ.', 500);
+  }
+  return createImageKey(`clubs/${clubId}/${normalizedFolder}`, fileName);
 }

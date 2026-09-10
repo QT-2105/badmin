@@ -1,0 +1,21 @@
+-- Run outside a transaction, one statement at a time.
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_app_users_club_role_status_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_auth_sessions_club_user";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_auth_sessions_club_expires";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_payment_banks_club_active_order";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_play_sessions_club_date_start";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_play_sessions_club_status_updated";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_session_players_club_session_joined";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_session_players_club_session_couple";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_runtime_matches_club_session_status";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_match_histories_club_session_ended";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_match_histories_club_session_court";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_match_history_players_club_player";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_session_transactions_club_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_session_transactions_club_session_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_products_club_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_products_club_status_name";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_movements_club_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_movements_club_product_created";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_player_images_club_player";
+DROP INDEX CONCURRENTLY IF EXISTS public."idx_player_images_club_status";
