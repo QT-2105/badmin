@@ -117,13 +117,16 @@ jobs:
             fi
           done
 
-      - name: Build and push Heroku image
+      # Heroku Container Registry accepts Docker Image Manifest V2 Schema 2,
+      # but not OCI manifests. Load the single-platform build into Docker first,
+      # then let the Docker daemon push the compatible manifest.
+      - name: Build Heroku image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: true
-          tags: registry.heroku.com/${{ vars.HEROKU_APP_NAME }}/web
+          load: true
+          tags: badmin-heroku:${{ github.sha }}
           platforms: linux/amd64
           provenance: false
           build-args: |
@@ -131,11 +134,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Push Heroku image
+        shell: bash
+        run: |
+          local_image="badmin-heroku:${GITHUB_SHA}"
+          registry_image="registry.heroku.com/${HEROKU_APP_NAME}/web"
+          docker tag "$local_image" "$registry_image"
+          docker push "$registry_image"
+
       - name: Release image on Heroku
         shell: bash
         run: |
           image="registry.heroku.com/${HEROKU_APP_NAME}/web"
-          docker pull "$image"
           image_id="$(docker inspect "$image" --format='{{.Id}}')"
 
           curl --fail-with-body --silent --show-error \
