@@ -11,7 +11,6 @@ Mobile-first badminton group management workspace for real-time court arrangemen
 - Zustand
 - Framer Motion
 - TanStack Query
-- Supabase
 - PostgreSQL
 - Prisma
 - PWA/offline sync foundation
@@ -22,20 +21,19 @@ Mobile-first badminton group management workspace for real-time court arrangemen
 - Shared UI primitives for button and badge states
 - Dark operational design language
 - Prisma schema for users, players, sessions, courts, matches, pairings, attendance, transactions, expenses, tags, relationships, rotation history, and sync queue
-- Supabase and Prisma client helpers
+- Prisma client helpers
 - Environment variable template
 
 ## Getting started
 
 1. Install dependencies.
 2. Copy `.env.example` to `.env.local` and fill in the values.
-3. Run Prisma generate and your database migration.
+3. Generate the Prisma client. Review and apply database SQL separately when required.
 4. Start the app in development mode.
 
 ```bash
 npm install
-npx prisma generate
-npx prisma migrate dev
+npm run prisma:generate
 npm run dev
 ```
 
@@ -47,14 +45,21 @@ npm run dev
 - `npm run lint` - run ESLint
 - `npm run typecheck` - run TypeScript checks
 - `npm run prisma:generate` - generate Prisma client
-- `npm run prisma:migrate` - create and apply a Prisma migration
 - `npm run prisma:studio` - open Prisma Studio
+
+## Production deployment
+
+Production CI/CD targets Heroku Container Registry, uses Neon Postgres, and can
+serve a Namecheap-managed custom domain. See
+[`docs/heroku-deployment.md`](docs/heroku-deployment.md) for the required
+Heroku config vars, GitHub environment values, DNS records, health check, and
+rollback procedure.
 
 ## Workspace structure
 
 - `src/app` - App Router entry points and global layout
 - `src/components/ui` - UI primitives
-- `src/lib` - shared utilities, env, Prisma, and Supabase helpers
+- `src/lib` - shared utilities and Prisma helpers
 - `prisma/schema.prisma` - database schema
 
 ## Next steps
@@ -62,5 +67,5 @@ npm run dev
 - Add auth routes for email/password and Google login
 - Add offline queue persistence with IndexedDB
 - Build court arrangement and rotation workflows
-- Wire session and finance mutations to Supabase/Postgres
+- Continue hardening session and finance persistence on PostgreSQL
 - Add background sync and conflict resolution

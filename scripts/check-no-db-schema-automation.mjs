@@ -5,9 +5,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const files = [
   '.github/workflows/ci-cd.yml',
-  '.github/workflows/deploy.yml',
   'Dockerfile',
-  'docker-compose.yml',
   'package.json'
 ];
 
